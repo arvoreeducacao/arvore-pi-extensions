@@ -1,10 +1,6 @@
 import { readFile, readdir, writeFile, mkdir, rm } from "node:fs/promises";
 import { join, basename, resolve, dirname } from "node:path";
 import { existsSync } from "node:fs";
-import { createHash } from "node:crypto";
-import * as lancedb from "@lancedb/lancedb";
-import type { VectorQuery } from "@lancedb/lancedb";
-import { EmbeddingEngine } from "./embeddings.js";
 import type {
   MemoryEntry,
   MemoryCatalogEntry,
@@ -30,47 +26,21 @@ function detectSteeringTargets(workspaceRoot: string): string[] {
   return targets;
 }
 
-function vectorRecord(entry: MemoryEntry, vector: number[], contentHash: string): Record<string, unknown> {
-  return {
-    id: entry.id,
-    title: entry.title,
-    category: entry.category,
-    date: entry.date,
-    tags: entry.tags.join(","),
-    status: entry.status,
-    snippet: entry.content.length > 200 ? entry.content.slice(0, 200) + "..." : entry.content,
-    content_hash: contentHash,
-    vector,
-  };
-}
-
 export class MemoryStore {
   private memoriesPath: string;
   private workspaceRoot: string;
   private catalog: MemoryEntry[] = [];
-  private embeddings: EmbeddingEngine;
-  private db: lancedb.Connection | null = null;
-  private table: lancedb.Table | null = null;
   private loaded = false;
   private loadingPromise: Promise<void> | null = null;
 
-  constructor(memoriesPath: string, embeddingModel?: string) {
+  constructor(memoriesPath: string) {
     this.memoriesPath = memoriesPath;
     this.workspaceRoot = this.resolveWorkspaceRoot(memoriesPath);
-    this.embeddings = new EmbeddingEngine(embeddingModel);
   }
 
   private resolveWorkspaceRoot(memoriesPath: string): string {
     const abs = resolve(memoriesPath);
-    const parent = dirname(abs);
-    if (
-      existsSync(join(parent, ".kiro")) ||
-      existsSync(join(parent, ".cursor")) ||
-      existsSync(join(parent, ".git"))
-    ) {
-      return parent;
-    }
-    return parent;
+    return dirname(abs);
   }
 
   async load(): Promise<void> {
@@ -80,8 +50,6 @@ export class MemoryStore {
 
   private async doLoad(): Promise<void> {
     this.catalog = [];
-
-    await this.embeddings.init();
 
     if (!existsSync(this.memoriesPath)) {
       await mkdir(this.memoriesPath, { recursive: true });
@@ -104,10 +72,6 @@ export class MemoryStore {
     this.catalog.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-
-    if (this.embeddings.isReady()) {
-      await this.syncVectorStore();
-    }
 
     this.loaded = true;
     await this.syncSteeringIndex();
@@ -162,42 +126,6 @@ export class MemoryStore {
         `Failed to sync steering index: ${error instanceof Error ? error.message : error}`
       );
     }
-  }
-
-  private async syncVectorStore(): Promise<void> {
-    const dbPath = join(this.memoriesPath, ".lancedb");
-    this.db = await lancedb.connect(dbPath);
-
-    const records: Record<string, unknown>[] = [];
-
-    for (const entry of this.catalog) {
-      const text = this.buildEmbeddingText(entry);
-      const vector = await this.embeddings.embed(text);
-      records.push(vectorRecord(entry, vector, this.contentHash(text)));
-    }
-
-    if (records.length > 0) {
-      this.table = await this.db.createTable("memories", records, {
-        mode: "overwrite",
-      });
-      console.error(`Indexed ${records.length} memories in LanceDB`);
-    } else {
-      this.table = null;
-    }
-  }
-
-  private buildEmbeddingText(entry: MemoryEntry): string {
-    const parts = [
-      entry.title,
-      `Category: ${entry.category}`,
-      entry.tags.length > 0 ? `Tags: ${entry.tags.join(", ")}` : "",
-      entry.content,
-    ];
-    return parts.filter(Boolean).join("\n");
-  }
-
-  private contentHash(text: string): string {
-    return createHash("sha256").update(text).digest("hex").slice(0, 16);
   }
 
   private parseFrontmatter(raw: string): {
@@ -273,11 +201,10 @@ export class MemoryStore {
 
   private async ensureLoaded(): Promise<void> {
     if (this.loaded) return;
-    if (this.loadingPromise) {
-      await this.loadingPromise;
-      return;
+    if (!this.loadingPromise) {
+      this.loadingPromise = this.doLoad();
     }
-    throw new MemoryError("Store not loaded. Call load() first.", "NOT_LOADED");
+    await this.loadingPromise;
   }
 
   async search(
@@ -289,51 +216,11 @@ export class MemoryStore {
     const status = opts?.status || "active";
     const limit = opts?.limit || 10;
 
-    if (this.embeddings.isReady() && this.table) {
-      return this.semanticSearch(query, { category: opts?.category, status, limit });
-    }
-
     let filtered = this.catalog.filter((m) => m.status === status);
     if (opts?.category) {
       filtered = filtered.filter((m) => m.category === opts.category);
     }
     return this.keywordSearch(query, filtered, limit);
-  }
-
-  private async semanticSearch(
-    query: string,
-    opts: { category?: MemoryCategory; status?: string; limit: number }
-  ): Promise<(MemoryCatalogEntry & { score: number })[]> {
-    const queryVector = await this.embeddings.embed(query);
-
-    const filters: string[] = [];
-    if (opts.status) filters.push(`status = '${opts.status}'`);
-    if (opts.category) filters.push(`category = '${opts.category}'`);
-
-    const searchQuery = (this.table!.search(queryVector) as VectorQuery)
-      .distanceType("cosine")
-      .limit(opts.limit);
-
-    if (filters.length > 0) {
-      searchQuery.where(filters.join(" AND "));
-    }
-
-    const results = await searchQuery.toArray();
-
-    const MIN_RELEVANCE_SCORE = -0.2;
-
-    return results
-      .map((row: Record<string, unknown>) => ({
-        id: row.id as string,
-        title: row.title as string,
-        category: row.category as MemoryCategory,
-        date: row.date as string,
-        tags: (row.tags as string).split(",").filter(Boolean),
-        status: row.status as MemoryStatus,
-        snippet: row.snippet as string,
-        score: round(1 - ((row._distance as number) || 0)),
-      }))
-      .filter((r) => r.score >= MIN_RELEVANCE_SCORE);
   }
 
   private keywordSearch(
@@ -434,19 +321,6 @@ export class MemoryStore {
     };
 
     this.catalog.unshift(entry);
-
-    if (this.embeddings.isReady() && this.db) {
-      const text = this.buildEmbeddingText(entry);
-      const vector = await this.embeddings.embed(text);
-      const record = vectorRecord(entry, vector, this.contentHash(text));
-
-      if (this.table) {
-        await this.table.add([record]);
-      } else {
-        this.table = await this.db.createTable("memories", [record], { mode: "overwrite" });
-      }
-    }
-
     await this.syncSteeringIndex();
 
     return entry;
@@ -468,10 +342,6 @@ export class MemoryStore {
     const updated = `${this.buildFrontmatter(data as Record<string, unknown>)}\n${content}`;
     await writeFile(entry.path, updated, "utf-8");
 
-    if (this.table) {
-      await this.table.update({ where: `id = '${id}'`, values: { status: "archived" } });
-    }
-
     await this.syncSteeringIndex();
 
     return entry;
@@ -487,10 +357,6 @@ export class MemoryStore {
 
     await rm(entry.path);
     this.catalog = this.catalog.filter((m) => m.id !== id);
-
-    if (this.table) {
-      await this.table.delete(`id = '${id}'`);
-    }
 
     await this.syncSteeringIndex();
   }
