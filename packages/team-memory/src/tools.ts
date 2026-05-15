@@ -1,4 +1,4 @@
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { MemoryCategory, MemoryStatus } from "./types.js";
 import { VALID_CATEGORIES, VALID_STATUSES } from "./types.js";

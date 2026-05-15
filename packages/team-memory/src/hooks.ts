@@ -1,6 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { MemoryCategory } from "./types.js";
-import { VALID_CATEGORIES } from "./types.js";
 import { MemoryStore } from "./store.js";
 
 const DECISION_PATTERNS = [
