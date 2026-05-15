@@ -1,5 +1,5 @@
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { Type, StringEnum } from "@mariozechner/pi-ai";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { MemoryCategory, MemoryStatus } from "./types.js";
 import { VALID_CATEGORIES, VALID_STATUSES } from "./types.js";
 import { MemoryStore } from "./store.js";
