@@ -2,202 +2,203 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import type { MemoryCategory } from "./types.js";
 import { MemoryStore } from "./store.js";
 
-const DECISION_PATTERNS = [
-  /we (?:should|will|decided to|agreed to) use/i,
-  /the (?:approach|strategy|solution) (?:is|will be)/i,
-  /(?:architecture|design) (?:decision|choice)/i,
-  /we (?:went with|chose|selected)/i,
-  /(?:best practice|standard) (?:is|for)/i,
+interface MemoryCandidate {
+  category: MemoryCategory;
+  title: string;
+  content: string;
+  confidence: number;
+  turnIndex: number;
+}
+
+const pendingCandidates: MemoryCandidate[] = [];
+const MAX_CANDIDATES = 5;
+
+const DECISION_INDICATORS = [
+  "we decided to",
+  "we chose to",
+  "we agreed to",
+  "the solution is",
+  "the approach is",
+  "we went with",
+  "we selected",
+  "architecture decision",
+  "design decision",
+  "best practice for",
 ];
 
-const GOTCHA_PATTERNS = [
-  /(?:gotcha|caveat|warning|note):/i,
-  /make sure (?:to|you)/i,
-  /don't forget to/i,
-  /be careful (?:with|about)/i,
-  /watch out for/i,
-  /this (?:breaks|fails|doesn't work)/i,
-  /the issue (?:was|is)/i,
-  /root cause (?:was|is)/i,
+const GOTCHA_INDICATORS = [
+  "gotcha:",
+  "caveat:",
+  "warning:",
+  "the issue was",
+  "root cause was",
+  "this breaks when",
+  "this fails if",
+  "make sure to",
+  "don't forget to",
+  "be careful with",
+  "watch out for",
 ];
 
-const CONVENTION_PATTERNS = [
-  /we (?:always|never|typically) /i,
-  /our (?:convention|standard|pattern) (?:is|for)/i,
-  /by convention,/i,
-  /we follow (?:the|a)/i,
+const CONVENTION_INDICATORS = [
+  "we always",
+  "we never",
+  "our convention",
+  "our standard",
+  "our pattern",
+  "by convention",
+  "we follow",
+];
+
+const INCIDENT_INDICATORS = [
+  "incident:",
+  "outage:",
+  "bug:",
+  "production issue",
+  "postmortem",
+  "retrospective",
+];
+
+const DOMAIN_INDICATORS = [
+  "this works because",
+  "the system uses",
+  "the architecture is",
+  "the data model",
+  "the flow is",
 ];
 
 function detectMemoryCategory(text: string): MemoryCategory | null {
   const lowerText = text.toLowerCase();
 
-  for (const pattern of DECISION_PATTERNS) {
-    if (pattern.test(text)) return "decisions";
+  for (const indicator of DECISION_INDICATORS) {
+    if (lowerText.includes(indicator)) return "decisions";
   }
 
-  for (const pattern of GOTCHA_PATTERNS) {
-    if (pattern.test(text)) return "gotchas";
+  for (const indicator of GOTCHA_INDICATORS) {
+    if (lowerText.includes(indicator)) return "gotchas";
   }
 
-  for (const pattern of CONVENTION_PATTERNS) {
-    if (pattern.test(text)) return "conventions";
+  for (const indicator of CONVENTION_INDICATORS) {
+    if (lowerText.includes(indicator)) return "conventions";
   }
 
-  if (
-    lowerText.includes("incident") ||
-    lowerText.includes("outage") ||
-    lowerText.includes("bug") ||
-    lowerText.includes("production")
-  ) {
-    return "incidents";
+  for (const indicator of INCIDENT_INDICATORS) {
+    if (lowerText.includes(indicator)) return "incidents";
+  }
+
+  for (const indicator of DOMAIN_INDICATORS) {
+    if (lowerText.includes(indicator)) return "domain";
   }
 
   return null;
 }
 
-function extractLastAssistantText(entries: any[]): string {
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const entry = entries[i];
-    if (entry.type === "message" && entry.message?.role === "assistant") {
-      const content = entry.message.content;
-      if (Array.isArray(content)) {
-        return content
-          .filter((c: any): c is { type: "text"; text: string } => c.type === "text")
-          .map((c) => c.text)
-          .join("\n");
-      }
+function extractTitle(text: string, category: MemoryCategory): string {
+  const lines = text.split("\n").filter((l) => l.trim());
+  if (lines.length === 0) return `New ${category} memory`;
+
+  const firstLine = lines[0].trim();
+  const maxLength = 60;
+
+  let title = firstLine.replace(/^[\-\*\d\.]+\s*/, "");
+
+  const indicators = [...DECISION_INDICATORS, ...GOTCHA_INDICATORS, ...CONVENTION_INDICATORS];
+  for (const indicator of indicators) {
+    const idx = title.toLowerCase().indexOf(indicator);
+    if (idx !== -1) {
+      title = title.slice(idx + indicator.length).trim();
+      break;
     }
   }
+
+  if (title.length > maxLength) {
+    title = title.slice(0, maxLength).trim();
+    const lastSpace = title.lastIndexOf(" ");
+    if (lastSpace > 30) title = title.slice(0, lastSpace);
+  }
+
+  return title || `New ${category} memory`;
+}
+
+function extractAssistantText(message: any): string {
+  if (!message) return "";
+  const content = message.content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((c: any): c is { type: "text"; text: string } => c.type === "text")
+      .map((c) => c.text)
+      .join("\n");
+  }
+  if (typeof content === "string") return content;
   return "";
 }
 
-function extractUserPrompt(entries: any[]): string {
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const entry = entries[i];
-    if (entry.type === "message" && entry.message?.role === "user") {
-      const content = entry.message.content;
-      if (Array.isArray(content)) {
-        const textPart = content.find((c: any) => c.type === "text");
-        if (textPart) return textPart.text;
-      }
-      if (typeof content === "string") return content;
-    }
+function checkSimilarity(candidate: MemoryCandidate, store: MemoryStore): boolean {
+  const catalog = store.getCatalog().filter((m) => m.status === "active");
+  const titleWords = candidate.title.toLowerCase().split(/\s+/).filter(Boolean);
+
+  for (const memory of catalog) {
+    const memoryWords = memory.title.toLowerCase().split(/\s+/).filter(Boolean);
+    const overlap = titleWords.filter((w) => memoryWords.includes(w)).length;
+    const similarity = overlap / Math.max(titleWords.length, memoryWords.length, 1);
+
+    if (similarity > 0.6) return true;
   }
-  return "";
+
+  return false;
+}
+
+export function getPendingCandidates(): MemoryCandidate[] {
+  return [...pendingCandidates];
+}
+
+export function clearCandidate(index: number): void {
+  if (index >= 0 && index < pendingCandidates.length) {
+    pendingCandidates.splice(index, 1);
+  }
 }
 
 export function registerMemoryHooks(pi: ExtensionAPI, store: MemoryStore) {
-  pi.on("session_shutdown", async (_event, ctx: ExtensionContext) => {
-    const entries = ctx.sessionManager.getEntries();
-    const assistantText = extractLastAssistantText(entries);
-    const userPrompt = extractUserPrompt(entries);
+  pi.on("turn_end", async (event, ctx: ExtensionContext) => {
+    const message = event.message;
+    if (message?.role !== "assistant") return;
 
-    if (!assistantText && !userPrompt) return;
+    const text = extractAssistantText(message);
+    if (text.length < 50) return;
 
-    const category = detectMemoryCategory(assistantText + " " + userPrompt);
-
-    if (!category) {
-      return;
-    }
-
-    if (!ctx.hasUI) return;
-
-    const capture = await ctx.ui.confirm(
-      "Capture team memory?",
-      `This session may contain a ${category} worth saving. Add to team memory?`
-    );
-
-    if (!capture) return;
-
-    const title = await ctx.ui.input("Memory title:", "");
-
-    if (!title || title.trim().length === 0) {
-      ctx.ui.notify("Cancelled — title is required", "warning");
-      return;
-    }
-
-    const content = await ctx.ui.editor(
-      "Memory content (markdown):",
-      assistantText.slice(0, 2000)
-    );
-
-    if (!content || content.trim().length === 0) {
-      ctx.ui.notify("Cancelled — content is required", "warning");
-      return;
-    }
-
-    const entry = await store.add({
-      title: title.trim(),
-      category,
-      content: content.trim(),
-    });
-
-    ctx.ui.notify(`Created memory: ${entry.id}`, "info");
-  });
-
-  pi.on("agent_end", async (event, ctx: ExtensionContext) => {
-    const messages = event.messages;
-    if (!messages || messages.length === 0) return;
-
-    const lastAssistant = messages.find(
-      (m: any) => m.role === "assistant" && "content" in m && m.content
-    );
-
-    if (!lastAssistant) return;
-
-    const content = Array.isArray((lastAssistant as any).content)
-      ? (lastAssistant as any).content
-          .filter((c: any) => c.type === "text")
-          .map((c: any) => c.text)
-          .join("\n")
-      : "";
-
-    const category = detectMemoryCategory(content);
-
+    const category = detectMemoryCategory(text);
     if (!category) return;
 
-    const shouldSuggest = await shouldSuggestCapture(content);
+    if (pendingCandidates.length >= MAX_CANDIDATES) {
+      pendingCandidates.shift();
+    }
 
-    if (!shouldSuggest) return;
+    const title = extractTitle(text, category);
+    const candidate: MemoryCandidate = {
+      category,
+      title,
+      content: text.slice(0, 2000),
+      confidence: 0.7,
+      turnIndex: event.turnIndex,
+    };
+
+    if (checkSimilarity(candidate, store)) return;
+
+    pendingCandidates.push(candidate);
 
     if (!ctx.hasUI) return;
 
-    const prompt = await ctx.ui.input(
-      "Add memory title (or leave empty to skip):",
-      ""
-    );
-
-    if (!prompt || prompt.trim().length === 0) return;
-
-    const memoryContent = await ctx.ui.editor(
-      "Memory content:",
-      content.slice(0, 2000)
-    );
-
-    if (!memoryContent || memoryContent.trim().length === 0) return;
-
-    const entry = await store.add({
-      title: prompt.trim(),
-      category,
-      content: memoryContent.trim(),
-    });
-
-    ctx.ui.notify(`Saved: ${entry.id}`, "info");
+    ctx.ui.setWidget("memory-capture", [
+      `💡 Memory candidate: "${title}" (${category})`,
+      "  Type /capture to save, /capture list to browse",
+    ]);
   });
-}
 
-async function shouldSuggestCapture(text: string): Promise<boolean> {
-  const significantIndicators = [
-    "we decided",
-    "the solution is",
-    "root cause",
-    "the issue was",
-    "best practice",
-    "we should",
-    "convention:",
-    "gotcha:",
-  ];
+  pi.on("session_shutdown", async (_event, ctx: ExtensionContext) => {
+    if (pendingCandidates.length === 0) return;
+    if (!ctx.hasUI) return;
 
-  const lowerText = text.toLowerCase();
-  return significantIndicators.some((indicator) => lowerText.includes(indicator));
+    const titles = pendingCandidates.map((c) => `  - ${c.title} (${c.category})`).join("\n");
+    ctx.ui.notify(`Pending memories not captured:\n${titles}`, "warning");
+  });
 }
