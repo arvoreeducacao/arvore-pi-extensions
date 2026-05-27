@@ -68,6 +68,6 @@ jobs:
           for pkg in packages/*/; do
             echo "Publishing $pkg..."
             cd "$pkg"
-            pnpm publish --access public --no-git-checks --provenance || echo "Skipped $pkg (already published or error)"
+            npm publish --access public --provenance || echo "Skipped $pkg (already published or error)"
             cd ../..
           done
