@@ -44,6 +44,11 @@
     "memory",
     "team-memory"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/team-memory"
+  },
   "author": "Arvore",
   "license": "MIT"
 }

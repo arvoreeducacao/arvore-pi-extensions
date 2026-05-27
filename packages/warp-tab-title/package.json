@@ -38,6 +38,11 @@
     "tab",
     "title"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/warp-tab-title"
+  },
   "author": "Arvore",
   "license": "MIT"
 }
