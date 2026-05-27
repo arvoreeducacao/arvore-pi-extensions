@@ -41,6 +41,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,11 +62,21 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Publish packages
         run: |
           for pkg in packages/*/; do
-            echo "Publishing $pkg..."
-            cd "$pkg"
-            npm publish --access public --provenance || echo "Skipped $pkg (already published or error)"
-            cd ../..
+            PKG_NAME=$(node -p "require('./$pkg/package.json').name")
+            PKG_VERSION=$(node -p "require('./$pkg/package.json').version")
+            if npm view "$PKG_NAME@$PKG_VERSION" version 2>/dev/null; then
+              echo "$PKG_NAME@$PKG_VERSION already published, skipping."
+            else
+              echo "Publishing $PKG_NAME@$PKG_VERSION..."
+              cd "$pkg"
+              TARBALL=$(pnpm pack --pack-destination /tmp | tail -1)
+              npm publish "$TARBALL" --access public --provenance
+              cd ../..
+            fi
           done
