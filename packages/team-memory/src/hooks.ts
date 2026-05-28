@@ -190,7 +190,7 @@ export function registerMemoryHooks(pi: ExtensionAPI, store: MemoryStore) {
 
     ctx.ui.setWidget("memory-capture", [
       `💡 Memory candidate: "${title}" (${category})`,
-      "  Type /capture to save, /capture list to browse",
+      "  Type /capture to save, /dismiss to skip",
     ]);
   });
 

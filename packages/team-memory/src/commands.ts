@@ -242,6 +242,28 @@ export function registerMemoryCommands(pi: ExtensionAPI, store: MemoryStore) {
     },
   });
 
+  pi.registerCommand("dismiss", {
+    description: "Dismiss the current memory capture candidate",
+    handler: async (_args, ctx: ExtensionCommandContext) => {
+      const candidates = getPendingCandidates();
+      if (candidates.length === 0) {
+        ctx.ui.notify("No pending candidates to dismiss", "info");
+        return;
+      }
+      clearCandidate(candidates.length - 1);
+      if (getPendingCandidates().length === 0) {
+        ctx.ui.setWidget("memory-capture", []);
+      } else {
+        const latest = getPendingCandidates().at(-1)!;
+        ctx.ui.setWidget("memory-capture", [
+          `💡 Memory candidate: "${latest.title}" (${latest.category})`,
+          "  Type /capture to save, /dismiss to skip",
+        ]);
+      }
+      ctx.ui.notify("Candidate dismissed", "info");
+    },
+  });
+
   pi.registerCommand("capture", {
     description: "Capture a memory from recent conversation candidates",
     getArgumentCompletions: (prefix: string) => {
