@@ -1,0 +1,44 @@
+{
+  "name": "@arvoretech/pi-open-editor",
+  "version": "1.0.0",
+  "description": "PI extension to open files in the user's $EDITOR (tmux pane, GUI, or new terminal window)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@types/node": "^20.10.0",
+    "@earendil-works/pi-ai": "latest",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "editor",
+    "open-editor",
+    "tmux"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/open-editor"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
