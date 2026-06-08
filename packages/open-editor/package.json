@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-open-editor",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "PI extension to open files in the user's $EDITOR (tmux pane, GUI, or new terminal window)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

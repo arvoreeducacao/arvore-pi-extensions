@@ -11,6 +11,47 @@ function isTerminalEditor(editor: string): boolean {
   return TERMINAL_EDITORS.some((t) => base === t || base.startsWith(t + "."));
 }
 
+function isInsideWarp(): boolean {
+  if (process.env.TERM_PROGRAM === "WarpTerminal") return true;
+  if (process.env.WARP_IS_LOCAL_SHELL_SESSION) return true;
+
+  let pid: number | null = process.ppid;
+  while (pid && pid > 1) {
+    try {
+      const comm = readFileSync(`/proc/${pid}/comm`, "utf-8").trim();
+      if (comm.includes("warp")) return true;
+      const stat: string = readFileSync(`/proc/${pid}/stat`, "utf-8");
+      const ppidMatch: RegExpMatchArray | null = stat.match(/\) \S+ (\d+)/);
+      pid = ppidMatch ? parseInt(ppidMatch[1], 10) : null;
+    } catch {
+      break;
+    }
+  }
+  return false;
+}
+
+function findOpenCommand(): string | null {
+  for (const candidate of ["xdg-open", "open"]) {
+    const which = spawnSync("which", [candidate], { encoding: "utf-8" });
+    if (which.status === 0) return which.stdout.trim();
+  }
+  return null;
+}
+
+function buildWarpUri(filePath: string, line?: number): string {
+  const params = new URLSearchParams({ path: filePath });
+  if (line && line > 0) params.set("line", String(line));
+  return `warp://action/open_file_editor?${params.toString()}`;
+}
+
+function openInWarp(filePath: string, line: number | undefined, cwd: string): boolean {
+  const opener = findOpenCommand();
+  if (!opener) return false;
+  const uri = buildWarpUri(filePath, line);
+  spawn(opener, [uri], { detached: true, stdio: "ignore", cwd }).unref();
+  return true;
+}
+
 function buildEditorCommand(editor: string, filePath: string, line?: number): string {
   if (line) {
     if (editor.includes("vim") || editor.includes("nvim")) return `${editor} +${line} '${filePath}'`;
@@ -64,6 +105,14 @@ export default function (pi: ExtensionAPI) {
       const editor = process.env.EDITOR || "nvim";
       const filePath = resolve(ctx.cwd, params.path);
       const inTmux = !!process.env.TMUX;
+
+      if (isInsideWarp() && openInWarp(filePath, params.line, ctx.cwd)) {
+        const location = params.line ? `${params.path}:${params.line}` : params.path;
+        return {
+          content: [{ type: "text", text: `Opened ${location} in Warp editor` }],
+          details: {},
+        };
+      }
 
       if (isTerminalEditor(editor)) {
         if (inTmux) {
