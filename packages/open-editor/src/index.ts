@@ -4,11 +4,11 @@ import { spawn, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const GUI_EDITORS = ["code", "cursor", "zed", "subl", "sublime_text", "atom", "webstorm", "idea"];
+const TERMINAL_EDITORS = ["vim", "nvim", "vi", "nano", "emacs", "helix", "hx", "micro", "kakoune", "kak"];
 
-function isGuiEditor(editor: string): boolean {
+function isTerminalEditor(editor: string): boolean {
   const base = editor.split("/").pop() || "";
-  return GUI_EDITORS.some((g) => base.startsWith(g));
+  return TERMINAL_EDITORS.some((t) => base === t || base.startsWith(t + "."));
 }
 
 function buildEditorCommand(editor: string, filePath: string, line?: number): string {
@@ -65,23 +65,25 @@ export default function (pi: ExtensionAPI) {
       const filePath = resolve(ctx.cwd, params.path);
       const inTmux = !!process.env.TMUX;
 
-      if (inTmux) {
-        const cmd = buildEditorCommand(editor, filePath, params.line);
-        spawn("tmux", ["split-window", "-h", cmd], { stdio: "ignore" });
-      } else if (isGuiEditor(editor)) {
+      if (isTerminalEditor(editor)) {
+        if (inTmux) {
+          const cmd = buildEditorCommand(editor, filePath, params.line);
+          spawn("tmux", ["split-window", "-h", cmd], { stdio: "ignore" });
+        } else {
+          const terminal = process.env.TERMINAL || detectTerminal();
+          const cmd = buildEditorCommand(editor, filePath, params.line);
+          if (terminal) {
+            spawn(terminal, ["-e", "sh", "-c", cmd], { detached: true, stdio: "ignore", cwd: ctx.cwd }).unref();
+          } else {
+            return {
+              content: [{ type: "text", text: `Could not open editor: no tmux and no terminal emulator detected. File: ${filePath}` }],
+              details: {},
+            };
+          }
+        }
+      } else {
         const args = params.line ? [`${filePath}:${params.line}`] : [filePath];
         spawn(editor, args, { detached: true, stdio: "ignore" }).unref();
-      } else {
-        const terminal = process.env.TERMINAL || detectTerminal();
-        const cmd = buildEditorCommand(editor, filePath, params.line);
-        if (terminal) {
-          spawn(terminal, ["-e", "sh", "-c", cmd], { detached: true, stdio: "ignore", cwd: ctx.cwd }).unref();
-        } else {
-          return {
-            content: [{ type: "text", text: `Could not open editor: no tmux, no GUI editor, and no terminal detected. File: ${filePath}` }],
-            details: {},
-          };
-        }
       }
 
       const location = params.line ? `${params.path}:${params.line}` : params.path;
