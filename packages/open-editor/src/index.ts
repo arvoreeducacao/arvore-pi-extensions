@@ -65,19 +65,21 @@ export default function (pi: ExtensionAPI) {
       const filePath = resolve(ctx.cwd, params.path);
       const inTmux = !!process.env.TMUX;
 
-      if (inTmux) {
-        const cmd = buildEditorCommand(editor, filePath, params.line);
-        spawn("tmux", ["split-window", "-h", cmd], { stdio: "ignore" });
-      } else if (isTerminalEditor(editor)) {
-        const terminal = process.env.TERMINAL || detectTerminal();
-        const cmd = buildEditorCommand(editor, filePath, params.line);
-        if (terminal) {
-          spawn(terminal, ["-e", "sh", "-c", cmd], { detached: true, stdio: "ignore", cwd: ctx.cwd }).unref();
+      if (isTerminalEditor(editor)) {
+        if (inTmux) {
+          const cmd = buildEditorCommand(editor, filePath, params.line);
+          spawn("tmux", ["split-window", "-h", cmd], { stdio: "ignore" });
         } else {
-          return {
-            content: [{ type: "text", text: `Could not open editor: no tmux and no terminal emulator detected. File: ${filePath}` }],
-            details: {},
-          };
+          const terminal = process.env.TERMINAL || detectTerminal();
+          const cmd = buildEditorCommand(editor, filePath, params.line);
+          if (terminal) {
+            spawn(terminal, ["-e", "sh", "-c", cmd], { detached: true, stdio: "ignore", cwd: ctx.cwd }).unref();
+          } else {
+            return {
+              content: [{ type: "text", text: `Could not open editor: no tmux and no terminal emulator detected. File: ${filePath}` }],
+              details: {},
+            };
+          }
         }
       } else {
         const args = params.line ? [`${filePath}:${params.line}`] : [filePath];
