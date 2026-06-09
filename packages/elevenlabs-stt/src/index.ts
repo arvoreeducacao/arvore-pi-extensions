@@ -262,6 +262,7 @@ export default function elevenlabsStt(pi: ExtensionAPI) {
   async function transcribe(audio: Buffer, signal?: AbortSignal): Promise<string> {
     const form = new FormData();
     form.append("model_id", MODEL_ID);
+    form.append("no_verbatim", "true");
     form.append("file", new Blob([new Uint8Array(audio)], { type: "audio/wav" }), "capture.wav");
 
     const response = await fetch(API_URL, {

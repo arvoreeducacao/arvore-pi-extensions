@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-elevenlabs-stt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension for push-to-talk speech-to-text using the ElevenLabs Scribe API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
