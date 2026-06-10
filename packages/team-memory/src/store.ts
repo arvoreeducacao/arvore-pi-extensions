@@ -9,6 +9,7 @@ import type {
   MemoryFrontmatter,
 } from "./types.js";
 import { VALID_CATEGORIES, MemoryError } from "./types.js";
+import { resolveGitAuthor } from "./git-identity.js";
 
 function detectSteeringTargets(workspaceRoot: string): string[] {
   const targets: string[] = [];
@@ -296,13 +297,15 @@ export class MemoryStore {
     const id = `${date}-${slug}`;
     const filePath = join(catDir, `${id}.md`);
 
+    const author = params.author || (await resolveGitAuthor(this.workspaceRoot));
+
     const fm: Record<string, unknown> = {
       title: params.title,
       category: params.category,
       date,
       status: "active",
     };
-    if (params.author) fm.author = params.author;
+    if (author) fm.author = author;
     if (params.tags?.length) fm.tags = params.tags;
 
     const fileContent = `${this.buildFrontmatter(fm)}\n\n${params.content}\n`;
@@ -314,7 +317,7 @@ export class MemoryStore {
       title: params.title,
       category: params.category,
       date,
-      author: params.author,
+      author,
       tags: params.tags || [],
       status: "active",
       content: params.content,
