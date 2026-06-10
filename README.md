@@ -7,6 +7,7 @@ Monorepo for custom PI extensions used across Arvore projects.
 | Package | Description |
 |---------|-------------|
 | `@arvoretech/pi-team-memory` | Team memory with proactive capture hooks |
+| `@arvoretech/pi-bee-context` | Injects confirmed personal facts from the Bee wearable assistant into the system prompt |
 
 ## Development
 
