@@ -36,7 +36,7 @@ The extension auto-detects the audio input backend:
 | Env var | Default | Description |
 |---------|---------|-------------|
 | `ELEVENLABS_API_KEY` | — | **Required.** ElevenLabs API key used for transcription. |
-| `ELEVENLABS_STT_SHORTCUT` | `ctrl+alt+t` (Linux/Windows), `ctrl+super+t` (macOS) | Keyboard shortcut that toggles recording. On macOS, `super` is the Cmd key. |
+| `ELEVENLABS_STT_SHORTCUT` | `ctrl+alt+t` (Linux/Windows), `ctrl+alt+r` (macOS) | Keyboard shortcut that toggles recording. On macOS, `alt` is the Option key. Avoid `super` (Cmd) — terminals usually don't forward it to pi. |
 
 > Some terminals and window managers reserve `ctrl+alt+t` / `ctrl+cmd+t`. If the shortcut doesn't reach pi, set `ELEVENLABS_STT_SHORTCUT` to another combination (e.g. `alt+t`, `ctrl+alt+r`).
 
