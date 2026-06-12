@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { listInputDevices } from "./devices.js";
 
-const DEFAULT_SHORTCUT: KeyId = process.platform === "darwin" ? "ctrl+super+t" : "ctrl+alt+t";
+const DEFAULT_SHORTCUT: KeyId = process.platform === "darwin" ? "ctrl+alt+r" : "ctrl+alt+t";
 const STATUS_KEY = "elevenlabs-stt";
 const MODEL_ID = "scribe_v2";
 const API_URL = "https://api.elevenlabs.io/v1/speech-to-text";
