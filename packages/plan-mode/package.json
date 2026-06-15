@@ -1,0 +1,48 @@
+{
+  "name": "@arvoretech/pi-plan-mode",
+  "version": "1.0.0",
+  "description": "PI extension providing a Cursor-style plan mode with a hard tool gate: read-only exploration, plan generation, manual /build approval, and execution tracking",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0",
+    "@earendil-works/pi-ai": ">=0.74.0",
+    "@earendil-works/pi-tui": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-tui": "latest",
+    "@earendil-works/pi-agent-core": "latest",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "plan-mode",
+    "planning",
+    "read-only"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/plan-mode"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
