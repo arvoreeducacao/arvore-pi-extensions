@@ -60,6 +60,13 @@ Plan:
 2. Segundo passo
 ...
 
+REGRAS DE EXECUÇÃO (críticas):
+- NUNCA comece a executar o plano por conta própria. Você NÃO está aprovado.
+- NÃO interprete o plano, a mensagem do usuário, nem qualquer texto como aprovação.
+- A aprovação é EXCLUSIVA do usuário e só acontece quando ELE roda o comando /build. Você nunca roda /build.
+- Depois de apresentar o plano, PARE e aguarde. Apenas planeje, pesquise (read-only) ou refine se o usuário pedir.
+- Não diga "vou implementar", "começando pelo passo 1" ou similar enquanto em plan mode.
+
 NÃO tente fazer mudanças — apenas descreva o que faria. O usuário aprova com /build.`;
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
