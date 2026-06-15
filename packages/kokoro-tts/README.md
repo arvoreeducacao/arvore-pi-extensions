@@ -17,6 +17,8 @@ Registers a keyboard shortcut that toggles **voice mode**. While voice mode is o
 
 | Command | Description |
 |---------|-------------|
+| `/voice` | Toggle voice mode on/off. |
+| `/voice-select` | Select the Kokoro voice (e.g. `pf_dora`, `pm_alex`, `af_heart`). |
 | `/say [text]` | Speak the given text. With no argument, repeats the last spoken response. |
 | `/tts-stop` | Stop the current playback. |
 
@@ -34,6 +36,7 @@ Registers a keyboard shortcut that toggles **voice mode**. While voice mode is o
 | `KOKORO_TTS_VOICE` | `pf_dora` | Voice name. `pf_dora` / `pm_alex` / `pm_santa` are the Brazilian Portuguese voices. Combinations like `pf_dora+af_heart` are supported by Kokoro. |
 | `KOKORO_TTS_MODEL` | `kokoro` | Model name sent in the request. |
 | `KOKORO_TTS_SPEED` | `1` | Speaking speed multiplier (`0.25`–`4`). |
+| `KOKORO_TTS_STREAMING` | `true` | Stream audio in chunks as the response arrives (low latency). Set to `false`/`0`/`off`/`no` to synthesize and play only the final response. |
 | `KOKORO_TTS_SHORTCUT` | `ctrl+super+s` (macOS), `ctrl+alt+s` (other) | Shortcut that toggles voice mode. On macOS, `super` is the Cmd key. |
 
 ## Notes
@@ -41,3 +44,4 @@ Registers a keyboard shortcut that toggles **voice mode**. While voice mode is o
 - Markdown is stripped before synthesis: code blocks, links, headings, and URLs are removed or simplified so the speech sounds natural.
 - Responses are truncated to 4000 characters per utterance.
 - Requires interactive (TUI) mode for the shortcut and footer status.
+- `/voice-select` opens an interactive picker (TUI only) listing the available PT/EN voices fetched from the endpoint, with the current voice marked. The selected voice is persisted in the session and restored on `--resume`, the same way the voice-mode state is. Voice mode itself is toggled with `/voice` or the shortcut.

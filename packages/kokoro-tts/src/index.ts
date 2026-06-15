@@ -12,6 +12,7 @@ const DEFAULT_VOICE = "pf_dora";
 const DEFAULT_MODEL = "kokoro";
 const MAX_SPEAK_CHARS = 4000;
 const MIN_CHUNK_CHARS = 60;
+const FETCH_TIMEOUT_MS = 15000;
 
 interface VoiceState {
   enabled: boolean;
@@ -75,7 +76,22 @@ async function fetchVoices(): Promise<string[]> {
   const apiKey = resolveApiKey();
   const headers: Record<string, string> = {};
   if (apiKey) headers["x-api-key"] = apiKey;
-  const response = await fetch(`${baseUrl}/audio/voices`, { headers });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/audio/voices`, {
+      headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`request timed out after ${FETCH_TIMEOUT_MS}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const data = (await response.json()) as { voices?: unknown };
   const voices = Array.isArray(data.voices) ? data.voices.filter((v): v is string => typeof v === "string") : [];
@@ -105,7 +121,8 @@ function resolveStreaming(): boolean {
 }
 
 function hasBinary(binary: string): boolean {
-  return spawnSync("which", [binary], { stdio: "ignore" }).status === 0;
+  const detector = process.platform === "win32" ? "where" : "which";
+  return spawnSync(detector, [binary], { stdio: "ignore" }).status === 0;
 }
 
 function describe(error: unknown): string {
