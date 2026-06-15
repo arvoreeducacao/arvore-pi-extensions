@@ -12,7 +12,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "send-to-pi") {
+  if (info.menuItemId === "send-to-pi" && tab?.id) {
     await ensureContentScript(tab.id);
     chrome.tabs.sendMessage(tab.id, { action: "inspect-clicked" });
   }

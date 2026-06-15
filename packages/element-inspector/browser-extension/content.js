@@ -194,21 +194,16 @@
     const select = bubble.querySelector("#__pi-session-select");
     if (!select) return;
 
-    select.innerHTML = sessions.map((s) =>
-      `<option value="${s.port}" ${s.port === activeSession?.port ? "selected" : ""}>${s.name}</option>`
-    ).join("");
+    select.innerHTML = "";
+    sessions.forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = String(s.port);
+      opt.textContent = s.name;
+      if (s.port === activeSession?.port) opt.selected = true;
+      select.appendChild(opt);
+    });
 
     select.style.display = sessions.length > 1 ? "block" : "none";
-    if (sessions.length <= 1 && activeSession) {
-      const nameEl = bubble.querySelector("#__pi-session-name");
-      if (!nameEl) {
-        const span = document.createElement("span");
-        span.id = "__pi-session-name";
-        span.style.cssText = `color:${COLORS.textMuted};font-size:11px;white-space:nowrap;`;
-        span.textContent = activeSession.name;
-        select.parentNode.appendChild(span);
-      }
-    }
   }
 
   function updateBubbleChips() {
@@ -431,5 +426,6 @@
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.action === "ping") { sendResponse("pong"); return; }
     if (msg.action === "toggle-inspect") toggleInspect();
+    if (msg.action === "inspect-clicked") toggleInspect(true);
   });
 })();

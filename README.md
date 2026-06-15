@@ -8,6 +8,13 @@ Monorepo for custom PI extensions used across Arvore projects.
 |---------|-------------|
 | `@arvoretech/pi-team-memory` | Team memory with proactive capture hooks |
 | `@arvoretech/pi-bee-context` | Injects confirmed personal facts from the Bee wearable assistant into the system prompt |
+| `@arvoretech/pi-element-inspector` | Receives inspected browser elements and pastes them into the editor |
+| `@arvoretech/pi-elevenlabs-stt` | Push-to-talk speech-to-text using the ElevenLabs Scribe API |
+| `@arvoretech/pi-kokoro-tts` | Speaks the assistant's responses out loud using Kokoro-FastAPI TTS |
+| `@arvoretech/pi-open-editor` | Opens files in the user's $EDITOR (tmux pane, GUI, or new terminal window) |
+| `@arvoretech/pi-plan-mode` | Cursor-style plan mode with read-only exploration and manual /build approval |
+| `@arvoretech/pi-memory` | Cloud-based memory with RAG (Qdrant + GitHub OAuth) |
+| `@arvoretech/pi-warp-tab-title` | Renames the Warp terminal tab to reflect the current task focus |
 
 ## Development
 
@@ -19,16 +26,32 @@ pnpm test
 
 ## Using Extensions
 
-### Global (all projects)
-Link to `~/.pi/agent/extensions/`:
-```bash
-ln -s $(pwd)/packages/team-memory/dist ~/.pi/agent/extensions/team-memory
-```
+### Via npm (recommended)
 
-### Project-local
-Reference in `.pi/settings.json`:
+Add to `.pi/settings.json`:
 ```json
 {
-  "extensions": ["./path/to/arvore-pi-extensions/packages/team-memory"]
+  "packages": [
+    "npm:@arvoretech/pi-team-memory",
+    "npm:@arvoretech/pi-open-editor"
+  ]
 }
+```
+
+### Project-local (dev)
+
+Reference the dist path in `.pi/settings.json`:
+```json
+{
+  "extensions": [
+    "./arvore-pi-extensions/packages/element-inspector/dist/index.js"
+  ]
+}
+```
+
+### Global (all projects)
+
+Symlink to `~/.pi/agent/extensions/`:
+```bash
+ln -s $(pwd)/packages/team-memory/dist/index.js ~/.pi/agent/extensions/team-memory.js
 ```
