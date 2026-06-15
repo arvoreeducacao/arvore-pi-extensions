@@ -1,0 +1,44 @@
+{
+  "name": "@arvoretech/pi-kokoro-tts",
+  "version": "1.0.0",
+  "description": "PI extension that speaks the assistant's responses out loud using a Kokoro-FastAPI text-to-speech endpoint",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.79.1",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "text-to-speech",
+    "tts",
+    "kokoro",
+    "voice"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/kokoro-tts"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
