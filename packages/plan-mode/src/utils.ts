@@ -193,3 +193,31 @@ export function extractPlanSection(message: string): string {
 	const start = message.indexOf(headerMatch[0]);
 	return message.slice(start).trim();
 }
+
+export function isInsideWarp(): boolean {
+	return process.env.TERM_PROGRAM === "WarpTerminal" || Boolean(process.env.WARP_IS_LOCAL_SHELL_SESSION);
+}
+
+export function buildWarpUri(filePath: string, line?: number): string {
+	const params = new URLSearchParams({ path: filePath });
+	if (line && line > 0) params.set("line", String(line));
+	return `warp://action/open_file_editor?${params.toString()}`;
+}
+
+const COMPLEXITY_PATTERNS = [
+	/\bimplementar?\b/i,
+	/\bcriar?\s+(uma?\s+)?(feature|funcionalidade|m[oó]dulo|endpoint|servi[cç]o|fluxo|integra[cç][aã]o)/i,
+	/\brefatorar?\b/i,
+	/\bmigrar?\b/i,
+	/\barquitetura\b/i,
+	/\bv[aá]rios?\s+(arquivos|reposit[oó]rios|servi[cç]os)/i,
+	/\bm[uú]ltiplos?\b/i,
+	/\bdo\s+zero\b/i,
+	/\bend[\s-]?to[\s-]?end\b/i,
+	/\bplaneje?\b/i,
+];
+
+export function looksComplex(text: string): boolean {
+	if (text.trim().length < 25) return false;
+	return COMPLEXITY_PATTERNS.some((p) => p.test(text));
+}

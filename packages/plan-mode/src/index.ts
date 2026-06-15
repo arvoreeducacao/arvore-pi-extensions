@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
@@ -5,10 +6,13 @@ import type { AssistantMessage, TextContent } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Key } from "@earendil-works/pi-tui";
 import {
+	buildWarpUri,
 	extractPlanSection,
 	extractPlanTitle,
 	extractTodoItems,
+	isInsideWarp,
 	isSafeCommand,
+	looksComplex,
 	markCompletedSteps,
 	slugify,
 	type TodoItem,
@@ -19,17 +23,34 @@ const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 const MUTATING_TOOLS = new Set(["edit", "write"]);
 
 const PLAN_INSTRUCTIONS = `[PLAN MODE ATIVO]
-Você está em plan mode — modo somente-leitura para análise segura antes de codar.
+Você está em plan mode — modo somente-leitura para análise e refinamento antes de codar. Esta é uma plataforma de educação (edtech), então o contexto de negócio e pedagógico importa tanto quanto o técnico.
 
 Restrições (impostas por hard gate, não apenas instrução):
 - Você só pode usar: read, bash, grep, find, ls, questionnaire
 - edit e write estão BLOQUEADOS — qualquer tentativa é rejeitada pelo gate
 - bash está restrito a um allowlist de comandos somente-leitura
 
-Faça perguntas de esclarecimento usando a tool questionnaire antes de assumir escopo.
-Pesquise o codebase com read/grep/find para montar contexto real.
+Antes de planejar, ENTENDA o problema por completo. Faça perguntas de esclarecimento usando a tool questionnaire, cobrindo:
 
-Produza um plano detalhado e numerado sob um header "Plan:":
+Negócio e produto:
+- Qual problema concreto e mensurável estamos resolvendo? O que acontece hoje que mostra que ele existe?
+- Qual o impacto de não fazer nada? Qual a prioridade?
+- O que está dentro do escopo agora e o que fica explicitamente de fora?
+
+Usuários e pedagogia:
+- Quem é diretamente impactado: aluno, professor, escola, coordenação, editora?
+- Há variação por perfil, plano, série/ano, ou tipo de conteúdo?
+- Há implicação pedagógica (avaliação, leitura, fluência, antifraude) que precisa ser respeitada?
+
+Técnico:
+- Quais repositórios e sistemas são afetados?
+- Quais alternativas estamos descartando e por quê?
+- Happy path, erros, falhas de rede, timeouts, escala esperada e máxima?
+- Padrões de UX, código, arquitetura e acessibilidade a seguir?
+
+Sempre que fizer uma pergunta com alternativas, ofereça opções claras para o usuário escolher (não peça texto livre quando opções resolvem). Pesquise o codebase com read/grep/find para basear tudo em fatos, não suposições.
+
+Quando tiver contexto suficiente, produza um plano detalhado e numerado sob um header "Plan:":
 
 # Título curto do plano
 
@@ -56,7 +77,9 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 	let executionMode = false;
 	let todoItems: TodoItem[] = [];
 	let lastPlanText = "";
+	let lastShownPlan = "";
 	let lastPlanFile: string | undefined;
+	let suggestedThisSession = false;
 
 	pi.registerFlag("plan", {
 		description: "Iniciar em plan mode (exploração somente-leitura)",
@@ -91,6 +114,8 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		planModeEnabled = true;
 		executionMode = false;
 		todoItems = [];
+		lastPlanText = "";
+		lastShownPlan = "";
 		pi.setActiveTools(PLAN_MODE_TOOLS);
 		ctx.ui.notify(`Plan mode ativado (locked). Tools: ${PLAN_MODE_TOOLS.join(", ")}. Aprove com /build.`, "info");
 		updateStatus(ctx);
@@ -132,6 +157,19 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		return file;
 	}
 
+	function openInEditor(filePath: string, cwd: string): boolean {
+		if (isInsideWarp()) {
+			spawn("open", [buildWarpUri(filePath)], { detached: true, stdio: "ignore", cwd }).unref();
+			return true;
+		}
+		const editor = process.env.EDITOR;
+		if (editor) {
+			spawn(editor, [filePath], { detached: true, stdio: "ignore", cwd }).unref();
+			return true;
+		}
+		return false;
+	}
+
 	pi.registerCommand("plan", {
 		description: "Alternar plan mode (exploração somente-leitura, edits bloqueados)",
 		handler: async (_args, ctx) => togglePlanMode(ctx),
@@ -168,6 +206,25 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		},
 	});
 
+	pi.registerCommand("plan-open", {
+		description: "Abrir o plano atual no editor (Warp/$EDITOR) para revisar e editar",
+		handler: async (_args, ctx) => {
+			if (!lastPlanFile) {
+				if (lastPlanText) {
+					lastPlanFile = savePlanToFile(ctx, lastPlanText);
+				} else {
+					ctx.ui.notify("Nenhum plano para abrir ainda. Gere um plano primeiro.", "warning");
+					return;
+				}
+			}
+			if (openInEditor(lastPlanFile, ctx.cwd)) {
+				ctx.ui.notify(`Abrindo ${lastPlanFile} no editor.`, "info");
+			} else {
+				ctx.ui.notify(`Plano salvo em ${lastPlanFile} (sem editor detectado).`, "info");
+			}
+		},
+	});
+
 	pi.registerCommand("todos", {
 		description: "Mostrar o progresso do plano atual",
 		handler: async (_args, ctx) => {
@@ -183,6 +240,22 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 	pi.registerShortcut(Key.ctrlAlt("p"), {
 		description: "Alternar plan mode",
 		handler: async (ctx) => togglePlanMode(ctx),
+	});
+
+	pi.on("input", async (event, ctx) => {
+		if (planModeEnabled || executionMode || suggestedThisSession || !ctx.hasUI) return;
+		if (event.source !== "interactive") return;
+		if (event.text.startsWith("/") || event.text.startsWith("!")) return;
+		if (!looksComplex(event.text)) return;
+
+		suggestedThisSession = true;
+		const choice = await ctx.ui.select("Essa tarefa parece complexa. Quer planejar antes de codar?", [
+			"Sim, entrar em plan mode (refinar antes de codar)",
+			"Não, seguir direto",
+		]);
+		if (choice?.startsWith("Sim")) {
+			enablePlanMode(ctx);
+		}
 	});
 
 	pi.on("tool_call", async (event) => {
@@ -266,6 +339,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 				executionMode = false;
 				todoItems = [];
 				lastPlanText = "";
+				lastShownPlan = "";
 				pi.setActiveTools(NORMAL_MODE_TOOLS);
 				updateStatus(ctx);
 				persistState();
@@ -276,27 +350,34 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		if (!planModeEnabled) return;
 
 		const lastAssistant = [...event.messages].reverse().find(isAssistantMessage);
+		let planChanged = false;
 		if (lastAssistant) {
 			const text = getTextContent(lastAssistant);
 			const extracted = extractTodoItems(text);
-			if (extracted.length > 0) {
+			if (extracted.length > 0 && text !== lastPlanText) {
 				todoItems = extracted;
 				lastPlanText = text;
+				planChanged = true;
 			}
 		}
 
-		if (todoItems.length > 0 && ctx.hasUI) {
-			const todoListText = todoItems.map((t, i) => `${i + 1}. ☐ ${t.text}`).join("\n");
-			pi.sendMessage(
-				{
-					customType: "plan-todo-list",
-					content: `**Plano (${todoItems.length} passos):**\n\n${todoListText}\n\n_Revise/edite e rode \`/build\` para aprovar e executar, ou continue refinando._`,
-					display: true,
-				},
-				{ triggerTurn: false },
-			);
-			persistState();
+		if (!planChanged || todoItems.length === 0 || lastPlanText === lastShownPlan || !ctx.hasUI) {
+			return;
 		}
+
+		lastShownPlan = lastPlanText;
+		lastPlanFile = savePlanToFile(ctx, lastPlanText);
+		persistState();
+
+		const todoListText = todoItems.map((t, i) => `${i + 1}. ☐ ${t.text}`).join("\n");
+		pi.sendMessage(
+			{
+				customType: "plan-todo-list",
+				content: `**Plano (${todoItems.length} passos):**\n\n${todoListText}\n\nSalvo em \`${lastPlanFile}\`.\n_Use \`/plan-open\` para abrir no editor, \`/build\` para aprovar e executar, ou continue refinando._`,
+				display: true,
+			},
+			{ triggerTurn: false },
+		);
 	});
 
 	pi.on("session_start", async (_event, ctx) => {

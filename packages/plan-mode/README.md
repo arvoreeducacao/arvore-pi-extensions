@@ -12,10 +12,16 @@ physically cannot touch code until you approve the plan with `/build`.
 - **Hard gate**: hides `edit`/`write` via `setActiveTools` AND blocks them in
   `tool_call` (defense in depth). `bash` is allowlisted (blocks `rm`,
   `git commit`, `kubectl apply`, `aws ... delete`, `mix ecto`, redirects, etc.).
-- **Plan generation**: the agent asks clarifying questions, researches the
-  codebase, and produces a numbered plan under a `Plan:` header.
-- **Workspace storage**: on approval the plan is saved to
-  `.pi/plans/{date}-{slug}.md` — versionable and shareable.
+- **Business + pedagogical refinement**: the plan prompt drives clarifying
+  questions across business, users/pedagogy (edtech), and technical concerns —
+  with selectable options instead of free text where possible.
+- **Auto-suggest**: when a prompt looks complex (implement, refactor, migrate,
+  architecture, etc.) the extension offers to enter plan mode via a select dialog.
+- **Plan generation**: the agent researches the codebase and produces a numbered
+  plan under a `Plan:` header.
+- **Workspace storage + editor**: the plan is saved to `.pi/plans/{date}-{slug}.md`
+  as soon as it is generated. `/plan-open` opens it in Warp (or `$EDITOR`) so you
+  can review and edit it directly.
 - **Manual handoff**: nothing executes until you run `/build`.
 - **Progress tracking**: numbered steps become a todo list; completed steps are
   marked with `[DONE:n]` and shown in a widget during execution.
@@ -24,6 +30,7 @@ physically cannot touch code until you approve the plan with `/build`.
 ## Commands
 
 - `/plan` — toggle plan mode (read-only, edits blocked). `Ctrl+Alt+P` too.
+- `/plan-open` — open the current plan `.md` in Warp / `$EDITOR` to review and edit.
 - `/build` — approve the current plan, save it to `.pi/plans/`, exit plan mode and execute.
 - `/todos` — show plan progress.
 - `--plan` — flag to start directly in plan mode.
