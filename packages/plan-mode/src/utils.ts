@@ -1,0 +1,238 @@
+const DESTRUCTIVE_PATTERNS = [
+	/\brm\b/i,
+	/\brmdir\b/i,
+	/\bmv\b/i,
+	/\bcp\b/i,
+	/\bmkdir\b/i,
+	/\btouch\b/i,
+	/\bchmod\b/i,
+	/\bchown\b/i,
+	/\bchgrp\b/i,
+	/\bln\b/i,
+	/\btee\b/i,
+	/\btruncate\b/i,
+	/\bdd\b/i,
+	/\bshred\b/i,
+	/(^|[^<])>(?!>)/,
+	/>>/,
+	/\bnpm\s+(install|uninstall|update|ci|link|publish)/i,
+	/\byarn\s+(add|remove|install|publish)/i,
+	/\bpnpm\s+(add|remove|install|publish)/i,
+	/\bpip\s+(install|uninstall)/i,
+	/\bapt(-get)?\s+(install|remove|purge|update|upgrade)/i,
+	/\bbrew\s+(install|uninstall|upgrade)/i,
+	/\bgit\s+(add|commit|push|pull|merge|rebase|reset|checkout|branch\s+-[dD]|stash|cherry-pick|revert|tag|init|clone)/i,
+	/\bmix\s+(deps\.get|ecto\.|phx\.gen|format)/i,
+	/\bsudo\b/i,
+	/\bsu\b/i,
+	/\bkill\b/i,
+	/\bpkill\b/i,
+	/\bkillall\b/i,
+	/\breboot\b/i,
+	/\bshutdown\b/i,
+	/\bsystemctl\s+(start|stop|restart|enable|disable)/i,
+	/\bservice\s+\S+\s+(start|stop|restart)/i,
+	/\b(vim?|nano|emacs|code|subl)\b/i,
+	/\bkubectl\s+(apply|delete|edit|scale|patch|rollout)/i,
+	/\baws\s+\S+\s+(create|delete|put|update|modify|terminate|remove)/i,
+];
+
+const SAFE_PATTERNS = [
+	/^\s*cat\b/,
+	/^\s*head\b/,
+	/^\s*tail\b/,
+	/^\s*less\b/,
+	/^\s*more\b/,
+	/^\s*grep\b/,
+	/^\s*find\b/,
+	/^\s*ls\b/,
+	/^\s*pwd\b/,
+	/^\s*echo\b/,
+	/^\s*printf\b/,
+	/^\s*wc\b/,
+	/^\s*sort\b/,
+	/^\s*uniq\b/,
+	/^\s*diff\b/,
+	/^\s*file\b/,
+	/^\s*stat\b/,
+	/^\s*du\b/,
+	/^\s*df\b/,
+	/^\s*tree\b/,
+	/^\s*which\b/,
+	/^\s*whereis\b/,
+	/^\s*type\b/,
+	/^\s*env\b/,
+	/^\s*printenv\b/,
+	/^\s*uname\b/,
+	/^\s*whoami\b/,
+	/^\s*id\b/,
+	/^\s*date\b/,
+	/^\s*cal\b/,
+	/^\s*uptime\b/,
+	/^\s*ps\b/,
+	/^\s*top\b/,
+	/^\s*htop\b/,
+	/^\s*free\b/,
+	/^\s*git\s+(status|log|diff|show|branch|remote|config\s+--get)/i,
+	/^\s*git\s+ls-/i,
+	/^\s*npm\s+(list|ls|view|info|search|outdated|audit)/i,
+	/^\s*yarn\s+(list|info|why|audit)/i,
+	/^\s*pnpm\s+(list|why|outdated|audit)/i,
+	/^\s*mix\s+(help|deps(\.tree)?|hex\.info)/i,
+	/^\s*node\s+--version/i,
+	/^\s*python\s+--version/i,
+	/^\s*curl\s/i,
+	/^\s*wget\s+-O\s*-/i,
+	/^\s*jq\b/,
+	/^\s*sed\s+-n/i,
+	/^\s*awk\b/,
+	/^\s*rg\b/,
+	/^\s*fd\b/,
+	/^\s*bat\b/,
+	/^\s*eza\b/,
+];
+
+const UNSAFE_SAFE_COMMAND_PATTERNS = [
+	/\bcurl\b[^\n]*(\|\s*(sh|bash|zsh|python|node)\b|(?:^|\s)(-o|-O|--output)\b)/i,
+	/\bwget\b[^\n]*(\|\s*(sh|bash|zsh|python|node)\b)/i,
+	/\bfind\b[^\n]*\s-(delete|exec|ok)\b/i,
+	/\bsed\b[^\n]*(\s-i\b|\bw\s+\S+)/i,
+	/\bgit\s+diff\b[^\n]*\s--output(=|\s+)/i,
+	/\bawk\b[^\n]*\bprint\b[^\n]*>\s*\S+/i,
+];
+
+export function isSafeCommand(command: string): boolean {
+	if (UNSAFE_SAFE_COMMAND_PATTERNS.some((p) => p.test(command))) return false;
+	const isDestructive = DESTRUCTIVE_PATTERNS.some((p) => p.test(command));
+	const isSafe = SAFE_PATTERNS.some((p) => p.test(command));
+	return !isDestructive && isSafe;
+}
+
+export interface TodoItem {
+	step: number;
+	text: string;
+	completed: boolean;
+}
+
+export function cleanStepText(text: string): string {
+	let cleaned = text
+		.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1")
+		.replace(/`([^`]+)`/g, "$1")
+		.replace(
+			/^(Use|Run|Execute|Create|Write|Read|Check|Verify|Update|Modify|Add|Remove|Delete|Install)\s+(the\s+)?/i,
+			"",
+		)
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (cleaned.length > 0) {
+		cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+	}
+	if (cleaned.length > 60) {
+		cleaned = `${cleaned.slice(0, 57)}...`;
+	}
+	return cleaned;
+}
+
+export function extractTodoItems(message: string): TodoItem[] {
+	const items: TodoItem[] = [];
+	const headerMatch = message.match(/\*{0,2}Plan:\*{0,2}\s*\n/i);
+	if (!headerMatch) return items;
+
+	const planSection = message.slice(message.indexOf(headerMatch[0]) + headerMatch[0].length);
+	const numberedPattern = /^\s*(\d+)[.)]\s+\*{0,2}([^*\n]+)/gm;
+
+	for (const match of planSection.matchAll(numberedPattern)) {
+		const parsedStep = Number(match[1]);
+		const text = match[2]
+			.trim()
+			.replace(/\*{1,2}$/, "")
+			.trim();
+		if (text.length > 5 && !text.startsWith("`") && !text.startsWith("/") && !text.startsWith("-")) {
+			const cleaned = cleanStepText(text);
+			if (cleaned.length > 3 && Number.isFinite(parsedStep)) {
+				items.push({ step: parsedStep, text: cleaned, completed: false });
+			}
+		}
+	}
+	return items;
+}
+
+export function extractDoneSteps(message: string): number[] {
+	const steps: number[] = [];
+	for (const match of message.matchAll(/\[DONE:(\d+)\]/gi)) {
+		const step = Number(match[1]);
+		if (Number.isFinite(step)) steps.push(step);
+	}
+	return steps;
+}
+
+export function markCompletedSteps(text: string, items: TodoItem[]): number {
+	const doneSteps = new Set(extractDoneSteps(text));
+	let updated = 0;
+	for (const step of doneSteps) {
+		const item = items.find((t) => t.step === step);
+		if (item && !item.completed) {
+			item.completed = true;
+			updated += 1;
+		}
+	}
+	return updated;
+}
+
+export function slugify(text: string): string {
+	return text
+		.toLowerCase()
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 60);
+}
+
+export function extractPlanTitle(message: string): string {
+	const titleMatch = message.match(/^#\s+(.+)$/m);
+	if (titleMatch) return titleMatch[1].trim();
+	const headerMatch = message.match(/\*{0,2}Plan:\*{0,2}/i);
+	if (headerMatch) {
+		const before = message.slice(0, message.indexOf(headerMatch[0])).trim();
+		const lastLine = before.split("\n").filter(Boolean).pop();
+		if (lastLine) return lastLine.replace(/^#+\s*/, "").trim();
+	}
+	return "plano";
+}
+
+export function extractPlanSection(message: string): string {
+	const headerMatch = message.match(/\*{0,2}Plan:\*{0,2}\s*\n/i);
+	if (!headerMatch) return message.trim();
+	const start = message.indexOf(headerMatch[0]);
+	return message.slice(start).trim();
+}
+
+export function isInsideWarp(): boolean {
+	return process.env.TERM_PROGRAM === "WarpTerminal" || Boolean(process.env.WARP_IS_LOCAL_SHELL_SESSION);
+}
+
+export function buildWarpUri(filePath: string, line?: number): string {
+	const params = new URLSearchParams({ path: filePath });
+	if (line && line > 0) params.set("line", String(line));
+	return `warp://action/open_file_editor?${params.toString()}`;
+}
+
+const COMPLEXITY_PATTERNS = [
+	/\bimplementar?\b/i,
+	/\bcriar?\s+(uma?\s+)?(feature|funcionalidade|m[oó]dulo|endpoint|servi[cç]o|fluxo|integra[cç][aã]o)/i,
+	/\brefatorar?\b/i,
+	/\bmigrar?\b/i,
+	/\barquitetura\b/i,
+	/\bv[aá]rios?\s+(arquivos|reposit[oó]rios|servi[cç]os)/i,
+	/\bm[uú]ltiplos?\b/i,
+	/\bdo\s+zero\b/i,
+	/\bend[\s-]?to[\s-]?end\b/i,
+	/\bplaneje?\b/i,
+];
+
+export function looksComplex(text: string): boolean {
+	if (text.trim().length < 25) return false;
+	return COMPLEXITY_PATTERNS.some((p) => p.test(text));
+}
