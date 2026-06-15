@@ -108,12 +108,32 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		}
 
 		if (executionMode && todoItems.length > 0) {
-			const lines = todoItems.map((item) => {
+			const theme = ctx.ui.theme;
+			const completed = todoItems.filter((t) => t.completed).length;
+			const hasActive = completed < todoItems.length;
+			const headingColor = hasActive ? "accent" : "dim";
+			const headingIcon = hasActive ? "●" : "○";
+			const heading = `${theme.fg(headingColor, headingIcon)} ${theme.fg(headingColor, `Plano (${completed}/${todoItems.length})`)}`;
+			const firstPending = todoItems.find((t) => !t.completed);
+			const lines = [heading];
+			todoItems.forEach((item, index) => {
+				const isLast = index === todoItems.length - 1;
+				const connector = theme.fg("dim", isLast ? "└─" : "├─");
+				let glyph: string;
+				let subject: string;
 				if (item.completed) {
-					return ctx.ui.theme.fg("success", "☑ ") + ctx.ui.theme.fg("muted", ctx.ui.theme.strikethrough(item.text));
+					glyph = theme.fg("success", "✓");
+					subject = theme.fg("dim", theme.strikethrough(item.text));
+				} else if (item === firstPending) {
+					glyph = theme.fg("warning", "◐");
+					subject = theme.fg("text", item.text);
+				} else {
+					glyph = theme.fg("dim", "○");
+					subject = theme.fg("text", item.text);
 				}
-				return `${ctx.ui.theme.fg("muted", "☐ ")}${item.text}`;
+				lines.push(`${connector} ${glyph} ${subject}`);
 			});
+			lines.push("");
 			ctx.ui.setWidget("plan-todos", lines);
 		} else {
 			ctx.ui.setWidget("plan-todos", undefined);
@@ -379,11 +399,17 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		lastPlanFile = savePlanToFile(ctx, lastPlanText);
 		persistState();
 
-		const todoListText = todoItems.map((t, i) => `${i + 1}. ☐ ${t.text}`).join("\n");
+		const total = todoItems.length;
+		const treeLines = todoItems
+			.map((t, i) => {
+				const connector = i === total - 1 ? "└─" : "├─";
+				return `${connector} ○ ${t.text}`;
+			})
+			.join("\n");
 		pi.sendMessage(
 			{
 				customType: "plan-todo-list",
-				content: `**Plano (${todoItems.length} passos):**\n\n${todoListText}\n\nSalvo em \`${lastPlanFile}\`.\n_Use \`/plan-open\` para abrir no editor, \`/build\` para aprovar e executar, ou continue refinando._`,
+				content: `● **Plano (0/${total})**\n\n${treeLines}\n\nSalvo em \`${lastPlanFile}\`.\n_Use \`/plan-open\` para abrir no editor, \`/build\` para aprovar e executar, ou continue refinando._`,
 				display: true,
 			},
 			{ triggerTurn: false },

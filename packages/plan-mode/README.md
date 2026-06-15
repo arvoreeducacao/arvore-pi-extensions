@@ -26,7 +26,9 @@ physically cannot touch code until you approve the plan with `/build`.
   can review and edit it directly.
 - **Manual handoff**: nothing executes until you run `/build`.
 - **Progress tracking**: numbered steps become a todo list; completed steps are
-  marked with `[DONE:n]` and shown in a widget during execution.
+  marked with `[DONE:n]` and shown in a tree-style overlay widget during
+  execution (`● Plano (n/total)` heading, `├─`/`└─` connectors, `○` pending /
+  `◐` current / `✓` done glyphs, inspired by rpiv-todo).
 - **Session persistence**: state survives `/resume`.
 
 ## Commands
