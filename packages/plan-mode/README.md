@@ -13,8 +13,10 @@ physically cannot touch code until you approve the plan with `/build`.
   `tool_call` (defense in depth). `bash` is allowlisted (blocks `rm`,
   `git commit`, `kubectl apply`, `aws ... delete`, `mix ecto`, redirects, etc.).
 - **Business + pedagogical refinement**: the plan prompt drives clarifying
-  questions across business, users/pedagogy (edtech), and technical concerns —
-  with selectable options instead of free text where possible.
+  questions across business, users/pedagogy (edtech), and technical concerns,
+  asked through a bundled `questionnaire` tool that renders selectable options
+  (single = option list, multiple = tabbed), with a "type something" fallback
+  instead of free text.
 - **Auto-suggest**: when a prompt looks complex (implement, refactor, migrate,
   architecture, etc.) the extension offers to enter plan mode via a select dialog.
 - **Plan generation**: the agent researches the codebase and produces a numbered

@@ -17,6 +17,7 @@ import {
 	slugify,
 	type TodoItem,
 } from "./utils.js";
+import registerQuestionnaire from "./questionnaire.js";
 
 const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "questionnaire"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
@@ -73,6 +74,8 @@ function getTextContent(message: AssistantMessage): string {
 }
 
 export default function planModeExtension(pi: ExtensionAPI): void {
+	registerQuestionnaire(pi);
+
 	let planModeEnabled = false;
 	let executionMode = false;
 	let todoItems: TodoItem[] = [];
