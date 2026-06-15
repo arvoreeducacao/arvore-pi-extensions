@@ -1,0 +1,41 @@
+{
+  "name": "@arvoretech/pi-element-inspector",
+  "version": "0.1.0",
+  "description": "PI extension that receives inspected browser elements and pastes them into the editor",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-coding-agent": "latest",
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/element-inspector"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
