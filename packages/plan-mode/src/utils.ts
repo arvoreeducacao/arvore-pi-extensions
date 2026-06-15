@@ -92,7 +92,17 @@ const SAFE_PATTERNS = [
 	/^\s*eza\b/,
 ];
 
+const UNSAFE_SAFE_COMMAND_PATTERNS = [
+	/\bcurl\b[^\n]*(\|\s*(sh|bash|zsh|python|node)\b|(?:^|\s)(-o|-O|--output)\b)/i,
+	/\bwget\b[^\n]*(\|\s*(sh|bash|zsh|python|node)\b)/i,
+	/\bfind\b[^\n]*\s-(delete|exec|ok)\b/i,
+	/\bsed\b[^\n]*(\s-i\b|\bw\s+\S+)/i,
+	/\bgit\s+diff\b[^\n]*\s--output(=|\s+)/i,
+	/\bawk\b[^\n]*\bprint\b[^\n]*>\s*\S+/i,
+];
+
 export function isSafeCommand(command: string): boolean {
+	if (UNSAFE_SAFE_COMMAND_PATTERNS.some((p) => p.test(command))) return false;
 	const isDestructive = DESTRUCTIVE_PATTERNS.some((p) => p.test(command));
 	const isSafe = SAFE_PATTERNS.some((p) => p.test(command));
 	return !isDestructive && isSafe;
@@ -133,14 +143,15 @@ export function extractTodoItems(message: string): TodoItem[] {
 	const numberedPattern = /^\s*(\d+)[.)]\s+\*{0,2}([^*\n]+)/gm;
 
 	for (const match of planSection.matchAll(numberedPattern)) {
+		const parsedStep = Number(match[1]);
 		const text = match[2]
 			.trim()
 			.replace(/\*{1,2}$/, "")
 			.trim();
 		if (text.length > 5 && !text.startsWith("`") && !text.startsWith("/") && !text.startsWith("-")) {
 			const cleaned = cleanStepText(text);
-			if (cleaned.length > 3) {
-				items.push({ step: items.length + 1, text: cleaned, completed: false });
+			if (cleaned.length > 3 && Number.isFinite(parsedStep)) {
+				items.push({ step: parsedStep, text: cleaned, completed: false });
 			}
 		}
 	}
@@ -157,12 +168,16 @@ export function extractDoneSteps(message: string): number[] {
 }
 
 export function markCompletedSteps(text: string, items: TodoItem[]): number {
-	const doneSteps = extractDoneSteps(text);
+	const doneSteps = new Set(extractDoneSteps(text));
+	let updated = 0;
 	for (const step of doneSteps) {
 		const item = items.find((t) => t.step === step);
-		if (item) item.completed = true;
+		if (item && !item.completed) {
+			item.completed = true;
+			updated += 1;
+		}
 	}
-	return doneSteps.length;
+	return updated;
 }
 
 export function slugify(text: string): string {

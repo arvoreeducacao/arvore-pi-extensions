@@ -299,7 +299,8 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		}
 
 		if (event.toolName === "bash") {
-			const command = event.input.command as string;
+			const command = event.input?.command;
+			if (typeof command !== "string") return;
 			if (!isSafeCommand(command)) {
 				return {
 					block: true,
@@ -391,13 +392,15 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 			}
 		}
 
-		if (!planChanged || todoItems.length === 0 || lastPlanText === lastShownPlan || !ctx.hasUI) {
+		if (!planChanged || todoItems.length === 0 || lastPlanText === lastShownPlan) {
 			return;
 		}
 
 		lastShownPlan = lastPlanText;
 		lastPlanFile = savePlanToFile(ctx, lastPlanText);
 		persistState();
+
+		if (!ctx.hasUI) return;
 
 		const total = todoItems.length;
 		const treeLines = todoItems
@@ -445,15 +448,17 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 					break;
 				}
 			}
-			const messages: AssistantMessage[] = [];
-			for (let i = executeIndex + 1; i < entries.length; i++) {
-				const entry = entries[i];
-				if (entry.type === "message" && "message" in entry && isAssistantMessage(entry.message as AgentMessage)) {
-					messages.push(entry.message as AssistantMessage);
+			if (executeIndex !== -1) {
+				const messages: AssistantMessage[] = [];
+				for (let i = executeIndex + 1; i < entries.length; i++) {
+					const entry = entries[i];
+					if (entry.type === "message" && "message" in entry && isAssistantMessage(entry.message as AgentMessage)) {
+						messages.push(entry.message as AssistantMessage);
+					}
 				}
+				const allText = messages.map(getTextContent).join("\n");
+				markCompletedSteps(allText, todoItems);
 			}
-			const allText = messages.map(getTextContent).join("\n");
-			markCompletedSteps(allText, todoItems);
 		}
 
 		if (planModeEnabled) {

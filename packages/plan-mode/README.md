@@ -58,7 +58,7 @@ ln -s $(pwd)/packages/plan-mode/dist ~/.pi/agent/extensions/plan-mode
 
 ```json
 {
-  "extensions": ["./path/to/arvore-pi-extensions/packages/plan-mode"]
+  "extensions": ["./path/to/arvore-pi-extensions/packages/plan-mode/dist"]
 }
 ```
 
