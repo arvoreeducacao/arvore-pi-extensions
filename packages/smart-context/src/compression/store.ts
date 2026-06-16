@@ -12,7 +12,7 @@ export function createContentStore() {
   const store = new Map<string, StoredContent>();
 
   function makeId(text: string): string {
-    return createHash("sha1").update(text).digest("hex").slice(0, 10);
+    return createHash("sha256").update(text).digest("hex").slice(0, 10);
   }
 
   function put(text: string, role: string, turn: number): string {

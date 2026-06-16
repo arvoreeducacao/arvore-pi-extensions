@@ -189,11 +189,12 @@ export function createCompressor(deps: CompressorDeps) {
 
     const newContent = msg.content.map((block: any) => {
       if (block.type !== "text" || !block.text || block.text.length < 300) return block;
-      let text = block.text;
+      const original = block.text;
+      let text = original;
       text = foldLogs(text);
       text = deduplicateLines(text);
       text = compactJson(text);
-      return { ...block, text };
+      return text.length < original.length ? { ...block, text } : block;
     });
 
     return { ...msg, content: newContent };

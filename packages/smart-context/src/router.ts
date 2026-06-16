@@ -15,8 +15,6 @@ Rules:
 Respond with ONLY one word: trivial, simple, medium, or complex`;
 
 export function createRouter(pi: ExtensionAPI) {
-  let lastClassification: Complexity | null = null;
-
   return {
     async pick(prompt: string, ctx: any): Promise<string | null> {
       const usage = ctx.getContextUsage?.();
@@ -58,7 +56,6 @@ export function createRouter(pi: ExtensionAPI) {
           .join("");
 
         const complexity = parseComplexity(answer);
-        lastClassification = complexity;
         return modelForComplexity(complexity);
       } catch {
         return null;
@@ -67,25 +64,29 @@ export function createRouter(pi: ExtensionAPI) {
   };
 }
 
+const CONTEXT_CHAR_BUDGET = 6000;
+const PER_MESSAGE_CHAR_CAP = 300;
+
 function buildRecentContext(ctx: any): string {
   const entries = ctx.sessionManager?.getEntries?.();
   if (!entries || entries.length === 0) return "No previous context.";
 
-  const recent = entries.slice(-6);
   const lines: string[] = [];
+  let budget = CONTEXT_CHAR_BUDGET;
 
-  for (const entry of recent) {
-    if (entry.type === "message") {
-      const role = entry.message?.role;
-      const text = extractEntryText(entry);
-      if (role && text) {
-        lines.push(`[${role}]: ${text.slice(0, 200)}`);
-      }
-    }
+  for (let i = entries.length - 1; i >= 0 && budget > 0; i--) {
+    const entry = entries[i];
+    if (entry.type !== "message") continue;
+    const role = entry.message?.role;
+    const text = extractEntryText(entry);
+    if (!role || !text) continue;
+    const snippet = text.slice(0, PER_MESSAGE_CHAR_CAP);
+    lines.unshift(`[${role}]: ${snippet}`);
+    budget -= snippet.length;
   }
 
   return lines.length > 0
-    ? `Recent conversation:\n${lines.join("\n")}`
+    ? `Conversation so far (most recent last):\n${lines.join("\n")}`
     : "No previous context.";
 }
 
@@ -103,10 +104,8 @@ function extractEntryText(entry: any): string {
 }
 
 function parseComplexity(answer: string): Complexity {
-  if (answer.includes("trivial")) return "trivial";
-  if (answer.includes("complex")) return "complex";
-  if (answer.includes("simple")) return "simple";
-  if (answer.includes("medium")) return "medium";
+  const match = answer.trim().toLowerCase().match(/\b(trivial|simple|medium|complex)\b/);
+  if (match) return match[1] as Complexity;
   return "medium";
 }
 
@@ -120,6 +119,6 @@ function modelForComplexity(complexity: Complexity): string | null {
       return "claude-opus-4-6";
     case "medium":
     default:
-      return null;
+      return "claude-sonnet-4-5";
   }
 }

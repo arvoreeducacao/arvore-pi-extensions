@@ -11,7 +11,7 @@ export function createSummarizer() {
   let cacheHits = 0;
 
   async function summarize(text: string, ctx: any): Promise<string | null> {
-    const key = createHash("sha1").update(text).digest("hex").slice(0, 16);
+    const key = createHash("sha256").update(text).digest("hex").slice(0, 16);
     const cached = cache.get(key);
     if (cached !== undefined) {
       cacheHits++;

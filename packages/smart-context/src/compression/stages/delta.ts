@@ -14,8 +14,9 @@ export function deltaCompress(
   const text = extractToolText(msg);
   if (!text || text.length < 200) return null;
 
-  const id = msg.toolCallId ?? "";
-  const hash = createHash("sha1").update(text).digest("hex").slice(0, 16);
+  if (!msg.toolCallId) return null;
+  const id = msg.toolCallId;
+  const hash = createHash("sha256").update(text).digest("hex").slice(0, 16);
 
   const previousHash = hashStore.get(`${id}:hash`);
 

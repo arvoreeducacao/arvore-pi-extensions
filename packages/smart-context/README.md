@@ -12,7 +12,7 @@ Uses **Haiku** (fast, cheap) to classify task complexity based on the full conve
 |---|---|---|
 | trivial | `claude-haiku-4-5` | Greetings, meta-conversation, no pending task |
 | simple | `claude-sonnet-4-5` | Single-file fixes, quick questions |
-| medium | Current model (no change) | Standard multi-file work |
+| medium | `claude-sonnet-4-5` | Standard multi-file work (deterministic baseline) |
 | complex | `claude-opus-4-6` | Architecture, large refactors, security audits |
 | Large context (>500K) | `claude-sonnet-4-6` | 1M window needed |
 
