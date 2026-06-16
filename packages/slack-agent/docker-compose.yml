@@ -11,6 +11,6 @@ services:
       - PI_CWD=/workspace
       - HOME=/home/node
     volumes:
-      - ${PI_CWD:-.}:/workspace
+      - ${HOST_WORKSPACE:-.}:/workspace
       - ${HOME}/.pi/agent:/home/node/.pi/agent
     mem_limit: 2g
