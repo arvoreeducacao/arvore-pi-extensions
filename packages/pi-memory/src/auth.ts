@@ -2,25 +2,81 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
+import { getConfig } from "./config.js";
 
 export interface MemoryCredentials {
   token: string;
+  refreshToken?: string;
   username: string;
   expiresAt: number;
 }
 
 const CONFIG_DIR = join(homedir(), ".config", "pi");
 const CREDENTIALS_FILE = join(CONFIG_DIR, "memory-credentials.json");
+const EXPIRY_SKEW_MS = 60_000;
 
-export async function getCredentials(): Promise<MemoryCredentials | null> {
+async function readCredentials(): Promise<MemoryCredentials | null> {
   if (!existsSync(CREDENTIALS_FILE)) return null;
 
-  const raw = await readFile(CREDENTIALS_FILE, "utf-8");
-  const creds = JSON.parse(raw) as MemoryCredentials;
+  try {
+    const raw = await readFile(CREDENTIALS_FILE, "utf-8");
+    const creds = JSON.parse(raw) as MemoryCredentials;
+    if (!creds.token) return null;
+    return creds;
+  } catch {
+    return null;
+  }
+}
 
-  if (Date.now() > creds.expiresAt) return null;
+export async function getCredentials(): Promise<MemoryCredentials | null> {
+  const creds = await readCredentials();
+  if (!creds) return null;
 
-  return creds;
+  if (Date.now() < creds.expiresAt - EXPIRY_SKEW_MS) {
+    return creds;
+  }
+
+  if (creds.refreshToken) {
+    const refreshed = await tryRefresh(creds.refreshToken);
+    if (refreshed) return refreshed;
+  }
+
+  return null;
+}
+
+async function tryRefresh(refreshToken: string): Promise<MemoryCredentials | null> {
+  try {
+    const config = getConfig();
+    const response = await fetch(`${config.apiUrl}/auth/github/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    };
+
+    const payload = JSON.parse(
+      Buffer.from(data.access_token.split(".")[1], "base64url").toString(),
+    );
+
+    const creds: MemoryCredentials = {
+      token: data.access_token,
+      refreshToken: data.refresh_token,
+      username: payload.username,
+      expiresAt: Date.now() + data.expires_in * 1000,
+    };
+
+    await saveCredentials(creds);
+    return creds;
+  } catch {
+    return null;
+  }
 }
 
 export async function saveCredentials(creds: MemoryCredentials): Promise<void> {

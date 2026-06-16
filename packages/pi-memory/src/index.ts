@@ -76,13 +76,19 @@ function collectMessages(entries: unknown[]): IngestMessage[] {
   return messages;
 }
 
-async function startLoginFlow(): Promise<{ token: string; username: string; expiresIn: number }> {
+async function startLoginFlow(): Promise<{
+  token: string;
+  refreshToken: string | null;
+  username: string;
+  expiresIn: number;
+}> {
   return new Promise((resolve, reject) => {
     let boundPort = 0;
 
     const server = createServer((req, res) => {
       const url = new URL(req.url ?? "", `http://localhost:${boundPort || 0}`);
       const token = url.searchParams.get("token");
+      const refreshToken = url.searchParams.get("refresh_token");
 
       if (!token) {
         res.writeHead(400);
@@ -98,6 +104,7 @@ async function startLoginFlow(): Promise<{ token: string; username: string; expi
         const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
         resolve({
           token,
+          refreshToken,
           username: payload.username,
           expiresIn: (payload.exp - payload.iat) * 1000,
         });
@@ -223,6 +230,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         const result = await startLoginFlow();
         await saveCredentials({
           token: result.token,
+          refreshToken: result.refreshToken ?? undefined,
           username: result.username,
           expiresAt: Date.now() + result.expiresIn,
         });
