@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "https://api.arvore.com.br/api-arvore";
+const DEFAULT_API_URL = "https://livros.arvore.com.br/api-arvore";
 
 export interface PiMemoryConfig {
   apiUrl: string;
