@@ -43,23 +43,19 @@ export function createRouter(pi: ExtensionAPI) {
         },
       ];
 
-      try {
-        const response = await complete(
-          model,
-          { messages, systemPrompt: CLASSIFICATION_PROMPT },
-          { apiKey: auth.apiKey, headers: auth.headers, maxTokens: 10 }
-        );
+      const response = await complete(
+        model,
+        { messages, systemPrompt: CLASSIFICATION_PROMPT },
+        { apiKey: auth.apiKey, headers: auth.headers, maxTokens: 10 }
+      );
 
-        const answer = response.content
-          .filter((c): c is { type: "text"; text: string } => c.type === "text")
-          .map((c) => c.text.trim().toLowerCase())
-          .join("");
+      const answer = response.content
+        .filter((c): c is { type: "text"; text: string } => c.type === "text")
+        .map((c) => c.text.trim().toLowerCase())
+        .join("");
 
-        const complexity = parseComplexity(answer);
-        return modelForComplexity(complexity);
-      } catch {
-        return null;
-      }
+      const complexity = parseComplexity(answer);
+      return modelForComplexity(complexity);
     },
   };
 }

@@ -10,16 +10,31 @@ export default function (pi: ExtensionAPI) {
   const store = createContentStore();
   const summarizer = createSummarizer();
   const compressor = createCompressor({ store, summarizer });
+  const debug = process.env.SMART_CONTEXT_DEBUG === "1";
 
   pi.on("before_agent_start", async (event, ctx) => {
-    const model = await router.pick(event.prompt, ctx);
-    if (model) {
+    try {
+      const model = await router.pick(event.prompt, ctx);
+      if (!model) {
+        if (debug) ctx.ui.notify("smart-context: no route (keeping current model)", "info");
+        return;
+      }
       const resolved = ctx.modelRegistry.find("kiro", model);
-      if (resolved) {
-        const auth = await ctx.modelRegistry.getApiKeyAndHeaders(resolved);
-        if (auth.ok && auth.apiKey) {
-          await pi.setModel(resolved);
-        }
+      if (!resolved) {
+        if (debug) ctx.ui.notify(`smart-context: model ${model} not found`, "warning");
+        return;
+      }
+      const auth = await ctx.modelRegistry.getApiKeyAndHeaders(resolved);
+      if (!auth.ok || !auth.apiKey) {
+        if (debug) ctx.ui.notify(`smart-context: no auth for ${model}`, "warning");
+        return;
+      }
+      await pi.setModel(resolved);
+      if (debug) ctx.ui.notify(`smart-context: routed → ${model}`, "info");
+    } catch (err) {
+      if (debug) {
+        const msg = err instanceof Error ? err.message : String(err);
+        ctx.ui.notify(`smart-context routing error: ${msg}`, "warning");
       }
     }
   });
