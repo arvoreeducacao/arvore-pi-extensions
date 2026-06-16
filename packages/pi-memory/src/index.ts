@@ -1,5 +1,6 @@
 import { exec } from "node:child_process";
 import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { randomUUID } from "node:crypto";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { clearCredentials, getCredentials, saveCredentials } from "./auth.js";
@@ -15,7 +16,6 @@ import {
 } from "./api.js";
 import type { IngestMessage } from "./api.js";
 
-const LOGIN_PORT = 9876;
 const LOGIN_TIMEOUT_MS = 60_000;
 const MIN_TEXT_LENGTH = 10;
 const FLUSH_DEBOUNCE_MS = 4000;
@@ -79,7 +79,8 @@ function collectMessages(entries: unknown[]): IngestMessage[] {
 async function startLoginFlow(): Promise<{ token: string; username: string; expiresIn: number }> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
-      const url = new URL(req.url ?? "", `http://localhost:${LOGIN_PORT}`);
+      const port = (server.address() as AddressInfo).port;
+      const url = new URL(req.url ?? "", `http://localhost:${port}`);
       const token = url.searchParams.get("token");
 
       if (!token) {
@@ -100,9 +101,10 @@ async function startLoginFlow(): Promise<{ token: string; username: string; expi
       });
     });
 
-    server.listen(LOGIN_PORT, () => {
+    server.listen(0, () => {
+      const port = (server.address() as AddressInfo).port;
       const config = getConfig();
-      const loginUrl = `${config.apiUrl}/auth/github/start?redirect_url=http://localhost:${LOGIN_PORT}`;
+      const loginUrl = `${config.apiUrl}/auth/github/start?redirect_url=http://localhost:${port}`;
       openBrowser(loginUrl);
     });
 
