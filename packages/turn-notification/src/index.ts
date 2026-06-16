@@ -10,18 +10,19 @@ function notify(body: string): void {
   execFile("osascript", ["-e", script], () => {});
 }
 
-function extractText(message: { content?: Array<{ type: string; text?: string }> }): string {
-  if (!message?.content) return "Turn completed";
-  const text = message.content
+function extractText(messages: Array<{ role?: string; content?: Array<{ type: string; text?: string }> }>): string {
+  const last = [...messages].reverse().find((m) => m.role === "assistant");
+  if (!last?.content) return "Done";
+  const text = last.content
     .filter((block) => block.type === "text" && block.text)
     .map((block) => block.text!)
     .join(" ")
     .trim();
-  return text || "Turn completed";
+  return text || "Done";
 }
 
 export default function turnNotificationExtension(api: ExtensionAPI): void {
-  api.on("turn_end", async (event) => {
-    notify(extractText(event.message as any));
+  api.on("agent_end", async (event) => {
+    notify(extractText(event.messages as any));
   });
 }
