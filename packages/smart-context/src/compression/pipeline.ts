@@ -48,6 +48,7 @@ export function createCompressor(deps: CompressorDeps) {
     const lastUserIdx = findLastUserMessage(messages);
     if (lastUserIdx === -1) return messages;
 
+    const cacheActive = detectActiveCache(ctx);
     const query = extractText(messages[lastUserIdx]);
     const protectedBoundary = findProtectedBoundary(messages, PROTECTED_TURNS);
 
@@ -63,16 +64,22 @@ export function createCompressor(deps: CompressorDeps) {
       }
 
       if (isToolResult(msg)) {
-        const delta = deltaCompress(msg, state.previousToolHashes);
-        if (delta) {
-          result.push(delta);
-          continue;
+        if (!cacheActive) {
+          const delta = deltaCompress(msg, state.previousToolHashes);
+          if (delta) {
+            result.push(delta);
+            continue;
+          }
         }
         result.push(compressToolMessage(msg));
         continue;
       }
 
       if (msg.role === "assistant" || msg.role === "user") {
+        if (cacheActive) {
+          result.push(msg);
+          continue;
+        }
         const compressed = await maybeCompressMessage(msg, scored.get(i), ctx);
         result.push(compressed ?? msg);
         continue;
@@ -213,6 +220,19 @@ function findLastUserMessage(messages: Message[]): number {
     if (messages[i].role === "user") return i;
   }
   return -1;
+}
+
+function detectActiveCache(ctx: any): boolean {
+  const entries = ctx.sessionManager?.getEntries?.();
+  if (!entries) return false;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const entry = entries[i];
+    const usage = entry?.message?.usage;
+    if (!usage) continue;
+    if (entry.message?.role !== "assistant") continue;
+    return (usage.cacheRead ?? 0) > 0 || (usage.cacheWrite ?? 0) > 0;
+  }
+  return false;
 }
 
 function findProtectedBoundary(messages: Message[], turns: number): number {

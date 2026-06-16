@@ -114,11 +114,11 @@ function modelForComplexity(complexity: Complexity): string | null {
     case "trivial":
       return "claude-haiku-4-5";
     case "simple":
-      return "claude-sonnet-4-5";
+      return "claude-sonnet-4-6";
     case "complex":
-      return "claude-opus-4-6";
+      return "claude-opus-4-8";
     case "medium":
     default:
-      return "claude-sonnet-4-5";
+      return "claude-sonnet-4-6";
   }
 }

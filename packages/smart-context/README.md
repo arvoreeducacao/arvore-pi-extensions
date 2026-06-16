@@ -11,9 +11,9 @@ Uses **Haiku** (fast, cheap) to classify task complexity based on the full conve
 | Classification | Model | When |
 |---|---|---|
 | trivial | `claude-haiku-4-5` | Greetings, meta-conversation, no pending task |
-| simple | `claude-sonnet-4-5` | Single-file fixes, quick questions |
-| medium | `claude-sonnet-4-5` | Standard multi-file work (deterministic baseline) |
-| complex | `claude-opus-4-6` | Architecture, large refactors, security audits |
+| simple | `claude-sonnet-4-6` | Single-file fixes, quick questions |
+| medium | `claude-sonnet-4-6` | Standard multi-file work (deterministic baseline) |
+| complex | `claude-opus-4-8` | Architecture, large refactors, security audits |
 | Large context (>500K) | `claude-sonnet-4-6` | 1M window needed |
 
 ### Retrieval-Augmented Compression
@@ -33,7 +33,14 @@ Compressed/dropped content is replaced by a summary + a `recover_context("id")` 
 
 #### Cache-aware (critical)
 
-Anthropic/Kiro use **prompt caching** keyed by prefix. Compression that rewrites the context differently each turn would *break the cache and increase cost*. This extension keeps compression **stable and monotonic**: once a message is compressed, the identical compressed form is reused on every subsequent turn. The cache prefix is invalidated only once, then rebuilds and stays cached.
+Anthropic/Kiro use **prompt caching** keyed by prefix. Compression that rewrites the context differently each turn would *break the cache and increase cost*.
+
+Two protections:
+
+1. **Runtime cache detection** — the extension inspects the last assistant message's `cacheRead`/`cacheWrite`. If the provider is actively caching, **lossy compression of the prefix is disabled** (only safe structural compression of new tool output runs). No cache break, ever.
+2. **Stable/monotonic compression** — when cache is off, once a message is compressed the identical compressed form is reused on every subsequent turn, so even the one-time prefix change rebuilds and stays stable.
+
+> Note: at the time of writing, the Kiro provider reports `cacheRead: 0 / cacheWrite: 0` across sessions — caching is effectively off, so compression is pure savings (the full context is re-billed every turn with no cache to break). The cache-detection path future-proofs the extension for when Kiro enables caching.
 
 #### Aggressive quality gate
 
