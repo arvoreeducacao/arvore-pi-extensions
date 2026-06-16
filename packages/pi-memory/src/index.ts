@@ -139,7 +139,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       setStatus("memory", `memory: ${creds.username} (+${result.decisions.add})`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[pi-memory] flush failed: ${message}`);
+      void message;
     }
   }
 
