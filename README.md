@@ -8,6 +8,7 @@ Monorepo for custom PI extensions used across Arvore projects.
 |---------|-------------|
 | `@arvoretech/pi-bee-context` | Injects personal facts from the Bee wearable assistant into the system prompt |
 | `@arvoretech/pi-changes-tracker` | Shows changed repos and files with `/changed` and `/changes` commands |
+| `@arvoretech/pi-ci-watch` | Monitors CI status, auto-fixes failures, and notifies on completion |
 | `@arvoretech/pi-element-inspector` | Receives inspected browser elements and pastes them into the editor |
 | `@arvoretech/pi-elevenlabs-stt` | Push-to-talk speech-to-text using ElevenLabs Scribe API |
 | `@arvoretech/pi-kokoro-tts` | Speaks assistant responses using Kokoro-FastAPI TTS |
