@@ -1,70 +1,94 @@
 import { getCredentials } from "./auth.js";
 import { getConfig } from "./config.js";
 
-export interface IngestChunk {
-  id: string;
-  content: string;
-  vector: number[];
-  metadata: {
-    session_id: string;
-    timestamp: number;
-    topic?: string;
-    turn_index?: number;
-    extra?: Record<string, unknown>;
-  };
+export interface IngestMessage {
+  role: "user" | "assistant";
+  text: string;
+  turn_index: number;
+}
+
+export interface IngestResult {
+  processed: number;
+  decisions: { add: number; update: number; noop: number };
 }
 
 export interface SearchResult {
   id: string;
-  score: number;
+  tier: "raw" | "curated";
+  category: string | null;
+  title: string | null;
   content: string;
-  session_id?: string;
-  timestamp?: number;
-  topic?: string;
-  turn_index?: number;
+  score: number;
+  relevance_score: number;
+  author_username: string;
+  updated_at: number;
 }
 
-export async function ingest(chunks: IngestChunk[]): Promise<{ ingested: number }> {
+export interface Candidate {
+  id: string;
+  content: string;
+  reinforce_count: number;
+  session_id: string | null;
+}
+
+async function request<T>(path: string, method: string, body?: unknown): Promise<T> {
   const creds = await getCredentials();
   if (!creds) throw new Error("Not authenticated. Run /memory-login first.");
 
   const config = getConfig();
-  const response = await fetch(`${config.apiUrl}/pi-memory/ingest`, {
-    method: "POST",
+  const response = await fetch(`${config.apiUrl}/pi-memory${path}`, {
+    method,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${creds.token}`,
     },
-    body: JSON.stringify({ chunks }),
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
-    throw new Error(`Ingest failed: ${response.status} ${await response.text()}`);
+    throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`);
   }
 
-  return response.json() as Promise<{ ingested: number }>;
+  return response.json() as Promise<T>;
+}
+
+export function ingest(sessionId: string, messages: IngestMessage[], final: boolean): Promise<IngestResult> {
+  return request<IngestResult>("/ingest", "POST", {
+    session_id: sessionId,
+    messages,
+    final,
+  });
 }
 
 export async function search(
-  vector: number[],
-  options: { limit?: number; score_threshold?: number; session_id?: string } = {},
+  query: string,
+  options: { tier?: string; category?: string; limit?: number } = {},
 ): Promise<SearchResult[]> {
-  const creds = await getCredentials();
-  if (!creds) throw new Error("Not authenticated. Run /memory-login first.");
+  const data = await request<{ results: SearchResult[] }>("/search", "POST", { query, ...options });
+  return data.results;
+}
 
-  const config = getConfig();
-  const response = await fetch(`${config.apiUrl}/pi-memory/search`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${creds.token}`,
-    },
-    body: JSON.stringify({ vector, ...options }),
-  });
+export async function listCandidates(): Promise<Candidate[]> {
+  const data = await request<{ candidates: Candidate[] }>("/candidates", "GET");
+  return data.candidates;
+}
 
-  if (!response.ok) {
-    throw new Error(`Search failed: ${response.status} ${await response.text()}`);
-  }
+export function promote(
+  rawIds: string[],
+  options: { title?: string; category?: string; tags?: string[] } = {},
+): Promise<{ id: string }> {
+  return request<{ id: string }>("/promote", "POST", { raw_ids: rawIds, ...options });
+}
 
-  return response.json() as Promise<SearchResult[]>;
+export function createCurated(input: {
+  title: string;
+  category: string;
+  content: string;
+  tags?: string[];
+}): Promise<{ id: string }> {
+  return request<{ id: string }>("/curated", "POST", input);
+}
+
+export function deleteSession(sessionId: string): Promise<{ deleted: boolean }> {
+  return request<{ deleted: boolean }>(`/session/${sessionId}`, "DELETE");
 }
