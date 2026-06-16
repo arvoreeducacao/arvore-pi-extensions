@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { clearCredentials, getCredentials, saveCredentials } from "./auth.js";
 import { getConfig } from "./config.js";
+import { registerMemoryTools } from "./tools.js";
 import {
   createCurated,
   deleteSession,
@@ -114,6 +115,7 @@ async function startLoginFlow(): Promise<{ token: string; username: string; expi
 }
 
 export default function piMemoryExtension(pi: ExtensionAPI): void {
+  registerMemoryTools(pi);
   async function flush(entries: unknown[], final: boolean, setStatus: (key: string, text: string) => void): Promise<void> {
     if (incognito) {
       return;
@@ -168,8 +170,13 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       }
 
       const memoryBlock = [
-        "## Relevant Context from Team Memory",
+        "## Team Memory (cloud)",
         "",
+        "This workspace uses a shared cloud team memory. Use the `memory_search` tool to recover",
+        "relevant decisions, conventions, incidents, domain knowledge and gotchas before non-trivial",
+        "tasks, and `memory_save` to persist durable knowledge the team should not rediscover.",
+        "",
+        "### Relevant context for the current request",
         ...results.map((r) => `- ${r.title ? `**${r.title}**: ` : ""}${r.content}`),
       ].join("\n");
 
