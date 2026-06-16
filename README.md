@@ -14,6 +14,7 @@ Monorepo for custom PI extensions used across Arvore projects.
 | `@arvoretech/pi-open-editor` | Opens files in the user's $EDITOR (tmux pane, GUI, or new terminal) |
 | `@arvoretech/pi-plan-mode` | Cursor-style plan mode with read-only exploration and manual /build approval |
 | `@arvoretech/pi-team-memory` | Team memory with proactive capture hooks |
+| `@arvoretech/pi-memory` | Cloud-based memory with RAG (Qdrant + GitHub OAuth) |
 | `@arvoretech/pi-warp-tab-title` | Renames Warp terminal tab to reflect current task focus |
 
 ## Development
@@ -26,16 +27,32 @@ pnpm test
 
 ## Using Extensions
 
-### Global (all projects)
-Link to `~/.pi/agent/extensions/`:
-```bash
-ln -s $(pwd)/packages/team-memory/dist ~/.pi/agent/extensions/team-memory
-```
+### Via npm (recommended)
 
-### Project-local
-Reference in `.pi/settings.json`:
+Add to `.pi/settings.json`:
 ```json
 {
-  "extensions": ["./path/to/arvore-pi-extensions/packages/team-memory"]
+  "packages": [
+    "npm:@arvoretech/pi-team-memory",
+    "npm:@arvoretech/pi-open-editor"
+  ]
 }
+```
+
+### Project-local (dev)
+
+Reference the dist path in `.pi/settings.json`:
+```json
+{
+  "extensions": [
+    "./arvore-pi-extensions/packages/element-inspector/dist/index.js"
+  ]
+}
+```
+
+### Global (all projects)
+
+Symlink to `~/.pi/agent/extensions/`:
+```bash
+ln -s $(pwd)/packages/team-memory/dist/index.js ~/.pi/agent/extensions/team-memory.js
 ```
