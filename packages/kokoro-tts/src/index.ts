@@ -7,7 +7,6 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 const STATUS_KEY = "kokoro-tts";
 const STATE_ENTRY_TYPE = "kokoro-tts-state";
 const SAMPLE_RATE = 24000;
-const DEFAULT_BASE_URL = "https://tts.arvore.com.br/v1";
 const DEFAULT_VOICE = "pf_dora";
 const DEFAULT_MODEL = "kokoro";
 const MAX_SPEAK_CHARS = 4000;
@@ -17,6 +16,7 @@ const FETCH_TIMEOUT_MS = 15000;
 interface VoiceState {
   enabled: boolean;
   voice?: string;
+  speed?: number;
 }
 
 const VOICE_ENTRY_TYPE = "kokoro-tts-voice";
@@ -28,7 +28,7 @@ interface ActivePlayback {
 
 function resolveBaseUrl(): string {
   const configured = process.env.KOKORO_TTS_URL?.trim();
-  return (configured ? configured : DEFAULT_BASE_URL).replace(/\/$/, "");
+  return configured ? configured.replace(/\/$/, "") : "";
 }
 
 function resolveEnvVoice(): string {
@@ -251,6 +251,21 @@ export default function kokoroTts(pi: ExtensionAPI): void {
     },
   });
 
+  pi.registerCommand("voice-speed", {
+    description: "Set TTS playback speed (0.25 to 4)",
+    handler: async (args, ctx) => {
+      const val = Number.parseFloat(args.trim());
+      if (!Number.isFinite(val) || val < 0.25 || val > 4) {
+        const current = state.speed ?? resolveSpeed();
+        ctx.ui.notify(`Speed: ${current}x (use /voice-speed 0.25–4)`, "info");
+        return;
+      }
+      state = { ...state, speed: val };
+      persistState(pi, state);
+      ctx.ui.notify(`Speed set to ${val}x.`, "info");
+    },
+  });
+
   pi.registerCommand("say", {
     description: "Speak arbitrary text (or the last response) via Kokoro TTS",
     handler: async (args, ctx) => {
@@ -365,6 +380,12 @@ export default function kokoroTts(pi: ExtensionAPI): void {
   }
 
   async function speak(rawText: string, ctx: ExtensionContext): Promise<void> {
+    const baseUrl = resolveBaseUrl();
+    if (!baseUrl) {
+      ctx.ui.notify("KOKORO_TTS_URL not set — configure the env var to use /voice", "error");
+      return;
+    }
+
     if (!hasBinary("ffplay")) {
       ctx.ui.notify("ffplay not found — install ffmpeg to use Kokoro TTS", "error");
       return;
@@ -374,7 +395,6 @@ export default function kokoroTts(pi: ExtensionAPI): void {
     if (!text) return;
 
     const controller = new AbortController();
-    const baseUrl = resolveBaseUrl();
     const apiKey = resolveApiKey();
 
     ctx.ui.setStatus(STATUS_KEY, "🔊 speaking…");
@@ -392,7 +412,7 @@ export default function kokoroTts(pi: ExtensionAPI): void {
           input: text,
           voice: state.voice ?? resolveEnvVoice(),
           response_format: "pcm",
-          speed: resolveSpeed(),
+          speed: state.speed ?? resolveSpeed(),
           stream: true,
         }),
         signal: controller.signal,
@@ -513,10 +533,11 @@ function restoreState(ctx: ExtensionContext): VoiceState {
   let result: VoiceState = { enabled: false };
   for (const entry of ctx.sessionManager.getEntries()) {
     if (entry.type !== "custom" || entry.customType !== STATE_ENTRY_TYPE) continue;
-    const data = entry.data as { enabled?: unknown; voice?: unknown } | null;
+    const data = entry.data as { enabled?: unknown; voice?: unknown; speed?: unknown } | null;
     result = {
       enabled: data?.enabled === true,
       voice: typeof data?.voice === "string" ? data.voice : undefined,
+      speed: typeof data?.speed === "number" ? data.speed : undefined,
     };
   }
   return result;

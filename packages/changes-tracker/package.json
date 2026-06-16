@@ -1,7 +1,7 @@
 {
-  "name": "@arvoretech/pi-kokoro-tts",
-  "version": "1.1.0",
-  "description": "PI extension that speaks the assistant's responses out loud using a Kokoro-FastAPI text-to-speech endpoint",
+  "name": "@arvoretech/pi-changes-tracker",
+  "version": "0.1.0",
+  "description": "PI extension that shows changed repos and files with /changed and /changes commands",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -17,7 +17,8 @@
     "@earendil-works/pi-coding-agent": ">=0.74.0"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "0.79.1",
+    "@earendil-works/pi-coding-agent": "latest",
+    "@earendil-works/pi-tui": "latest",
     "@types/node": "^20.10.0",
     "typescript": "^5.3.0"
   },
@@ -26,18 +27,10 @@
       "./dist/index.js"
     ]
   },
-  "keywords": [
-    "pi",
-    "extension",
-    "text-to-speech",
-    "tts",
-    "kokoro",
-    "voice"
-  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
-    "directory": "packages/kokoro-tts"
+    "directory": "packages/changes-tracker"
   },
   "author": "Arvore",
   "license": "MIT"
