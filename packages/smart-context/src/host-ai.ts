@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 type CompleteFn = (
@@ -32,7 +32,17 @@ function collectCandidateDirs(): string[] {
     // ignore
   }
 
+  const resolvedSeeds = new Set<string>();
   for (const seed of seeds) {
+    resolvedSeeds.add(seed);
+    try {
+      resolvedSeeds.add(realpathSync(seed));
+    } catch {
+      // ignore
+    }
+  }
+
+  for (const seed of resolvedSeeds) {
     let dir = dirname(seed);
     for (let i = 0; i < 10; i++) {
       dirs.add(dir);
