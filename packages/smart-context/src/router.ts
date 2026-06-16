@@ -8,9 +8,11 @@ const CLASSIFICATION_PROMPT = `You are a task complexity classifier for a coding
 Rules:
 - If the user says "ok", "bora", "yes", "continue", "go ahead" etc., look at what they're agreeing TO — the previous assistant message defines the task.
 - "trivial": Simple acknowledgments with no pending task, greetings, or meta-conversation
-- "simple": Single-file fixes, typos, small changes, quick questions
-- "medium": Multi-file changes, feature implementation, debugging
-- "complex": Architecture design, large refactors, security audits, system-wide changes, performance optimization across multiple services
+- "simple": Single-file fixes, typos, small changes, quick questions with a clear answer
+- "medium": Multi-file changes, feature implementation, debugging, code review, most coding tasks
+- "complex": Architecture design, large refactors, security audits, system-wide changes, performance optimization across multiple services — ONLY use this for the most demanding tasks
+
+When in doubt between simple and medium, choose medium. When in doubt between medium and complex, choose medium.
 
 Respond with ONLY one word: trivial, simple, medium, or complex`;
 
@@ -115,9 +117,8 @@ function modelForComplexity(complexity: Complexity): string | null {
     case "simple":
       return "claude-sonnet-4-6";
     case "complex":
-      return "claude-opus-4-8";
     case "medium":
     default:
-      return "claude-sonnet-4-6";
+      return "claude-opus-4-8";
   }
 }
