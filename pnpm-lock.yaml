@@ -38,7 +38,7 @@ importers:
         version: 0.79.5(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: latest
-        version: 0.79.6
+        version: 0.79.5
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -90,7 +90,7 @@ importers:
         version: 0.79.4(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: latest
-        version: 0.79.6
+        version: 0.79.4
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -135,7 +135,7 @@ importers:
         version: 0.79.5(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: latest
-        version: 0.79.6
+        version: 0.79.5
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -156,7 +156,7 @@ importers:
         version: 0.79.4(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: latest
-        version: 0.79.6
+        version: 0.79.4
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -189,8 +189,8 @@ importers:
         specifier: ^0.79.4
         version: 0.79.5(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
-        specifier: ^0.79.6
-        version: 0.79.6
+        specifier: ^0.79.4
+        version: 0.79.5
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -211,7 +211,7 @@ importers:
         version: 0.74.0(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: latest
-        version: 0.79.6
+        version: 0.74.0
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
@@ -253,7 +253,7 @@ importers:
         version: 0.75.5(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: latest
-        version: 0.79.6
+        version: 0.75.5
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -508,8 +508,8 @@ packages:
     engines: {node: '>=22.19.0'}
     hasBin: true
 
-  '@earendil-works/pi-tui@0.74.2':
-    resolution: {integrity: sha512-valQPz74qbdydRqII6t9rJ46YANMOOJeDhKm25a1ZrWvWwdjAaAEu6s3ur/LWz84Wkkwcbub2ZkVjzCZi8gFGA==}
+  '@earendil-works/pi-tui@0.74.0':
+    resolution: {integrity: sha512-1aIfXZp7D/z+1VlZX8BZcs6pgO8rjmil7kwyhctNDsWvce3Yfl8GVgu4eq+I0Mjhr8Cj+ipBiv9CLIzdoyCOIQ==}
     engines: {node: '>=20.0.0'}
 
   '@earendil-works/pi-tui@0.75.5':
@@ -524,8 +524,8 @@ packages:
     resolution: {integrity: sha512-/ZhfFiHSBMH7AbDrBQIN+UWlJnl9tSEpLYICRGGMzmNfyCqX+30NYacIhyOEaD8R5rS6wJZysAOPU0yNwigbXw==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-tui@0.79.6':
-    resolution: {integrity: sha512-6JCq780X0UuqvJsUDSJmi4V54ObB8qSwFQiBOI1jhPpC+Ydusd8SEXn2HtyIqve/utMgwcZT9aOyZM72m26A0w==}
+  '@earendil-works/pi-tui@0.79.5':
+    resolution: {integrity: sha512-u6GXJ85e8ReEa1wG0jT53HVkI6a+CccCX1yAtQOpZhiTFklv4nYdbZr3J2TAKi4QKptCPSpRJb+QqZZ4Jy6eiA==}
     engines: {node: '>=22.19.0'}
 
   '@emnapi/runtime@1.10.0':
@@ -1207,14 +1207,14 @@ packages:
   '@types/jsonwebtoken@9.0.10':
     resolution: {integrity: sha512-asx5hIG9Qmf/1oStypjanR7iKTv0gXQ1Ov/jfrX6kS/EO0OFni8orbmGCn0672NHR3kXHwpAwR+B368ZGN/2rA==}
 
+  '@types/mime-types@2.1.4':
+    resolution: {integrity: sha512-lfU4b34HOri+kAY5UheuFMWPDOI+OPceBSHZKp69gEyTL/mmJ4cnU6Y/rlme3UL3GyOn6Y42hyIEw0/q8sWx5w==}
+
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
   '@types/node@20.19.39':
     resolution: {integrity: sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw==}
-
-  '@types/node@20.19.43':
-    resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -2982,7 +2982,7 @@ snapshots:
     dependencies:
       '@earendil-works/pi-agent-core': 0.74.0(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-ai': 0.74.0(ws@8.20.0)(zod@4.4.3)
-      '@earendil-works/pi-tui': 0.74.2
+      '@earendil-works/pi-tui': 0.74.0
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
       cli-highlight: 2.1.11
@@ -3103,7 +3103,7 @@ snapshots:
     dependencies:
       '@earendil-works/pi-agent-core': 0.79.4(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-ai': 0.79.5(ws@8.20.0)(zod@4.4.3)
-      '@earendil-works/pi-tui': 0.79.6
+      '@earendil-works/pi-tui': 0.79.5
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
       cross-spawn: 7.0.6
@@ -3133,7 +3133,7 @@ snapshots:
     dependencies:
       '@earendil-works/pi-agent-core': 0.79.5(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-ai': 0.79.5(ws@8.20.0)(zod@4.4.3)
-      '@earendil-works/pi-tui': 0.79.6
+      '@earendil-works/pi-tui': 0.79.5
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
       cross-spawn: 7.0.6
@@ -3159,10 +3159,13 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-tui@0.74.2':
+  '@earendil-works/pi-tui@0.74.0':
     dependencies:
+      '@types/mime-types': 2.1.4
+      chalk: 5.6.2
       get-east-asian-width: 1.5.0
       marked: 15.0.12
+      mime-types: 3.0.2
     optionalDependencies:
       koffi: 2.16.1
 
@@ -3181,7 +3184,7 @@ snapshots:
       get-east-asian-width: 1.6.0
       marked: 15.0.12
 
-  '@earendil-works/pi-tui@0.79.6':
+  '@earendil-works/pi-tui@0.79.5':
     dependencies:
       get-east-asian-width: 1.6.0
       marked: 18.0.5
@@ -3871,11 +3874,11 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.19.43
+      '@types/node': 20.19.39
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 20.19.39
 
   '@types/esrecurse@4.3.1': {}
 
@@ -3883,7 +3886,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.1':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 20.19.39
       '@types/qs': 6.15.1
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -3903,13 +3906,11 @@ snapshots:
       '@types/ms': 2.1.0
       '@types/node': 20.19.39
 
+  '@types/mime-types@2.1.4': {}
+
   '@types/ms@2.1.0': {}
 
   '@types/node@20.19.39':
-    dependencies:
-      undici-types: 6.21.0
-
-  '@types/node@20.19.43':
     dependencies:
       undici-types: 6.21.0
 
@@ -3921,12 +3922,12 @@ snapshots:
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 20.19.39
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 20.19.43
+      '@types/node': 20.19.39
 
   '@types/ws@8.18.1':
     dependencies:
