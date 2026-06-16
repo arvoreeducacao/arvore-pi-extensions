@@ -1,4 +1,4 @@
-import { complete } from "@earendil-works/pi-ai";
+import { getComplete } from "../host-ai.js";
 import { createHash } from "node:crypto";
 
 const SUMMARIZE_PROMPT = `You compress conversation messages for an AI coding agent's context. Produce a dense summary that preserves ALL load-bearing facts: decisions made, file paths, function/variable names, API contracts, error messages, requirements, and open questions. Drop filler, pleasantries, and verbose explanations.
@@ -26,6 +26,8 @@ export function createSummarizer() {
 
     try {
       calls++;
+      const complete = await getComplete();
+      if (!complete) return null;
       const response = await complete(
         model,
         {
@@ -47,8 +49,8 @@ export function createSummarizer() {
       );
 
       const summary = response.content
-        .filter((c): c is { type: "text"; text: string } => c.type === "text")
-        .map((c) => c.text.trim())
+        .filter((c: { type: string; text?: string }): c is { type: "text"; text: string } => c.type === "text" && typeof c.text === "string")
+        .map((c: { text: string }) => c.text.trim())
         .join("\n");
 
       if (!summary) return null;

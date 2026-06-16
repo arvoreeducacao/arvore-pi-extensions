@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { complete } from "@earendil-works/pi-ai";
+import { getComplete } from "./host-ai.js";
 
 type Complexity = "trivial" | "simple" | "medium" | "complex";
 
@@ -28,6 +28,9 @@ export function createRouter(pi: ExtensionAPI) {
       const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
       if (!auth.ok || !auth.apiKey) return null;
 
+      const complete = await getComplete();
+      if (!complete) throw new Error("could not resolve host pi-ai complete()");
+
       const recentContext = buildRecentContext(ctx);
 
       const messages = [
@@ -50,8 +53,8 @@ export function createRouter(pi: ExtensionAPI) {
       );
 
       const answer = response.content
-        .filter((c): c is { type: "text"; text: string } => c.type === "text")
-        .map((c) => c.text.trim().toLowerCase())
+        .filter((c: { type: string; text?: string }): c is { type: "text"; text: string } => c.type === "text" && typeof c.text === "string")
+        .map((c: { text: string }) => c.text.trim().toLowerCase())
         .join("");
 
       const complexity = parseComplexity(answer);
