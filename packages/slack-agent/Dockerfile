@@ -9,9 +9,6 @@ COPY package.json ./
 RUN corepack enable && pnpm install --prod
 COPY dist ./dist
 
-RUN chown -R node:node /app
-USER node
-
 ENV PI_BIN=pi
 ENV PI_CWD=/workspace
 

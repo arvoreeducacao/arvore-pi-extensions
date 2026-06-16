@@ -9,7 +9,7 @@ export function createAgent(config: AgentConfig) {
     token: config.slackBotToken,
     appToken: config.slackAppToken,
     socketMode: true,
-    logLevel: LogLevel.WARN,
+    logLevel: LogLevel.DEBUG,
   });
 
   const sessions = new SessionManager(config);
