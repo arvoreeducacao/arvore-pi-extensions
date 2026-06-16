@@ -11,9 +11,12 @@ export default function (pi: ExtensionAPI) {
   const store = createContentStore();
   const summarizer = createSummarizer();
   const compressor = createCompressor({ store, summarizer });
+
+  let enabled = true;
   const debug = process.env.SMART_CONTEXT_DEBUG === "1";
 
   pi.on("before_agent_start", async (event, ctx) => {
+    if (!enabled) return;
     try {
       const model = await router.pick(event.prompt, ctx);
       if (!model) {
@@ -86,12 +89,20 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
+  pi.registerCommand("smart-context-toggle", {
+    description: "Enable or disable smart-context model routing",
+    handler: async (_args, ctx) => {
+      enabled = !enabled;
+      ctx.ui.notify(`smart-context routing ${enabled ? "enabled" : "disabled"}`, "info");
+    },
+  });
+
   pi.registerCommand("smart-context", {
     description: "Show smart-context compression stats",
     handler: async (_args, ctx) => {
       const s = compressor.getStats();
       ctx.ui.notify(
-        `Saved ${s.totalSaved} chars (${s.ratio}% avg) | turns ${s.turnsProcessed} | ` +
+        `[${enabled ? "on" : "off"}] Saved ${s.totalSaved} chars (${s.ratio}% avg) | turns ${s.turnsProcessed} | ` +
           `haiku ${s.haikuCalls} calls / ${s.haikuCacheHits} cached | recoverable ${s.storedItems}`,
         "info"
       );

@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-smart-context",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Intelligent model routing and prompt compression for Pi/Kiro",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
