@@ -1,4 +1,6 @@
 import type { CompressorStats } from "./types.js";
+import type { ContentStore } from "./store.js";
+import type { Summarizer } from "./haiku-summarize.js";
 import { deduplicateLines } from "./stages/dedup.js";
 import { foldLogs } from "./stages/log-fold.js";
 import { compactJson } from "./stages/json-compact.js";
@@ -18,15 +20,28 @@ interface ContentBlock {
   [key: string]: any;
 }
 
-export function createCompressor() {
+const PROTECTED_TURNS = 4;
+const MIN_SAVINGS_RATIO = 0.15;
+const SUMMARIZE_MIN_CHARS = 400;
+const BM25_DROP_THRESHOLD = 0.25;
+
+interface CompressorDeps {
+  store: ContentStore;
+  summarizer: Summarizer;
+}
+
+export function createCompressor(deps: CompressorDeps) {
+  const { store, summarizer } = deps;
+
   const state = {
     turnsProcessed: 0,
     totalInputChars: 0,
     totalOutputChars: 0,
     previousToolHashes: new Map<string, string>(),
+    stableCompressions: new Map<string, string>(),
   };
 
-  function compress(messages: Message[]): Message[] {
+  async function compress(messages: Message[], ctx: any): Promise<Message[]> {
     state.turnsProcessed++;
     if (messages.length < 4) return messages;
 
@@ -34,28 +49,15 @@ export function createCompressor() {
     if (lastUserIdx === -1) return messages;
 
     const query = extractText(messages[lastUserIdx]);
-    const recentBoundary = Math.max(0, messages.length - 6);
+    const protectedBoundary = findProtectedBoundary(messages, PROTECTED_TURNS);
 
+    const scored = scoreMessages(messages, query, protectedBoundary);
     const result: Message[] = [];
-    const scored = scoreMessages(messages, query, recentBoundary);
 
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
-      const score = scored.get(i);
 
-      if (i >= recentBoundary) {
-        result.push(msg);
-        continue;
-      }
-
-      if (msg.role === "assistant" || msg.role === "user") {
-        if (score !== undefined && score < 0.15) {
-          const compressed = summarizeMessage(msg);
-          if (compressed) {
-            result.push(compressed);
-            continue;
-          }
-        }
+      if (i >= protectedBoundary) {
         result.push(msg);
         continue;
       }
@@ -70,11 +72,57 @@ export function createCompressor() {
         continue;
       }
 
+      if (msg.role === "assistant" || msg.role === "user") {
+        const compressed = await maybeCompressMessage(msg, scored.get(i), ctx);
+        result.push(compressed ?? msg);
+        continue;
+      }
+
       result.push(msg);
     }
 
     trackStats(messages, result);
     return result;
+  }
+
+  async function maybeCompressMessage(
+    msg: Message,
+    score: number | undefined,
+    ctx: any
+  ): Promise<Message | null> {
+    const text = extractText(msg);
+    if (text.length < SUMMARIZE_MIN_CHARS) return null;
+
+    const stableKey = store.makeId(text);
+    const cachedForm = state.stableCompressions.get(stableKey);
+    if (cachedForm !== undefined) {
+      return replaceText(msg, cachedForm);
+    }
+
+    const relevant = score !== undefined && score >= BM25_DROP_THRESHOLD;
+
+    let replacement: string | null = null;
+
+    if (relevant) {
+      const summary = await summarizer.summarize(text, ctx);
+      if (summary && summary.length < text.length * (1 - MIN_SAVINGS_RATIO)) {
+        const id = store.put(text, msg.role, state.turnsProcessed);
+        replacement = `${summary}\n[full original: recover_context("${id}")]`;
+      }
+    } else {
+      const summary = await summarizer.summarize(text, ctx);
+      const id = store.put(text, msg.role, state.turnsProcessed);
+      if (summary && summary.length < text.length * (1 - MIN_SAVINGS_RATIO)) {
+        replacement = `[low-relevance, summarized] ${summary}\n[full: recover_context("${id}")]`;
+      } else {
+        replacement = `[compressed ${msg.role} message — ${text.length} chars — recover_context("${id}")]`;
+      }
+    }
+
+    if (replacement === null || replacement.length >= text.length) return null;
+
+    state.stableCompressions.set(stableKey, replacement);
+    return replaceText(msg, replacement);
   }
 
   function compressToolResult(
@@ -110,29 +158,29 @@ export function createCompressor() {
       state.totalInputChars > 0
         ? Math.round((1 - state.totalOutputChars / state.totalInputChars) * 100)
         : 0;
+    const haiku = summarizer.getStats();
     return {
       turnsProcessed: state.turnsProcessed,
       totalSaved: state.totalInputChars - state.totalOutputChars,
       ratio,
+      haikuCalls: haiku.calls,
+      haikuCacheHits: haiku.cacheHits,
+      storedItems: store.size(),
     };
   }
 
   function scoreMessages(
     messages: Message[],
     query: string,
-    recentBoundary: number
+    boundary: number
   ): Map<number, number> {
     const scorable: ScoredMessage[] = [];
-    const indices: number[] = [];
-
-    for (let i = 0; i < recentBoundary; i++) {
+    for (let i = 0; i < boundary; i++) {
       const text = extractText(messages[i]);
       if (text.length > 20) {
         scorable.push({ text, index: i });
-        indices.push(i);
       }
     }
-
     return bm25Score(scorable, query);
   }
 
@@ -152,10 +200,8 @@ export function createCompressor() {
   }
 
   function trackStats(input: Message[], output: Message[]) {
-    const inputChars = input.reduce((sum, m) => sum + messageSize(m), 0);
-    const outputChars = output.reduce((sum, m) => sum + messageSize(m), 0);
-    state.totalInputChars += inputChars;
-    state.totalOutputChars += outputChars;
+    state.totalInputChars += input.reduce((s, m) => s + messageSize(m), 0);
+    state.totalOutputChars += output.reduce((s, m) => s + messageSize(m), 0);
   }
 
   return { compress, compressToolResult, getStats };
@@ -166,6 +212,17 @@ function findLastUserMessage(messages: Message[]): number {
     if (messages[i].role === "user") return i;
   }
   return -1;
+}
+
+function findProtectedBoundary(messages: Message[], turns: number): number {
+  let userCount = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "user") {
+      userCount++;
+      if (userCount === turns) return i;
+    }
+  }
+  return 0;
 }
 
 function extractText(msg: Message): string {
@@ -183,24 +240,19 @@ function isToolResult(msg: Message): boolean {
   return msg.role === "toolResult" || msg.role === "tool";
 }
 
-function summarizeMessage(msg: Message): Message | null {
-  const text = extractText(msg);
-  if (text.length < 200) return null;
-
-  const truncated = text.slice(0, 150) + `\n[... ${text.length - 150} chars compressed ...]`;
+function replaceText(msg: Message, text: string): Message {
   if (typeof msg.content === "string") {
-    return { ...msg, content: truncated };
+    return { ...msg, content: text };
   }
   return {
     ...msg,
-    content: [{ type: "text", text: truncated }],
+    content: [{ type: "text", text }],
   };
 }
 
 function trimLargeFileOutput(text: string): string {
   const lines = text.split("\n");
   if (lines.length <= 100) return text;
-
   const head = lines.slice(0, 40);
   const tail = lines.slice(-40);
   const omitted = lines.length - 80;
@@ -208,6 +260,5 @@ function trimLargeFileOutput(text: string): string {
 }
 
 function messageSize(msg: Message): number {
-  const text = extractText(msg);
-  return text.length;
+  return extractText(msg).length;
 }
