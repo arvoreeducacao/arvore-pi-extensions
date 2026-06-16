@@ -4,6 +4,7 @@ import { createRouter } from "./router.js";
 import { createCompressor } from "./compression/pipeline.js";
 import { createContentStore } from "./compression/store.js";
 import { createSummarizer } from "./compression/haiku-summarize.js";
+import { getDiagnostics } from "./host-ai.js";
 
 export default function (pi: ExtensionAPI) {
   const router = createRouter(pi);
@@ -34,7 +35,7 @@ export default function (pi: ExtensionAPI) {
     } catch (err) {
       if (debug) {
         const msg = err instanceof Error ? err.message : String(err);
-        ctx.ui.notify(`smart-context routing error: ${msg}`, "warning");
+        ctx.ui.notify(`smart-context routing error: ${msg} [${getDiagnostics()}]`, "warning");
       }
     }
   });
