@@ -9,7 +9,7 @@ export function createAgent(config: AgentConfig) {
     token: config.slackBotToken,
     appToken: config.slackAppToken,
     socketMode: true,
-    logLevel: LogLevel.DEBUG,
+    logLevel: LogLevel.WARN,
   });
 
   const sessions = new SessionManager(config);
@@ -76,9 +76,9 @@ export function createAgent(config: AgentConfig) {
 
       function scheduleFlush(): void {
         if (flushTimer) return;
-        flushTimer = setTimeout(async () => {
+        flushTimer = setTimeout(() => {
           flushTimer = undefined;
-          await flushText();
+          flushText().catch(() => {});
         }, 300);
       }
 
@@ -111,7 +111,7 @@ export function createAgent(config: AgentConfig) {
                   status: "in_progress",
                 }],
               })
-            );
+            ).catch(() => {});
             break;
           }
           case "tool_execution_end": {
@@ -138,7 +138,7 @@ export function createAgent(config: AgentConfig) {
                 status: isError ? "error" : "complete",
                 ...(output ? { details: output } : {}),
               }],
-            });
+            }).catch(() => {});
             break;
           }
           case "agent_end": {
@@ -180,11 +180,6 @@ export function createAgent(config: AgentConfig) {
         await setStatus("");
       }
     },
-  });
-
-  app.use(async ({ body, next }) => {
-    process.stderr.write(`[event] ${JSON.stringify(body).slice(0, 300)}\n`);
-    await next();
   });
 
   app.assistant(assistant);

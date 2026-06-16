@@ -17,10 +17,10 @@ echo "1. Crie um Slack App: https://api.slack.com/apps → Create New App → Fr
 echo "   Cole o conteúdo de manifest.json quando pedir o manifest."
 echo ""
 
-read -rp "Bot Token (xoxb-...): " BOT_TOKEN
-read -rp "App-Level Token (xapp-...): " APP_TOKEN
+read -rsp "Bot Token (xoxb-...): " BOT_TOKEN && echo
+read -rsp "App-Level Token (xapp-...): " APP_TOKEN && echo
 read -rp "Seu Slack User ID (U...): " USER_ID
-read -rp "Anthropic API Key (sk-ant-...): " API_KEY
+read -rsp "Anthropic API Key (sk-ant-...): " API_KEY && echo
 read -rp "Caminho dos repos [$(pwd)]: " WORKSPACE
 WORKSPACE=${WORKSPACE:-$(pwd)}
 
@@ -29,8 +29,10 @@ SLACK_BOT_TOKEN=$BOT_TOKEN
 SLACK_APP_TOKEN=$APP_TOKEN
 ALLOWED_USER_IDS=$USER_ID
 ANTHROPIC_API_KEY=$API_KEY
-WORKSPACE_PATH=$WORKSPACE
+PI_CWD=$WORKSPACE
 EOF
+
+chmod 600 .env
 
 echo ""
 echo "✅ .env criado!"

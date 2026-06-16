@@ -23,6 +23,8 @@ export function loadConfig(): AgentConfig {
     throw new Error("ALLOWED_USER_IDS must list at least one Slack user ID.");
   }
 
+  const sessionIdleMs = Number(process.env.PI_SESSION_IDLE_MS ?? 15 * 60 * 1000);
+
   return {
     slackBotToken: botToken,
     slackAppToken: appToken,
@@ -30,6 +32,6 @@ export function loadConfig(): AgentConfig {
     piBin: process.env.PI_BIN ?? "pi",
     piCwd: process.env.PI_CWD ?? process.cwd(),
     piModel: process.env.PI_MODEL,
-    sessionIdleMs: Number(process.env.PI_SESSION_IDLE_MS ?? 15 * 60 * 1000),
+    sessionIdleMs: Number.isFinite(sessionIdleMs) && sessionIdleMs > 0 ? sessionIdleMs : 15 * 60 * 1000,
   };
 }

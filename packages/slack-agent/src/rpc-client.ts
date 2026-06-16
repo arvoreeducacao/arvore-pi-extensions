@@ -42,6 +42,14 @@ export class RpcClient {
     this.child.stderr.on("data", (chunk) => {
       process.stderr.write(`[pi] ${chunk}`);
     });
+    this.child.on("error", (error) => {
+      this.disposed = true;
+      for (const p of this.pending.values()) {
+        p.reject(error);
+      }
+      this.pending.clear();
+      this.options.onExit(1);
+    });
     this.child.on("exit", (code) => {
       this.disposed = true;
       for (const p of this.pending.values()) {
@@ -93,9 +101,16 @@ export class RpcClient {
     const id = `r-${++this.requestCounter}`;
     const payload = JSON.stringify({ ...command, id }) + "\n";
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error("RPC timeout"));
+      }, 30000);
+      this.pending.set(id, {
+        resolve: (data) => { clearTimeout(timeout); resolve(data); },
+        reject: (err) => { clearTimeout(timeout); reject(err); },
+      });
       this.child.stdin.write(payload, (err) => {
-        if (err) { this.pending.delete(id); reject(err); }
+        if (err) { clearTimeout(timeout); this.pending.delete(id); reject(err); }
       });
     });
   }

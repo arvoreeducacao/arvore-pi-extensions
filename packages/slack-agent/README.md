@@ -58,7 +58,7 @@ Abra o Slack → busque "Pi Agent" nos apps → mande uma mensagem. Cada thread 
 | Streaming | Respostas aparecem em tempo real |
 | Thinking Steps | Cada tool executada aparece como task card com status |
 | Imagens | Cole screenshots/figmas e o Pi analisa |
-| Steering | Mande outra mensagem durante execução pra corrigir o rumo |
+| Steering | Mande outra mensagem durante execução para corrigir o rumo |
 | Suggested Prompts | Botões prontos ao abrir o agent |
 | Thread = Sessão | Cada thread é uma sessão Pi persistente |
 
@@ -82,7 +82,7 @@ docker compose up -d --build
 | `SLACK_BOT_TOKEN` | sim | Bot token `xoxb-...` |
 | `SLACK_APP_TOKEN` | sim | App-level token `xapp-...` |
 | `ALLOWED_USER_IDS` | sim | Seu Slack user ID (vírgula-separados se >1) |
-| `ANTHROPIC_API_KEY` | sim | API key do Anthropic (pro Pi usar Claude) |
+| `ANTHROPIC_API_KEY` | sim | API key do Anthropic (para o Pi usar Claude) |
 | `WORKSPACE_PATH` | sim | Caminho dos repos na sua máquina |
 | `PI_MODEL` | não | Modelo (default: Pi decide) |
 
