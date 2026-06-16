@@ -76,12 +76,19 @@ function collectMessages(entries: unknown[]): IngestMessage[] {
   return messages;
 }
 
-async function startLoginFlow(): Promise<{ token: string; username: string; expiresIn: number }> {
+async function startLoginFlow(): Promise<{
+  token: string;
+  refreshToken: string | null;
+  username: string;
+  expiresIn: number;
+}> {
   return new Promise((resolve, reject) => {
+    let boundPort = 0;
+
     const server = createServer((req, res) => {
-      const port = (server.address() as AddressInfo).port;
-      const url = new URL(req.url ?? "", `http://localhost:${port}`);
+      const url = new URL(req.url ?? "", `http://localhost:${boundPort || 0}`);
       const token = url.searchParams.get("token");
+      const refreshToken = url.searchParams.get("refresh_token");
 
       if (!token) {
         res.writeHead(400);
@@ -93,18 +100,29 @@ async function startLoginFlow(): Promise<{ token: string; username: string; expi
       res.end("<html><body><h2>Login successful! You can close this tab.</h2></body></html>");
       server.close();
 
-      const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
-      resolve({
-        token,
-        username: payload.username,
-        expiresIn: (payload.exp - payload.iat) * 1000,
-      });
+      try {
+        const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
+        resolve({
+          token,
+          refreshToken,
+          username: payload.username,
+          expiresIn: (payload.exp - payload.iat) * 1000,
+        });
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error("Invalid token payload"));
+      }
     });
 
     server.listen(0, () => {
-      const port = (server.address() as AddressInfo).port;
+      const address = server.address() as AddressInfo | null;
+      if (!address) {
+        server.close();
+        reject(new Error("Failed to bind login server"));
+        return;
+      }
+      boundPort = address.port;
       const config = getConfig();
-      const loginUrl = `${config.apiUrl}/auth/github/start?redirect_url=http://localhost:${port}`;
+      const loginUrl = `${config.apiUrl}/auth/github/start?redirect_url=http://localhost:${boundPort}`;
       openBrowser(loginUrl);
     });
 
@@ -212,6 +230,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         const result = await startLoginFlow();
         await saveCredentials({
           token: result.token,
+          refreshToken: result.refreshToken ?? undefined,
           username: result.username,
           expiresAt: Date.now() + result.expiresIn,
         });
