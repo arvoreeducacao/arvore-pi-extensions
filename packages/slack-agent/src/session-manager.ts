@@ -87,6 +87,11 @@ export class Session {
     }
   }
 
+  async getState(): Promise<Record<string, unknown> | null> {
+    if (!this.client) return null;
+    return this.client.getState();
+  }
+
   dispose(): void {
     this.clearIdle();
     this.client?.dispose();

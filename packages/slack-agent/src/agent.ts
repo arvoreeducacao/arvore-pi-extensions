@@ -37,6 +37,20 @@ export function createAgent(config: AgentConfig) {
 
       const threadTs = (msg.thread_ts as string) ?? (msg.ts as string);
       const text = (msg.text as string ?? "").trim();
+
+      if (text === "!session") {
+        const session = sessions.get(threadTs, { onEvent: () => {} });
+        const state = await session.getState();
+        if (state) {
+          const sessionFile = state.sessionFile as string | undefined;
+          const sessionId = state.sessionId as string | undefined;
+          await say(`📎 *Sessão Pi*\n\`\`\`\npi --session ${sessionId ?? sessionFile ?? "(sem sessão)"}\n\`\`\``);
+        } else {
+          await say("⚠️ Nenhuma sessão ativa nessa thread.");
+        }
+        return;
+      }
+
       const files = (msg.files as Array<Record<string, unknown>> | undefined) ?? [];
 
       if (!text && files.length === 0) return;

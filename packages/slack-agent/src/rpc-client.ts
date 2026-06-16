@@ -122,6 +122,7 @@ export class RpcClient {
   }
   steer(message: string) { return this.send({ type: "steer", message }); }
   abort() { return this.send({ type: "abort" }); }
+  getState() { return this.send({ type: "get_state" }); }
 
   respondUi(id: string, response: Record<string, unknown>): void {
     if (this.disposed) return;
