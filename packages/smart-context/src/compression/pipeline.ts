@@ -24,6 +24,8 @@ const PROTECTED_TURNS = 4;
 const MIN_SAVINGS_RATIO = 0.15;
 const SUMMARIZE_MIN_CHARS = 400;
 const BM25_DROP_THRESHOLD = 0.25;
+const LARGE_TOOL_OUTPUT_CHARS = 4000;
+const TOOL_STUB_HEAD_CHARS = 600;
 
 interface CompressorDeps {
   store: ContentStore;
@@ -68,6 +70,11 @@ export function createCompressor(deps: CompressorDeps) {
           const delta = deltaCompress(msg, state.previousToolHashes);
           if (delta) {
             result.push(delta);
+            continue;
+          }
+          const trimmed = maybeTrimLargeToolOutput(msg);
+          if (trimmed) {
+            result.push(trimmed);
             continue;
           }
         }
@@ -130,6 +137,35 @@ export function createCompressor(deps: CompressorDeps) {
 
     state.stableCompressions.set(stableKey, replacement);
     return replaceText(msg, replacement);
+  }
+
+  function maybeTrimLargeToolOutput(msg: Message): Message | null {
+    const text = extractText(msg);
+    if (text.length < LARGE_TOOL_OUTPUT_CHARS) return null;
+
+    const stableKey = store.makeId(text);
+    const cachedForm = state.stableCompressions.get(stableKey);
+    if (cachedForm !== undefined) {
+      return replaceText(msg, cachedForm);
+    }
+
+    let structural = text;
+    structural = foldLogs(structural);
+    structural = deduplicateLines(structural);
+    structural = compactJson(structural);
+    if (structural.length < text.length * (1 - MIN_SAVINGS_RATIO)) {
+      state.stableCompressions.set(stableKey, structural);
+      return replaceText(msg, structural);
+    }
+
+    const id = store.put(text, msg.role, state.turnsProcessed);
+    const head = text.slice(0, TOOL_STUB_HEAD_CHARS);
+    const stub = `${head}\n[... ${text.length - TOOL_STUB_HEAD_CHARS} chars trimmed — recover_context("${id}") for full output ...]`;
+
+    if (stub.length >= text.length) return null;
+
+    state.stableCompressions.set(stableKey, stub);
+    return replaceText(msg, stub);
   }
 
   function compressToolResult(
