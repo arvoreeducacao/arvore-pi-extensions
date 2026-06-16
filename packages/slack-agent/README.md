@@ -1,87 +1,93 @@
-# @arvoretech/pi-slack-agent
+# Pi Agent — Slack
 
-Slack Agent nativo que expõe o Pi como um agente de IA no Slack, usando **todas as features do Slack Agents SDK**: streaming em tempo real, thinking steps (task cards), suggested prompts, thread titles e status indicators.
+Agente de IA no Slack que conecta o [Pi](https://github.com/earendil-works/pi) como agente nativo, com streaming em tempo real, thinking steps e suporte a imagens.
 
-> **Aviso de segurança.** Auto-aprova todas as ações do Pi (bash, edit, write). A barreira é `ALLOWED_USER_IDS`.
+## Setup rápido (5 min)
+
+### 1. Crie o Slack App
+
+1. Vá em https://api.slack.com/apps → **Create New App** → **From a manifest**
+2. Selecione o workspace da Árvore
+3. Cole o conteúdo de [`manifest.json`](./manifest.json) 
+4. Crie o app
+5. Em **Socket Mode** → gere um App-Level Token com scope `connections:write` → copie o `xapp-...`
+6. Em **Install App** → instale no workspace → copie o Bot Token `xoxb-...`
+7. Em **App Home** → ative **Messages Tab** e marque "Allow users to send messages from the chat tab"
+
+### 2. Descubra seu Slack User ID
+
+No Slack: clique no seu perfil → `⋮` → **Copy member ID** (formato `U...`)
+
+### 3. Configure o `.env`
+
+```bash
+cd packages/slack-agent
+cp .env.example .env
+```
+
+Edite o `.env`:
+```env
+SLACK_BOT_TOKEN=xoxb-seu-token
+SLACK_APP_TOKEN=xapp-seu-token
+ALLOWED_USER_IDS=seu-user-id
+ANTHROPIC_API_KEY=sk-ant-sua-key
+WORKSPACE_PATH=/caminho/dos/seus/repos
+```
+
+### 4. Rode
+
+**Com Docker (recomendado):**
+```bash
+docker compose up -d
+```
+
+**Sem Docker:**
+```bash
+pnpm install && pnpm build
+node dist/cli.js
+```
+
+### 5. Use
+
+Abra o Slack → busque "Pi Agent" nos apps → mande uma mensagem. Cada thread é uma sessão independente.
 
 ## Features
 
-- **Vive no top bar** — habilitado como Agent & AI App, abre em split pane
-- **Streaming nativo** — `chat.startStream` / `appendStream` / `stopStream` (sem hack de `chat.update`)
-- **Thinking Steps** — cada tool executada pelo Pi aparece como task card com status `in_progress` → `complete`/`error`
-- **Suggested Prompts** — botões prontos ao abrir o agent
-- **Thread Titles** — auto-nomeadas pela primeira mensagem
-- **Status Indicator** — "pensando...", nome da tool em execução
-- **Steering** — mande outra mensagem durante execução e ela entra como `steer`
-- **Idle Shutdown** — processo Pi encerrado após inatividade, sessão retomada pelo mesmo thread
+| Feature | Descrição |
+|---|---|
+| Streaming | Respostas aparecem em tempo real |
+| Thinking Steps | Cada tool executada aparece como task card com status |
+| Imagens | Cole screenshots/figmas e o Pi analisa |
+| Steering | Mande outra mensagem durante execução pra corrigir o rumo |
+| Suggested Prompts | Botões prontos ao abrir o agent |
+| Thread = Sessão | Cada thread é uma sessão Pi persistente |
 
-## Arquitetura
-
-```
-Slack Agent (top bar, split pane, mobile)
-   │  Socket Mode + Agent APIs
-   ▼
-pi-slack-agent (host sempre ligado)
-   │  1 processo Pi RPC por thread
-   ▼
-Pi --mode rpc (JSONL)
-   │  events → streaming chunks + task cards
-   ▼
-repos em PI_CWD
-```
-
-## Setup do Slack App
-
-1. Crie um app em https://api.slack.com/apps → From scratch
-2. **Agents & AI Apps** (sidebar) → Enable
-3. **Socket Mode** → Enable → gera App-Level Token `xapp-...` com scope `connections:write`
-4. **OAuth & Permissions** → Bot Token Scopes:
-   - `assistant:write`
-   - `chat:write`
-   - `im:history`, `im:read`, `im:write`
-5. **Event Subscriptions** → Subscribe to bot events:
-   - `assistant_thread_started`
-   - `assistant_thread_context_changed`
-   - `message.im`
-6. **Install App** → copie o Bot Token `xoxb-...`
-
-## Variáveis de Ambiente
-
-| Variável | Obrigatória | Default | Descrição |
-|---|---|---|---|
-| `SLACK_BOT_TOKEN` | sim | — | Bot token `xoxb-...` |
-| `SLACK_APP_TOKEN` | sim | — | App-level token `xapp-...` |
-| `ALLOWED_USER_IDS` | sim | — | Slack user IDs (vírgula-separados) |
-| `PI_BIN` | não | `pi` | Binário do Pi |
-| `PI_CWD` | não | cwd | Diretório de trabalho |
-| `PI_MODEL` | não | default Pi | Modelo (`provider/id[:thinking]`) |
-| `PI_SESSION_IDLE_MS` | não | `900000` | Idle timeout (ms) |
-
-## Rodando
+## Comandos úteis
 
 ```bash
-cd arvore-pi-extensions
-pnpm install
-pnpm --filter @arvoretech/pi-slack-agent build
+# Ver logs
+docker logs -f slack-agent-pi-slack-agent-1
 
-SLACK_BOT_TOKEN=xoxb-... \
-SLACK_APP_TOKEN=xapp-... \
-ALLOWED_USER_IDS=U0123ABCD \
-PI_CWD=/Users/voce/arvore/arvore-hub \
-node packages/slack-agent/dist/cli.js
+# Parar
+docker compose down
+
+# Rebuild após mudanças
+docker compose up -d --build
 ```
 
-### Produção
+## Variáveis de ambiente
 
-```bash
-pm2 start packages/slack-agent/dist/cli.js --name pi-slack-agent
-pm2 save
-```
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `SLACK_BOT_TOKEN` | sim | Bot token `xoxb-...` |
+| `SLACK_APP_TOKEN` | sim | App-level token `xapp-...` |
+| `ALLOWED_USER_IDS` | sim | Seu Slack user ID (vírgula-separados se >1) |
+| `ANTHROPIC_API_KEY` | sim | API key do Anthropic (pro Pi usar Claude) |
+| `WORKSPACE_PATH` | sim | Caminho dos repos na sua máquina |
+| `PI_MODEL` | não | Modelo (default: Pi decide) |
 
-## Como usar
+## Segurança
 
-1. Abra o agent no top bar do Slack (ou no app mobile)
-2. Use os prompts sugeridos ou digite qualquer coisa
-3. Veja as tools sendo executadas em tempo real (task cards)
-4. Mande outra mensagem durante execução → steering
-5. Cada thread é uma sessão Pi independente
+- O agent tem acesso **total** aos repos montados (leitura + escrita + bash)
+- Só user IDs na allowlist podem usar
+- Rode apenas na sua própria máquina

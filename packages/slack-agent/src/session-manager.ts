@@ -3,6 +3,7 @@ import type { AgentConfig } from "./config.js";
 
 export interface SessionHandlers {
   onEvent: (event: RpcEvent) => void;
+  onExit?: () => void;
 }
 
 export class Session {
@@ -30,7 +31,7 @@ export class Session {
       cwd: this.config.piCwd,
       model: this.config.piModel,
       onEvent: (event) => this.handleEvent(event),
-      onExit: () => { this.client = undefined; this.streaming = false; },
+      onExit: () => { this.client = undefined; this.streaming = false; this.handlers.onExit?.(); },
     });
     return this.client;
   }
@@ -76,13 +77,13 @@ export class Session {
     this.idleTimer = setTimeout(() => this.dispose(), this.config.sessionIdleMs);
   }
 
-  async submit(message: string): Promise<void> {
+  async submit(message: string, images?: Array<{ type: string; data: string; mimeType: string }>): Promise<void> {
     this.clearIdle();
     const client = this.ensureClient();
     if (this.streaming) {
       await client.steer(message);
     } else {
-      await client.prompt(message);
+      await client.prompt(message, images);
     }
   }
 

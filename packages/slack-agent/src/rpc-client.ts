@@ -100,7 +100,11 @@ export class RpcClient {
     });
   }
 
-  prompt(message: string) { return this.send({ type: "prompt", message }); }
+  prompt(message: string, images?: Array<{ type: string; data: string; mimeType: string }>) {
+    const cmd: Record<string, unknown> = { type: "prompt", message };
+    if (images && images.length > 0) cmd.images = images;
+    return this.send(cmd);
+  }
   steer(message: string) { return this.send({ type: "steer", message }); }
   abort() { return this.send({ type: "abort" }); }
 

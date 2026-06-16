@@ -27,7 +27,7 @@ export function createAgent(config: AgentConfig) {
       });
     },
 
-    userMessage: async ({ message, say, sayStream, setTitle, setStatus }) => {
+    userMessage: async ({ message, say, sayStream, setTitle, setStatus, client }) => {
       const msg = message as unknown as Record<string, unknown>;
       const userId = msg.user as string;
       if (!config.allowedUserIds.has(userId)) {
@@ -37,10 +37,27 @@ export function createAgent(config: AgentConfig) {
 
       const threadTs = (msg.thread_ts as string) ?? (msg.ts as string);
       const text = (msg.text as string ?? "").trim();
-      if (!text) return;
+      const files = (msg.files as Array<Record<string, unknown>> | undefined) ?? [];
+
+      if (!text && files.length === 0) return;
+
+      const images: Array<{ type: string; data: string; mimeType: string }> = [];
+      for (const file of files) {
+        const mimetype = file.mimetype as string | undefined;
+        if (!mimetype?.startsWith("image/")) continue;
+        const url = file.url_private as string | undefined;
+        if (!url) continue;
+        try {
+          const res = await fetch(url, {
+            headers: { "Authorization": `Bearer ${config.slackBotToken}` },
+          });
+          const buffer = Buffer.from(await res.arrayBuffer());
+          images.push({ type: "image", data: buffer.toString("base64"), mimeType: mimetype });
+        } catch {}
+      }
 
       await setStatus("pensando...");
-      await setTitle(text.slice(0, 60));
+      await setTitle((text || "imagem").slice(0, 60));
 
       const streamer = sayStream();
       const taskTitles = new Map<string, string>();
@@ -148,10 +165,13 @@ export function createAgent(config: AgentConfig) {
         await setStatus("");
       }
 
-      const session = sessions.get(threadTs, { onEvent: handleEvent });
+      const session = sessions.get(threadTs, {
+        onEvent: handleEvent,
+        onExit: () => void finish(),
+      });
 
       try {
-        await session.submit(text);
+        await session.submit(text || "O que tem nessa imagem?", images.length > 0 ? images : undefined);
       } catch (error) {
         await streamer.append({
           chunks: [{ type: "markdown_text", text: `❌ Erro: ${(error as Error).message}` }],
