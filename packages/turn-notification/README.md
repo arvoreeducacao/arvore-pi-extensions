@@ -1,8 +1,13 @@
 # @arvoretech/pi-turn-notification
 
-Pi extension that sends a macOS desktop notification at the end of each agent turn.
+Pi extension that sends a native desktop notification at the end of each agent turn.
 
-Uses `osascript` to trigger native macOS notifications with the "Glass" sound.
+Works on macOS and Linux:
+
+- **macOS**: uses `osascript` to trigger native notifications with the "Glass" sound.
+- **Linux**: uses `notify-send` (libnotify) for the notification, and plays a sound via `canberra-gtk-play` or `paplay` when available.
+
+On Linux, make sure `libnotify` is installed (`notify-send` binary). The sound is best-effort and silently skipped if no player is available.
 
 ## Install
 
