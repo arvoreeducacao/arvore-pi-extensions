@@ -81,11 +81,19 @@ export function createAgent(config: AgentConfig) {
 
       let finished = false;
 
+      let appendQueue: Promise<unknown> = Promise.resolve();
+      function enqueueAppend(chunks: Array<Record<string, unknown>>): Promise<void> {
+        appendQueue = appendQueue
+          .then(() => streamer.append({ chunks: chunks as never }))
+          .catch(() => {});
+        return appendQueue as Promise<void>;
+      }
+
       async function flushText(): Promise<void> {
         if (!textBuffer || finished) return;
         const chunk = textBuffer;
         textBuffer = "";
-        await streamer.append({ chunks: [{ type: "markdown_text", text: chunk }] });
+        await enqueueAppend([{ type: "markdown_text", text: chunk }]);
       }
 
       function scheduleFlush(): void {
@@ -116,16 +124,13 @@ export function createAgent(config: AgentConfig) {
             taskTitles.set(toolCallId, taskId);
 
             void setStatus(title);
-            void flushText().then(() =>
-              streamer.append({
-                chunks: [{
-                  type: "task_update",
-                  id: taskId,
-                  title,
-                  status: "in_progress",
-                }],
-              })
-            ).catch(() => {});
+            void flushText();
+            void enqueueAppend([{
+              type: "task_update",
+              id: taskId,
+              title,
+              status: "in_progress",
+            }]);
             break;
           }
           case "tool_execution_end": {
@@ -141,18 +146,16 @@ export function createAgent(config: AgentConfig) {
               .join("\n")
               .slice(0, 200);
 
-            void streamer.append({
-              chunks: [{
-                type: "task_update",
-                id: taskId,
-                title: formatToolTitle(
-                  event.toolName as string,
-                  event.args as Record<string, unknown> | undefined,
-                ),
-                status: isError ? "error" : "complete",
-                ...(output ? { details: output } : {}),
-              }],
-            }).catch(() => {});
+            void enqueueAppend([{
+              type: "task_update",
+              id: taskId,
+              title: formatToolTitle(
+                event.toolName as string,
+                event.args as Record<string, unknown> | undefined,
+              ),
+              status: isError ? "error" : "complete",
+              ...(output ? { details: output } : {}),
+            }]);
             break;
           }
           case "agent_end": {
@@ -171,6 +174,7 @@ export function createAgent(config: AgentConfig) {
           finalChunks.push({ type: "markdown_text", text: textBuffer });
           textBuffer = "";
         }
+        await appendQueue.catch(() => {});
         if (finalChunks.length > 0) {
           await streamer.stop({ chunks: finalChunks });
         } else {

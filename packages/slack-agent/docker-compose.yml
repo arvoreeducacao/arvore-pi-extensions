@@ -3,6 +3,8 @@ services:
     build: .
     restart: unless-stopped
     user: "${UID:-501}:${GID:-20}"
+    env_file:
+      - ${HOST_WORKSPACE:-.}/.env
     environment:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
