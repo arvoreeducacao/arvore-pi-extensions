@@ -72,7 +72,6 @@ export default function (pi: ExtensionAPI) {
       try {
         wss = await startServer(port, pi, ctx, clients);
         boundPort = port;
-        ctx.ui.setStatus("element-inspector", `Inspector ws:${port}`);
         break;
       } catch {}
     }
