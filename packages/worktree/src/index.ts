@@ -284,6 +284,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
       "Call `get_worktree_paths` before editing files. If it returns an active worktree, ALL reads/writes/edits MUST use those paths instead of the main repo.",
       "If `get_worktree_paths` says worktree mode is ON but no worktree is active, call `create_worktree` with the repos you intend to modify before making changes.",
       "If worktree mode is OFF and no worktree is active, work in the normal repo directories as usual.",
+      "If a worktree is active but you need to edit a repo not yet in it, call `attach_worktree_repos` to add it instead of creating a new worktree.",
     ],
     parameters: Type.Object({}),
     async execute() {
@@ -350,6 +351,44 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
       updateWidget(ctx);
       saveState(ctx.cwd, sessionId);
       return { content: [{ type: "text", text: `Deactivated worktree '${prev}'.` }], details: {} };
+    },
+  });
+
+  pi.registerTool({
+    name: "attach_worktree_repos",
+    label: "Attach Repos",
+    description: "Adds more repos to the currently active worktree. Use when you discover you need to edit additional repos that aren't yet part of the active worktree.",
+    promptSnippet: "Attach additional repos to the active worktree",
+    parameters: Type.Object({
+      repos: Type.Array(Type.String(), { description: "Repo directory names to add (e.g. ['frontend-arvore-nextjs'])" }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      if (!activeWorktree) {
+        return { content: [{ type: "text", text: "No active worktree. Call create_worktree first." }], details: {} };
+      }
+
+      const allRepos = discoverRepos(ctx.cwd);
+      const targetRepos = allRepos.filter((r) => params.repos.includes(basename(r)) && !activeWorktreePaths.has(basename(r)));
+
+      if (targetRepos.length === 0) {
+        return { content: [{ type: "text", text: `No new repos to attach. Already active: ${[...activeWorktreePaths.keys()].join(", ")}` }], details: {} };
+      }
+
+      const results: string[] = [];
+      for (const repo of targetRepos) {
+        const result = createWorktree(repo, activeWorktree);
+        if (result.ok) {
+          activeWorktreePaths.set(basename(repo), join(repo, WORKTREES_DIR, activeWorktree));
+          results.push(`✓ ${result.message}`);
+        } else {
+          results.push(`✗ ${result.message}`);
+        }
+      }
+
+      updateWidget(ctx);
+      saveState(ctx.cwd, sessionId);
+      const context = buildWorktreeContext();
+      return { content: [{ type: "text", text: results.join("\n") + "\n\n" + context }], details: {} };
     },
   });
 
