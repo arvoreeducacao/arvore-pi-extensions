@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-element-inspector",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PI extension that receives inspected browser elements and pastes them into the editor",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
