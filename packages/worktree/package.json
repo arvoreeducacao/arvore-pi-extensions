@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-worktree",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "PI extension to manage git worktrees across multi-repo workspaces with tree-themed names",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

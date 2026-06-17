@@ -599,7 +599,8 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           const pagerBase = pager.split(/\s+/)[0];
           const pagerArgs = pager.split(/\s+/).slice(1).filter((a) => a !== "--paging=never");
           if (pagerBase === "delta" || pagerBase.endsWith("/delta")) {
-            pagerArgs.push("--paging=never", "--width=120");
+            const cols = Math.floor((process.stdout.columns || 200) * 0.9) - 4;
+            pagerArgs.push("--paging=never", `--width=${cols}`);
           }
 
           const stripAnsi = (s: string) => s.replace(/\x1B(?:\[[\d;]*[A-Za-z]|\].*?(?:\x07|\x1B\\)|\([A-Z]|\[[\d;]*m)/g, "").replace(/[\x00-\x09\x0B-\x1F]/g, "");
@@ -751,7 +752,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
                 invalidate(): void {},
               };
             },
-            { overlay: true, overlayOptions: { anchor: "center", width: "85%", maxHeight: "85%" } },
+            { overlay: true, overlayOptions: { anchor: "center", width: "90%", maxHeight: "90%" } },
           );
           break;
         }
