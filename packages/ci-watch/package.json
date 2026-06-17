@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-ci-watch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension that monitors CI status on a PR and auto-fixes failures",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
