@@ -6,7 +6,7 @@ import { join, resolve, basename } from "node:path";
 
 let activeWorktree: string | null = null;
 let activeWorktreePaths: Map<string, string> = new Map();
-let worktreeMode = false;
+let worktreeMode = true;
 
 const TREE_NAMES = [
   "africanosa", "alfabetonio", "arqueoptera", "arterieira", "artilheira",
