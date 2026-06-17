@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@earendil-works/pi-ai";
-import { execSync, spawnSync } from "node:child_process";
+import { execSync, spawnSync, spawn } from "node:child_process";
 import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
 
@@ -113,7 +113,7 @@ function symlinkEnvFiles(repoPath: string, targetDir: string): void {
   }
   if (existsSync(join(repoPath, "package.json")) && !existsSync(join(targetDir, "node_modules"))) {
     const pm = existsSync(join(repoPath, "pnpm-lock.yaml")) ? "pnpm" : existsSync(join(repoPath, "yarn.lock")) ? "yarn" : "npm";
-    spawnSync(pm, ["install"], { cwd: targetDir, encoding: "utf-8", stdio: "ignore" });
+    spawn(pm, ["install"], { cwd: targetDir, stdio: "ignore", detached: true }).unref();
   }
 }
 
