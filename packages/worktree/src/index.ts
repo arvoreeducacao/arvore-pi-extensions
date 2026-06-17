@@ -169,7 +169,7 @@ function formatHelp(): string {
     "  use    <name>     — activate worktree (agent works in worktree paths)",
     "  stop              — deactivate current worktree",
     "  mode   [on|off]   — toggle worktree mode (agent auto-creates worktrees)",
-    "  diff              — show git diffs for active worktree (overlay)",
+    "  hub               — interactive dashboard: list worktrees, PR status, view diffs",
     "  list   [--repos repo1,repo2]",
     "  delete <name> [--repos repo1,repo2]",
     "",
@@ -539,35 +539,58 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           break;
         }
 
-        case "diff": {
-          if (!activeWorktree || activeWorktreePaths.size === 0) {
-            ctx.ui.notify("No active worktree. Use /worktree use <name> first.", "warning");
+        case "diff":
+        case "hub": {
+          if (!ctx.hasUI) {
+            ctx.ui.notify("Requires interactive mode", "error");
             return;
           }
 
-          const diffs: Array<{ repo: string; lines: string[] }> = [];
+          interface WtInfo {
+            name: string;
+            branch: string;
+            repos: Array<{ name: string; path: string; pr: { url: string; state: string; number: number } | null }>;
+          }
+
+          const allWorktrees = new Map<string, WtInfo>();
+
+          for (const repo of repos) {
+            const wts = getExistingWorktrees(repo);
+            for (const wt of wts) {
+              if (!allWorktrees.has(wt.name)) {
+                allWorktrees.set(wt.name, { name: wt.name, branch: wt.branch, repos: [] });
+              }
+              const info = allWorktrees.get(wt.name)!;
+              info.repos.push({ name: basename(repo), path: wt.path, pr: null });
+            }
+          }
+
+          const wtList = [...allWorktrees.values()];
+
+          for (const wt of wtList) {
+            for (const r of wt.repos) {
+              const prResult = spawnSync("gh", ["pr", "list", "--head", wt.branch, "--state", "all", "--json", "number,state,url", "--limit", "1"], {
+                cwd: r.path, encoding: "utf-8",
+              });
+              if (prResult.status === 0 && prResult.stdout?.trim()) {
+                try {
+                  const prs = JSON.parse(prResult.stdout);
+                  if (prs.length > 0) r.pr = prs[0];
+                } catch {}
+              }
+            }
+          }
+
+          if (wtList.length === 0) {
+            ctx.ui.notify("No worktrees found.", "info");
+            return;
+          }
+
           const pager = process.env.GIT_PAGER || spawnSync("git", ["config", "core.pager"], { encoding: "utf-8" }).stdout?.trim() || "";
           const pagerBase = pager.split(/\s+/)[0];
           const pagerArgs = pager.split(/\s+/).slice(1).filter((a) => a !== "--paging=never");
           if (pagerBase === "delta" || pagerBase.endsWith("/delta")) {
             pagerArgs.push("--paging=never", "--width=120");
-          }
-
-          for (const [repo, wtPath] of activeWorktreePaths) {
-            const raw = spawnSync("git", ["diff"], { cwd: wtPath, encoding: "utf-8" }).stdout?.trim() || "";
-            let rendered = raw;
-            if (raw && pagerBase) {
-              const piped = spawnSync(pagerBase, pagerArgs, { cwd: wtPath, encoding: "utf-8", input: raw });
-              if (piped.status === 0 && piped.stdout) rendered = piped.stdout;
-            }
-            const untrackedRaw = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: wtPath, encoding: "utf-8" }).stdout?.trim() || "";
-            const parts = [rendered, untrackedRaw ? `Untracked:\n${untrackedRaw}` : ""].filter(Boolean).join("\n\n");
-            diffs.push({ repo, lines: (parts || "(no changes)").split("\n") });
-          }
-
-          if (!ctx.hasUI) {
-            ctx.ui.notify(diffs.map((d) => `${d.repo}: ${d.lines.length} lines`).join("\n"), "info");
-            return;
           }
 
           const stripAnsi = (s: string) => s.replace(/\x1B(?:\[[\d;]*[A-Za-z]|\].*?(?:\x07|\x1B\\)|\([A-Z]|\[[\d;]*m)/g, "").replace(/[\x00-\x09\x0B-\x1F]/g, "");
@@ -586,20 +609,37 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
             return s.slice(0, i);
           };
 
+          type View = "list" | "diff";
+          let view: View = "list";
+          let cursor = 0;
+          let diffLines: Array<{ repo: string; lines: string[] }> = [];
+          let diffRepo = 0;
+          let scrollOffset = 0;
+
+          function loadDiff(wt: WtInfo): void {
+            diffLines = [];
+            for (const r of wt.repos) {
+              const raw = spawnSync("git", ["diff"], { cwd: r.path, encoding: "utf-8" }).stdout?.trim() || "";
+              let rendered = raw;
+              if (raw && pagerBase) {
+                const piped = spawnSync(pagerBase, pagerArgs, { cwd: r.path, encoding: "utf-8", input: raw });
+                if (piped.status === 0 && piped.stdout) rendered = piped.stdout;
+              }
+              const untracked = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: r.path, encoding: "utf-8" }).stdout?.trim() || "";
+              const parts = [rendered, untracked ? `Untracked:\n${untracked}` : ""].filter(Boolean).join("\n\n");
+              diffLines.push({ repo: r.name, lines: (parts || "(no changes)").split("\n") });
+            }
+            diffRepo = 0;
+            scrollOffset = 0;
+          }
+
           await ctx.ui.custom(
             (tui, theme, _keybindings, done) => {
-              let currentRepo = 0;
-              let scrollOffset = 0;
-
               return {
                 render(width: number): string[] {
                   const maxH = Math.floor((tui.terminal?.rows || 40) * 0.75);
                   const innerW = width - 2;
                   const contentW = innerW - 2;
-                  const title = `─ Worktree: ${activeWorktree} `;
-                  const topBorder = `┌${title}${"─".repeat(Math.max(0, innerW - title.length))}┐`;
-                  const bottomHint = ` tab=repo  ↑↓/jk=scroll  q=close `;
-                  const bottomBorder = `└${bottomHint}${"─".repeat(Math.max(0, innerW - bottomHint.length))}┘`;
                   const pad = (s: string) => {
                     const t = truncAnsi(s, contentW);
                     const gap = Math.max(0, contentW - visLen(t));
@@ -607,17 +647,58 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
                   };
                   const emptyRow = `│${" ".repeat(innerW)}│`;
 
+                  if (view === "list") {
+                    const title = `─ Worktree Hub `;
+                    const topBorder = `┌${title}${"─".repeat(Math.max(0, innerW - title.length))}┐`;
+                    const bottomHint = ` ↑↓=navigate  enter=view diff  q=close `;
+                    const bottomBorder = `└${bottomHint}${"─".repeat(Math.max(0, innerW - bottomHint.length))}┘`;
+
+                    const output: string[] = [];
+                    output.push(topBorder);
+                    output.push(pad(theme.bold("Worktrees")));
+                    output.push(emptyRow);
+
+                    for (let i = 0; i < wtList.length; i++) {
+                      const wt = wtList[i];
+                      const pointer = i === cursor ? theme.fg("accent", "❯") : " ";
+                      const active = wt.name === activeWorktree ? theme.fg("accent", " ●") : "  ";
+                      output.push(pad(`${pointer}${active} ${theme.bold(wt.name)} → ${wt.branch}`));
+                      for (const r of wt.repos) {
+                        let prStatus = theme.fg("dim", "no PR");
+                        if (r.pr) {
+                          if (r.pr.state === "MERGED") prStatus = theme.fg("accent", `✔ merged #${r.pr.number}`);
+                          else if (r.pr.state === "CLOSED") prStatus = theme.fg("error", `✖ closed #${r.pr.number}`);
+                          else prStatus = theme.fg("warning", `○ open #${r.pr.number}`);
+                        }
+                        output.push(pad(`     ${theme.fg("dim", r.name)}  ${prStatus}`));
+                      }
+                    }
+
+                    const usedRows = wtList.reduce((acc, wt) => acc + 1 + wt.repos.length, 0);
+                    const remaining = maxH - 5 - usedRows;
+                    for (let i = 0; i < remaining && i < maxH; i++) output.push(emptyRow);
+
+                    output.push(bottomBorder);
+                    return output;
+                  }
+
+                  const selectedWt = wtList[cursor];
+                  const title = `─ ${selectedWt.name}: diff `;
+                  const topBorder = `┌${title}${"─".repeat(Math.max(0, innerW - title.length))}┐`;
+                  const bottomHint = ` tab=repo  ↑↓=scroll  esc=back  q=close `;
+                  const bottomBorder = `└${bottomHint}${"─".repeat(Math.max(0, innerW - bottomHint.length))}┘`;
+
                   const output: string[] = [];
                   output.push(topBorder);
 
-                  const tabs = diffs.map((d, i) =>
-                    i === currentRepo ? theme.fg("accent", `[● ${d.repo}]`) : theme.fg("dim", `  ${d.repo} `)
+                  const tabs = diffLines.map((d, i) =>
+                    i === diffRepo ? theme.fg("accent", `[● ${d.repo}]`) : theme.fg("dim", `  ${d.repo} `)
                   ).join("  ");
                   output.push(pad(tabs));
                   output.push(emptyRow);
 
                   const contentH = maxH - 6;
-                  const visible = diffs[currentRepo].lines.slice(scrollOffset, scrollOffset + contentH);
+                  const visible = diffLines[diffRepo]?.lines.slice(scrollOffset, scrollOffset + contentH) || [];
 
                   for (const line of visible) {
                     output.push(pad(line));
@@ -627,7 +708,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
                   for (let i = 0; i < remaining; i++) output.push(emptyRow);
 
                   output.push(emptyRow);
-                  const totalLines = diffs[currentRepo].lines.length;
+                  const totalLines = diffLines[diffRepo]?.lines.length || 0;
                   output.push(pad(theme.fg("dim", `[${scrollOffset + 1}-${Math.min(scrollOffset + contentH, totalLines)}/${totalLines}]`)));
                   output.push(bottomBorder);
 
@@ -635,21 +716,33 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
                 },
                 handleInput(data: string): void {
                   const maxH = Math.floor((tui.terminal?.rows || 40) * 0.75);
-                  const contentH = maxH - 6;
-                  const totalLines = diffs[currentRepo].lines.length;
-                  if (data === "\x1B[A" || data === "k") scrollOffset = Math.max(0, scrollOffset - 1);
-                  else if (data === "\x1B[B" || data === "j") scrollOffset = Math.min(Math.max(0, totalLines - contentH), scrollOffset + 1);
-                  else if (data === "\x1B[5~") scrollOffset = Math.max(0, scrollOffset - contentH);
-                  else if (data === "\x1B[6~") scrollOffset = Math.min(Math.max(0, totalLines - contentH), scrollOffset + contentH);
-                  else if (data === "\t") { currentRepo = (currentRepo + 1) % diffs.length; scrollOffset = 0; }
-                  else if (data === "\x1B[Z") { currentRepo = (currentRepo - 1 + diffs.length) % diffs.length; scrollOffset = 0; }
-                  else if (data === "q" || data === "\x1B" || data === "\x03") { done(undefined); return; }
+
+                  if (view === "list") {
+                    if (data === "\x1B[A" || data === "k") cursor = Math.max(0, cursor - 1);
+                    else if (data === "\x1B[B" || data === "j") cursor = Math.min(wtList.length - 1, cursor + 1);
+                    else if (data === "\r" || data === "\n") {
+                      loadDiff(wtList[cursor]);
+                      view = "diff";
+                    }
+                    else if (data === "q" || data === "\x03") { done(undefined); return; }
+                  } else {
+                    const contentH = maxH - 6;
+                    const totalLines = diffLines[diffRepo]?.lines.length || 0;
+                    if (data === "\x1B[A" || data === "k") scrollOffset = Math.max(0, scrollOffset - 1);
+                    else if (data === "\x1B[B" || data === "j") scrollOffset = Math.min(Math.max(0, totalLines - contentH), scrollOffset + 1);
+                    else if (data === "\x1B[5~") scrollOffset = Math.max(0, scrollOffset - contentH);
+                    else if (data === "\x1B[6~") scrollOffset = Math.min(Math.max(0, totalLines - contentH), scrollOffset + contentH);
+                    else if (data === "\t") { diffRepo = (diffRepo + 1) % diffLines.length; scrollOffset = 0; }
+                    else if (data === "\x1B[Z") { diffRepo = (diffRepo - 1 + diffLines.length) % diffLines.length; scrollOffset = 0; }
+                    else if (data === "\x1B" || data === "\b") { view = "list"; }
+                    else if (data === "q" || data === "\x03") { done(undefined); return; }
+                  }
                   tui.requestRender();
                 },
                 invalidate(): void {},
               };
             },
-            { overlay: true, overlayOptions: { anchor: "center", width: "80%", maxHeight: "80%" } },
+            { overlay: true, overlayOptions: { anchor: "center", width: "85%", maxHeight: "85%" } },
           );
           break;
         }
