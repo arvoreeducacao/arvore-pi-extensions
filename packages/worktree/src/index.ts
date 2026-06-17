@@ -65,8 +65,10 @@ function discoverRepos(cwd: string): string[] {
 
 function findHubRoot(cwd: string): string | null {
   let dir = cwd;
-  while (dir !== "/") {
+  let prev = "";
+  while (dir !== prev) {
     if (existsSync(join(dir, "AGENTS.md")) || existsSync(join(dir, "hub.config.ts"))) return dir;
+    prev = dir;
     dir = resolve(dir, "..");
   }
   return null;
@@ -104,7 +106,9 @@ function symlinkEnvFiles(repoPath: string, targetDir: string): void {
     const src = join(repoPath, entry);
     const dest = join(targetDir, entry);
     if (statSync(src).isFile() && !existsSync(dest)) {
-      try { symlinkSync(src, dest); } catch {}
+      try { symlinkSync(src, dest); } catch (e) {
+        process.stderr.write(`[pi-worktree] Failed to symlink ${entry}: ${(e as Error).message}\n`);
+      }
     }
   }
   if (existsSync(join(repoPath, "package.json")) && !existsSync(join(targetDir, "node_modules"))) {
@@ -545,13 +549,15 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           const pager = process.env.GIT_PAGER || spawnSync("git", ["config", "core.pager"], { encoding: "utf-8" }).stdout?.trim() || "";
           const pagerBase = pager.split(/\s+/)[0];
           const pagerArgs = pager.split(/\s+/).slice(1).filter((a) => a !== "--paging=never");
-          pagerArgs.push("--paging=never");
+          if (pagerBase === "delta" || pagerBase.endsWith("/delta")) {
+            pagerArgs.push("--paging=never", "--width=120");
+          }
 
           for (const [repo, wtPath] of activeWorktreePaths) {
             const raw = spawnSync("git", ["diff"], { cwd: wtPath, encoding: "utf-8" }).stdout?.trim() || "";
             let rendered = raw;
             if (raw && pagerBase) {
-              const piped = spawnSync(pagerBase, [...pagerArgs, `--width=120`], { cwd: wtPath, encoding: "utf-8", input: raw });
+              const piped = spawnSync(pagerBase, pagerArgs, { cwd: wtPath, encoding: "utf-8", input: raw });
               if (piped.status === 0 && piped.stdout) rendered = piped.stdout;
             }
             const untrackedRaw = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: wtPath, encoding: "utf-8" }).stdout?.trim() || "";
