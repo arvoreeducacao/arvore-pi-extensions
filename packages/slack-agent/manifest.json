@@ -1,0 +1,54 @@
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "Pi Agent",
+    "description": "Agente de desenvolvimento que executa tarefas nos repositórios via Pi. Streaming em tempo real, thinking steps, e suporte a imagens.",
+    "background_color": "#1a1a2e",
+    "long_description": "Pi Agent conecta o Pi (coding agent) ao Slack como agente nativo. Cada thread é uma sessão independente com acesso completo aos repositórios configurados. Funcionalidades: streaming de respostas em tempo real, thinking steps mostrando tools executadas, suporte a imagens/screenshots, suggested prompts, e steering (mandar nova mensagem durante execução corrige o rumo)."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": false,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Pi Agent",
+      "always_online": true
+    },
+    "assistant_view": {
+      "assistant_description": "Agente de desenvolvimento que executa tarefas nos repositórios da Árvore. Pode ler/escrever código, rodar comandos, criar PRs, e responder perguntas sobre os projetos.",
+      "suggested_prompts_type": "dynamic"
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "assistant:write",
+        "chat:write",
+        "im:history",
+        "im:read",
+        "im:write",
+        "files:read"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "bot_events": [
+        "assistant_thread_started",
+        "assistant_thread_context_changed",
+        "message.im"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": false
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": true,
+    "token_rotation_enabled": false
+  }
+}

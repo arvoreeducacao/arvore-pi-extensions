@@ -1,0 +1,46 @@
+{
+  "name": "@arvoretech/pi-slack-agent",
+  "version": "0.1.0",
+  "description": "Slack Agent that drives Pi via RPC with native streaming, thinking steps, and assistant APIs",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "pi-slack-agent": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@slack/bolt": "4.7.3",
+    "@slack/web-api": "7.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "pi",
+    "slack",
+    "agent",
+    "rpc",
+    "streaming",
+    "thinking-steps"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/slack-agent"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+services:
+  pi-slack-agent:
+    build: .
+    restart: unless-stopped
+    user: "${UID:-501}:${GID:-20}"
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - ALLOWED_USER_IDS=${ALLOWED_USER_IDS}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PI_CWD=/workspace
+      - HOME=/home/node
+    volumes:
+      - ${HOST_WORKSPACE:-.}:/workspace
+      - ${HOME}/.pi/agent:/home/node/.pi/agent
+    mem_limit: 2g
