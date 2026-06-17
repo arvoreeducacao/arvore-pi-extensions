@@ -297,11 +297,10 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "create_worktree",
     label: "Create Worktree",
-    description: "Creates a new worktree for the specified repos and activates it. The worktree gets a tree-themed name and a new branch. All .env* files are symlinked into it.",
-    promptSnippet: "Create and activate a git worktree for isolated work",
+    description: "Creates a new worktree for the specified repos and activates it. The worktree gets a random tree-themed name (from a fixed pool) and a new branch. All .env* files are symlinked into it. Do NOT pass a custom name — the name is always auto-generated.",
+    promptSnippet: "Create and activate a git worktree for isolated work. Name is auto-assigned from a tree pool.",
     parameters: Type.Object({
       repos: Type.Array(Type.String(), { description: "Repo directory names to create worktrees in (e.g. ['api-arvore', 'frontend-arvore-nextjs'])" }),
-      name: Type.Optional(Type.String({ description: "Worktree name (optional, random tree name if omitted)" })),
       branch: Type.Optional(Type.String({ description: "Branch name (optional, defaults to wt/<name>)" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
@@ -312,7 +311,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
         return { content: [{ type: "text", text: `No matching repos found. Available: ${repos.map((r) => basename(r)).join(", ")}` }], details: {} };
       }
 
-      const name = params.name || pickAvailableName(targetRepos[0]) || "worktree";
+      const name = pickAvailableName(targetRepos[0]) || "worktree";
       const results: string[] = [];
 
       activeWorktreePaths.clear();
