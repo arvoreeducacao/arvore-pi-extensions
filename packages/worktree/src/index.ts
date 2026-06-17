@@ -392,6 +392,75 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
     },
   });
 
+  pi.registerTool({
+    name: "detach_worktree_repos",
+    label: "Detach Repos",
+    description: "Removes repos from the active worktree tracking without deleting the worktree from disk.",
+    promptSnippet: "Remove repos from the active worktree",
+    parameters: Type.Object({
+      repos: Type.Array(Type.String(), { description: "Repo directory names to remove (e.g. ['frontend-arvore-nextjs'])" }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      if (!activeWorktree) {
+        return { content: [{ type: "text", text: "No active worktree." }], details: {} };
+      }
+      const removed: string[] = [];
+      for (const repo of params.repos) {
+        if (activeWorktreePaths.has(repo)) {
+          activeWorktreePaths.delete(repo);
+          removed.push(repo);
+        }
+      }
+      if (removed.length === 0) {
+        return { content: [{ type: "text", text: `None of those repos are in the active worktree. Active: ${[...activeWorktreePaths.keys()].join(", ")}` }], details: {} };
+      }
+      if (activeWorktreePaths.size === 0) {
+        activeWorktree = null;
+      }
+      updateWidget(ctx);
+      saveState(ctx.cwd, sessionId);
+      return { content: [{ type: "text", text: `Detached: ${removed.join(", ")}\n\n${buildWorktreeContext()}` }], details: {} };
+    },
+  });
+
+  pi.registerTool({
+    name: "delete_worktree",
+    label: "Delete Worktree",
+    description: "Permanently removes worktree directories and their branches from disk. Use when work is done and the worktree is no longer needed.",
+    promptSnippet: "Delete a worktree and its branches from disk",
+    parameters: Type.Object({
+      name: Type.String({ description: "Worktree name to delete (e.g. 'biografosa')" }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const allRepos = discoverRepos(ctx.cwd);
+      const results: string[] = [];
+
+      for (const repo of allRepos) {
+        const wtPath = join(repo, WORKTREES_DIR, params.name);
+        if (!existsSync(wtPath)) continue;
+        const result = removeWorktree(repo, params.name);
+        results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
+        if (result.ok) {
+          const branch = `wt/${params.name}`;
+          spawnSync("git", ["branch", "-D", branch], { cwd: repo, encoding: "utf-8" });
+        }
+      }
+
+      if (results.length === 0) {
+        return { content: [{ type: "text", text: `Worktree '${params.name}' not found in any repo.` }], details: {} };
+      }
+
+      if (activeWorktree === params.name) {
+        activeWorktree = null;
+        activeWorktreePaths.clear();
+        updateWidget(ctx);
+        saveState(ctx.cwd, sessionId);
+      }
+
+      return { content: [{ type: "text", text: results.join("\n") }], details: {} };
+    },
+  });
+
   pi.registerCommand("worktree", {
     description: "Manage git worktrees with tree-themed names across repos",
     handler: async (args, ctx) => {
