@@ -14,7 +14,14 @@ import {
   promote,
   search,
 } from "./api.js";
-import type { IngestMessage } from "./api.js";
+import type { IngestMessage, SearchResult } from "./api.js";
+import {
+  feedbackEnabled,
+  incrementTurn,
+  maybeAskFeedback,
+  restoreFeedbackState,
+  setFeedbackEnabled,
+} from "./feedback.js";
 
 const LOGIN_TIMEOUT_MS = 60_000;
 const MIN_TEXT_LENGTH = 10;
@@ -24,6 +31,7 @@ let incognito = false;
 let sessionId = "";
 let lastFlushedTurn = -1;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let lastSearchResults: SearchResult[] = [];
 
 function openBrowser(url: string): void {
   const cmd =
@@ -74,6 +82,13 @@ function collectMessages(entries: unknown[]): IngestMessage[] {
   }
 
   return messages;
+}
+
+function buildSearchQuery(entries: unknown[], prompt: string): string {
+  const messages = collectMessages(entries);
+  const recent = messages.slice(-3).map((m) => m.text);
+  const combined = [...recent, prompt].join("\n").trim();
+  return combined.slice(0, 800);
 }
 
 async function startLoginFlow(): Promise<{
@@ -164,6 +179,8 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event, ctx) => {
     sessionId = randomUUID();
     lastFlushedTurn = -1;
+    lastSearchResults = [];
+    restoreFeedbackState(pi, ctx.sessionManager.getEntries());
 
     const creds = await getCredentials();
     ctx.ui.setStatus("memory", creds ? `memory: ${creds.username}` : "memory: not logged in");
@@ -174,6 +191,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       return;
     }
     const creds = await getCredentials();
+    ctx.ui.setStatus("memory", creds ? `memory: ${creds.username}` : "memory: not logged in");
     if (!creds) {
       return;
     }
@@ -184,7 +202,9 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         return;
       }
 
-      const results = await search(prompt.slice(0, 500), { limit: 10 });
+      const query = buildSearchQuery(ctx.sessionManager.getEntries(), prompt);
+      const results = await search(query, { limit: 10 });
+      lastSearchResults = results;
       if (results.length === 0) {
         return;
       }
@@ -207,6 +227,12 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
   });
 
   pi.on("turn_end", (_event, ctx) => {
+    incrementTurn();
+    if (feedbackEnabled() && lastSearchResults.length > 0) {
+      const results = lastSearchResults;
+      lastSearchResults = [];
+      void maybeAskFeedback(pi, ctx, results);
+    }
     if (flushTimer) {
       clearTimeout(flushTimer);
     }
@@ -258,6 +284,21 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       const status = incognito ? "ON" : "OFF";
       ctx.ui.setStatus("memory", `memory: incognito ${status}`);
       ctx.ui.notify(`Incognito mode: ${status}`, "info");
+      return Promise.resolve();
+    },
+  });
+
+  pi.registerCommand("memory-feedback", {
+    description: "Toggle memory relevance feedback prompts: /memory-feedback <on|off>",
+    handler: (args, ctx) => {
+      const arg = args?.trim().toLowerCase();
+      if (arg === "on" || arg === "off") {
+        setFeedbackEnabled(arg === "on");
+      } else {
+        setFeedbackEnabled(!feedbackEnabled());
+      }
+      ctx.ui.setStatus("memory", `memory: feedback ${feedbackEnabled() ? "ON" : "OFF"}`);
+      ctx.ui.notify(`Memory feedback ${feedbackEnabled() ? "enabled" : "disabled"}.`, "info");
       return Promise.resolve();
     },
   });

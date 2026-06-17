@@ -68,6 +68,10 @@ export async function search(
   return data.results;
 }
 
+export function sendFeedback(id: string, useful: boolean): Promise<{ updated: boolean }> {
+  return request<{ updated: boolean }>("/feedback", "POST", { id, useful });
+}
+
 export async function listCandidates(): Promise<Candidate[]> {
   const data = await request<{ candidates: Candidate[] }>("/candidates", "GET");
   return data.candidates;
