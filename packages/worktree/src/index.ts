@@ -6,7 +6,7 @@ import { join, resolve, basename } from "node:path";
 
 let activeWorktree: string | null = null;
 let activeWorktreePaths: Map<string, string> = new Map();
-let worktreeMode = false;
+let worktreeMode = true;
 
 const TREE_NAMES = [
   "africanosa", "alfabetonio", "arqueoptera", "arterieira", "artilheira",
@@ -449,9 +449,19 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           const name = flags.name || pickAvailableName(targetRepos[0]) || "worktree";
           const results: string[] = [];
 
+          activeWorktreePaths.clear();
           for (const repo of targetRepos) {
             const result = createWorktree(repo, name, flags.branch);
             results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
+            if (result.ok) {
+              activeWorktreePaths.set(basename(repo), join(repo, WORKTREES_DIR, name));
+            }
+          }
+
+          if (activeWorktreePaths.size > 0) {
+            activeWorktree = name;
+            updateWidget(ctx);
+            saveState(ctx.cwd, sessionId);
           }
 
           ctx.ui.notify(results.join("\n"), "info");
