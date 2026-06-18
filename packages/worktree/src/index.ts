@@ -880,7 +880,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
             return;
           }
 
-          const paths = flags.all ? [...activeWorktreePaths.values()] : [activeWorktreePaths.values().next().value!];
+          const paths = "all" in flags ? [...activeWorktreePaths.values()] : [activeWorktreePaths.values().next().value!];
 
           for (const wtPath of paths) {
             if (inTmux) {
