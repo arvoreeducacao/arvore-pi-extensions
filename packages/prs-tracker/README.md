@@ -20,8 +20,8 @@ Or in `.pi/settings.json`:
 
 - Listens to `bash` tool executions. When a command contains `gh pr create` or its output prints a `github.com/<owner>/<repo>/pull/<n>` URL, the PR is captured automatically.
 - For each tracked PR it runs `gh pr view <n> --json ...` to read title and state.
-- A widget pinned above the editor lists every tracked PR with a status icon:
-  - 🟢 open · ⚪ draft · 🟣 merged · 🔴 closed
+- A widget pinned above the editor lists every tracked PR with its state and URL:
+  - `[open]` / `[draft]` / `[merged]` / `[closed]`
 - Background polling (every 60s) refreshes statuses. Merged PRs stay for 24h, closed PRs drop off immediately.
 
 ## Commands
