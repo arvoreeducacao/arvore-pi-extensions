@@ -44,9 +44,14 @@ Two protections:
 
 #### Aggressive quality gate
 
-- Last **4 turns** never compressed (active working set)
-- Compression only applied if it saves **>15%**
-- Haiku summary only used if it beats the original by >15%; otherwise falls back to a recoverable stub
+The pipeline runs with one of two aggression profiles, chosen per turn:
+
+| Profile | Trigger | Protected turns | Min savings | Summarize ≥ | BM25 drop | Tool trim ≥ | Compress under cache |
+|---|---|---|---|---|---|---|---|
+| **Balanced** | Large-context model, low usage | 4 | 15% | 400 chars | 0.25 | 4000 chars | no |
+| **Aggressive** | Small context window (<200K) **or** usage ≥60% of the window | 2 | 10% | 250 chars | 0.35 | 2000 chars | yes |
+
+Detection uses `ctx.getModel().contextWindow` and `ctx.getContextUsage().tokens`. On a smaller-context model (or when the window is filling up) the extension protects fewer turns, summarizes shorter messages, drops more low-relevance content, trims tool output sooner, and — only in this mode — keeps compressing the prefix even when the provider is caching (the cost of a cache rebuild beats overflowing the window).
 
 ### Commands
 
