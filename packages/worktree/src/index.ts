@@ -170,6 +170,7 @@ function formatHelp(): string {
     "  stop              — deactivate current worktree",
     "  mode   [on|off]   — toggle worktree mode (agent auto-creates worktrees)",
     "  hub               — interactive dashboard: list worktrees, PR status, view diffs",
+    "  shell             — open tmux panes or Warp tabs in the worktree (tmux/Warp only)",
     "  list   [--repos repo1,repo2]",
     "  delete <name> [--repos repo1,repo2]",
     "",
@@ -862,6 +863,40 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
             },
             { overlay: true, overlayOptions: { anchor: "center", width: "90%", maxHeight: "90%" } },
           );
+          break;
+        }
+
+        case "shell": {
+          if (!activeWorktree || activeWorktreePaths.size === 0) {
+            ctx.ui.notify("No active worktree. Use /worktree use <name> first.", "warning");
+            return;
+          }
+
+          const inTmux = !!process.env.TMUX;
+          const inWarp = process.env.TERM_PROGRAM === "WarpTerminal" || !!process.env.WARP_IS_LOCAL_SHELL_SESSION;
+
+          if (!inTmux && !inWarp) {
+            ctx.ui.notify("shell requires tmux or Warp Terminal.", "error");
+            return;
+          }
+
+          const paths = [...activeWorktreePaths.values()];
+
+          for (let i = 0; i < paths.length; i++) {
+            if (inTmux) {
+              if (i === 0) {
+                spawn("tmux", ["split-window", "-h", "-c", paths[i]], { stdio: "ignore" });
+              } else {
+                spawn("tmux", ["split-window", "-v", "-c", paths[i]], { stdio: "ignore" });
+              }
+            } else {
+              const opener = process.platform === "darwin" ? "open" : "xdg-open";
+              spawn(opener, [`warp://action/new_tab?path=${encodeURIComponent(paths[i])}`], { detached: true, stdio: "ignore" }).unref();
+            }
+          }
+
+          const repoNames = paths.map((p) => basename(p).replace(`.worktrees/${activeWorktree}`, basename(resolve(p, "../.."))));
+          ctx.ui.notify(`Opened shell in: ${[...activeWorktreePaths.keys()].slice(0, paths.length).join(", ")}`, "info");
           break;
         }
 
