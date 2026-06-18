@@ -170,7 +170,7 @@ function formatHelp(): string {
     "  stop              — deactivate current worktree",
     "  mode   [on|off]   — toggle worktree mode (agent auto-creates worktrees)",
     "  hub               — interactive dashboard: list worktrees, PR status, view diffs",
-    "  shell [--all]     — open tmux pane or Warp tab in the worktree (tmux/Warp only)",
+    "  shell             — open tmux panes or Warp tabs in the worktree (tmux/Warp only)",
     "  list   [--repos repo1,repo2]",
     "  delete <name> [--repos repo1,repo2]",
     "",
@@ -880,7 +880,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
             return;
           }
 
-          const paths = "all" in flags ? [...activeWorktreePaths.values()] : [activeWorktreePaths.values().next().value!];
+          const paths = [...activeWorktreePaths.values()];
 
           for (let i = 0; i < paths.length; i++) {
             if (inTmux) {
