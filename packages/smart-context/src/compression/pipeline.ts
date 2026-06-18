@@ -20,12 +20,56 @@ interface ContentBlock {
   [key: string]: any;
 }
 
-const PROTECTED_TURNS = 4;
-const MIN_SAVINGS_RATIO = 0.15;
-const SUMMARIZE_MIN_CHARS = 400;
-const BM25_DROP_THRESHOLD = 0.25;
-const LARGE_TOOL_OUTPUT_CHARS = 4000;
-const TOOL_STUB_HEAD_CHARS = 600;
+interface AggressionProfile {
+  protectedTurns: number;
+  minSavingsRatio: number;
+  summarizeMinChars: number;
+  bm25DropThreshold: number;
+  largeToolOutputChars: number;
+  toolStubHeadChars: number;
+  compressDespiteCache: boolean;
+}
+
+const BALANCED_PROFILE: AggressionProfile = {
+  protectedTurns: 4,
+  minSavingsRatio: 0.15,
+  summarizeMinChars: 400,
+  bm25DropThreshold: 0.25,
+  largeToolOutputChars: 4000,
+  toolStubHeadChars: 600,
+  compressDespiteCache: false,
+};
+
+const AGGRESSIVE_PROFILE: AggressionProfile = {
+  protectedTurns: 2,
+  minSavingsRatio: 0.1,
+  summarizeMinChars: 250,
+  bm25DropThreshold: 0.35,
+  largeToolOutputChars: 2000,
+  toolStubHeadChars: 400,
+  compressDespiteCache: true,
+};
+
+const SMALL_CONTEXT_WINDOW = 200_000;
+const HIGH_USAGE_RATIO = 0.6;
+
+function resolveProfile(ctx: any): AggressionProfile {
+  const model = ctx.getModel?.();
+  const contextWindow: number | undefined = model?.contextWindow;
+  const usage = ctx.getContextUsage?.();
+  const usedTokens: number | undefined = usage?.tokens;
+
+  const smallWindow =
+    typeof contextWindow === "number" && contextWindow > 0 && contextWindow < SMALL_CONTEXT_WINDOW;
+
+  const highUsage =
+    typeof usedTokens === "number" &&
+    typeof contextWindow === "number" &&
+    contextWindow > 0 &&
+    usedTokens / contextWindow >= HIGH_USAGE_RATIO;
+
+  return smallWindow || highUsage ? AGGRESSIVE_PROFILE : BALANCED_PROFILE;
+}
 
 interface CompressorDeps {
   store: ContentStore;
@@ -50,9 +94,10 @@ export function createCompressor(deps: CompressorDeps) {
     const lastUserIdx = findLastUserMessage(messages);
     if (lastUserIdx === -1) return messages;
 
+    const profile = resolveProfile(ctx);
     const cacheActive = detectActiveCache(ctx);
     const query = extractText(messages[lastUserIdx]);
-    const protectedBoundary = findProtectedBoundary(messages, PROTECTED_TURNS);
+    const protectedBoundary = findProtectedBoundary(messages, profile.protectedTurns);
 
     const scored = scoreMessages(messages, query, protectedBoundary);
     const result: Message[] = [];
@@ -66,13 +111,13 @@ export function createCompressor(deps: CompressorDeps) {
       }
 
       if (isToolResult(msg)) {
-        if (!cacheActive) {
+        if (!cacheActive || profile.compressDespiteCache) {
           const delta = deltaCompress(msg, state.previousToolHashes);
           if (delta) {
             result.push(delta);
             continue;
           }
-          const trimmed = maybeTrimLargeToolOutput(msg);
+          const trimmed = maybeTrimLargeToolOutput(msg, profile);
           if (trimmed) {
             result.push(trimmed);
             continue;
@@ -83,11 +128,11 @@ export function createCompressor(deps: CompressorDeps) {
       }
 
       if (msg.role === "assistant" || msg.role === "user") {
-        if (cacheActive) {
+        if (cacheActive && !profile.compressDespiteCache) {
           result.push(msg);
           continue;
         }
-        const compressed = await maybeCompressMessage(msg, scored.get(i), ctx);
+        const compressed = await maybeCompressMessage(msg, scored.get(i), ctx, profile);
         result.push(compressed ?? msg);
         continue;
       }
@@ -102,10 +147,11 @@ export function createCompressor(deps: CompressorDeps) {
   async function maybeCompressMessage(
     msg: Message,
     score: number | undefined,
-    ctx: any
+    ctx: any,
+    profile: AggressionProfile
   ): Promise<Message | null> {
     const text = extractText(msg);
-    if (text.length < SUMMARIZE_MIN_CHARS) return null;
+    if (text.length < profile.summarizeMinChars) return null;
 
     const stableKey = store.makeId(text);
     const cachedForm = state.stableCompressions.get(stableKey);
@@ -113,20 +159,20 @@ export function createCompressor(deps: CompressorDeps) {
       return replaceText(msg, cachedForm);
     }
 
-    const relevant = score !== undefined && score >= BM25_DROP_THRESHOLD;
+    const relevant = score !== undefined && score >= profile.bm25DropThreshold;
 
     let replacement: string | null = null;
 
     if (relevant) {
       const summary = await summarizer.summarize(text, ctx);
-      if (summary && summary.length < text.length * (1 - MIN_SAVINGS_RATIO)) {
+      if (summary && summary.length < text.length * (1 - profile.minSavingsRatio)) {
         const id = store.put(text, msg.role, state.turnsProcessed);
         replacement = `${summary}\n[full original: recover_context("${id}")]`;
       }
     } else {
       const summary = await summarizer.summarize(text, ctx);
       const id = store.put(text, msg.role, state.turnsProcessed);
-      if (summary && summary.length < text.length * (1 - MIN_SAVINGS_RATIO)) {
+      if (summary && summary.length < text.length * (1 - profile.minSavingsRatio)) {
         replacement = `[low-relevance, summarized] ${summary}\n[full: recover_context("${id}")]`;
       } else {
         replacement = `[compressed ${msg.role} message — ${text.length} chars — recover_context("${id}")]`;
@@ -139,9 +185,9 @@ export function createCompressor(deps: CompressorDeps) {
     return replaceText(msg, replacement);
   }
 
-  function maybeTrimLargeToolOutput(msg: Message): Message | null {
+  function maybeTrimLargeToolOutput(msg: Message, profile: AggressionProfile): Message | null {
     const text = extractText(msg);
-    if (text.length < LARGE_TOOL_OUTPUT_CHARS) return null;
+    if (text.length < profile.largeToolOutputChars) return null;
 
     const stableKey = store.makeId(text);
     const cachedForm = state.stableCompressions.get(stableKey);
@@ -153,14 +199,14 @@ export function createCompressor(deps: CompressorDeps) {
     structural = foldLogs(structural);
     structural = deduplicateLines(structural);
     structural = compactJson(structural);
-    if (structural.length < text.length * (1 - MIN_SAVINGS_RATIO)) {
+    if (structural.length < text.length * (1 - profile.minSavingsRatio)) {
       state.stableCompressions.set(stableKey, structural);
       return replaceText(msg, structural);
     }
 
     const id = store.put(text, msg.role, state.turnsProcessed);
-    const head = text.slice(0, TOOL_STUB_HEAD_CHARS);
-    const stub = `${head}\n[... ${text.length - TOOL_STUB_HEAD_CHARS} chars trimmed — recover_context("${id}") for full output ...]`;
+    const head = text.slice(0, profile.toolStubHeadChars);
+    const stub = `${head}\n[... ${text.length - profile.toolStubHeadChars} chars trimmed — recover_context("${id}") for full output ...]`;
 
     if (stub.length >= text.length) return null;
 
