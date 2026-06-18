@@ -265,9 +265,10 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
     ctx.ui.setWidget("pi-worktree", (tui: any, theme: any) => ({
       render(width: number): string[] {
         const lines: string[] = [];
-        lines.push(theme.bold(` 🌳 Worktree: ${activeWorktree}`));
-        for (const [repo, path] of activeWorktreePaths) {
-          lines.push(theme.fg("dim", `   ${repo} → ${path}`));
+        const trunc = (s: string) => s.length > width ? s.slice(0, width - 1) + "…" : s;
+        lines.push(trunc(` 🌳 Worktree: ${activeWorktree}`));
+        for (const [repo] of activeWorktreePaths) {
+          lines.push(trunc(`   ${repo}`));
         }
         return lines;
       },
