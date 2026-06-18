@@ -882,11 +882,15 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
 
           const paths = "all" in flags ? [...activeWorktreePaths.values()] : [activeWorktreePaths.values().next().value!];
 
-          for (const wtPath of paths) {
+          for (let i = 0; i < paths.length; i++) {
             if (inTmux) {
-              spawn("tmux", ["split-window", "-h", "-c", wtPath], { stdio: "ignore" });
+              if (i === 0) {
+                spawn("tmux", ["split-window", "-h", "-c", paths[i]], { stdio: "ignore" });
+              } else {
+                spawn("tmux", ["split-window", "-v", "-c", paths[i]], { stdio: "ignore" });
+              }
             } else {
-              spawn("open", [`warp://action/new_tab?path=${encodeURIComponent(wtPath)}`], { detached: true, stdio: "ignore" }).unref();
+              spawn("open", [`warp://action/new_tab?path=${encodeURIComponent(paths[i])}`], { detached: true, stdio: "ignore" }).unref();
             }
           }
 
