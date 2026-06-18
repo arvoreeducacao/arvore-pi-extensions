@@ -890,7 +890,8 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
                 spawn("tmux", ["split-window", "-v", "-c", paths[i]], { stdio: "ignore" });
               }
             } else {
-              spawn("open", [`warp://action/new_tab?path=${encodeURIComponent(paths[i])}`], { detached: true, stdio: "ignore" }).unref();
+              const opener = process.platform === "darwin" ? "open" : "xdg-open";
+              spawn(opener, [`warp://action/new_tab?path=${encodeURIComponent(paths[i])}`], { detached: true, stdio: "ignore" }).unref();
             }
           }
 
