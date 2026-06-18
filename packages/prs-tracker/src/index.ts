@@ -5,7 +5,7 @@ import { join, dirname, basename } from "node:path";
 
 interface TrackedPr {
   number: number;
-  repoDir: string;
+  repo: string;
   title: string;
   url: string;
   state: "OPEN" | "MERGED" | "CLOSED";
@@ -15,7 +15,7 @@ interface TrackedPr {
 
 const POLL_INTERVAL_MS = 60_000;
 const MERGED_RETENTION_MS = 24 * 60 * 60 * 1000;
-const PR_URL_RE = /https?:\/\/github\.com\/[^/\s]+\/[^/\s]+\/pull\/(\d+)/g;
+const PR_URL_RE = /https?:\/\/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/g;
 const STATE_DIR = ".pi/prs-tracker-sessions";
 
 const tracked = new Map<string, TrackedPr>();
@@ -66,29 +66,28 @@ function loadState(cwd: string): void {
     hidden = Boolean(state.hidden);
     tracked.clear();
     for (const pr of state.prs ?? []) {
-      if (pr && typeof pr.number === "number" && pr.repoDir) {
-        tracked.set(keyOf(pr.repoDir, pr.number), pr);
+      if (pr && typeof pr.number === "number" && pr.repo) {
+        tracked.set(keyOf(pr.repo, pr.number), pr);
       }
     }
   } catch {}
 }
 
-function keyOf(repoDir: string, number: number): string {
-  return `${repoDir}#${number}`;
+function keyOf(repo: string, number: number): string {
+  return `${repo}#${number}`;
 }
 
-function runGh(args: string, cwd: string): string | null {
+function runGh(args: string): string | null {
   try {
-    return execSync(`gh ${args}`, { cwd, encoding: "utf-8", timeout: 30_000 }).trim();
+    return execSync(`gh ${args}`, { encoding: "utf-8", timeout: 30_000 }).trim();
   } catch {
     return null;
   }
 }
 
-function fetchPrDetails(number: number, repoDir: string): TrackedPr | null {
+function fetchPrDetails(number: number, repo: string): TrackedPr | null {
   const out = runGh(
-    `pr view ${number} --json number,title,state,url,isDraft,mergedAt`,
-    repoDir,
+    `pr view ${number} --repo ${repo} --json number,title,state,url,isDraft,mergedAt`,
   );
   if (!out) return null;
   try {
@@ -102,7 +101,7 @@ function fetchPrDetails(number: number, repoDir: string): TrackedPr | null {
     };
     return {
       number: data.number,
-      repoDir,
+      repo,
       title: data.title,
       url: data.url,
       state: (data.state as TrackedPr["state"]) ?? "OPEN",
@@ -114,10 +113,10 @@ function fetchPrDetails(number: number, repoDir: string): TrackedPr | null {
   }
 }
 
-function trackPr(number: number, repoDir: string): boolean {
-  const details = fetchPrDetails(number, repoDir);
+function trackPr(number: number, repo: string): boolean {
+  const details = fetchPrDetails(number, repo);
   if (!details) return false;
-  tracked.set(keyOf(repoDir, number), details);
+  tracked.set(keyOf(repo, number), details);
   return true;
 }
 
@@ -137,7 +136,7 @@ function pruneStale(): void {
 function refreshAll(): boolean {
   let changed = false;
   for (const [key, pr] of tracked) {
-    const updated = fetchPrDetails(pr.number, pr.repoDir);
+    const updated = fetchPrDetails(pr.number, pr.repo);
     if (updated && JSON.stringify(updated) !== JSON.stringify(pr)) {
       tracked.set(key, updated);
       changed = true;
@@ -147,12 +146,13 @@ function refreshAll(): boolean {
   return changed;
 }
 
-function extractPrs(text: string, cwd: string): void {
+function extractPrs(text: string): void {
   PR_URL_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = PR_URL_RE.exec(text)) !== null) {
-    const number = Number(match[1]);
-    if (Number.isFinite(number)) trackPr(number, cwd);
+    const repo = match[1];
+    const number = Number(match[2]);
+    if (repo && Number.isFinite(number)) trackPr(number, repo);
   }
 }
 
@@ -188,24 +188,34 @@ function labelFor(pr: TrackedPr): string {
   return "open";
 }
 
+function colorFor(pr: TrackedPr): string {
+  if (pr.state === "MERGED") return "accent";
+  if (pr.state === "CLOSED") return "error";
+  if (pr.isDraft) return "warning";
+  return "success";
+}
+
 function renderWidget(width: number, theme: any): string[] {
   const prs = sortedPrs();
   const lines: string[] = [];
   const trunc = (s: string): string => (s.length > width ? `${s.slice(0, width - 1)}…` : s);
-  const dim = (s: string): string => (theme?.dim ? theme.dim(s) : s);
+  const fg = (color: string, s: string): string => (theme?.fg ? theme.fg(color, s) : s);
+  const bold = (s: string): string => (theme?.bold ? theme.bold(s) : s);
 
   const open = prs.filter((p) => p.state === "OPEN").length;
   const merged = prs.filter((p) => p.state === "MERGED").length;
-  const header = ` PRs - ${open} open${merged ? `, ${merged} merged` : ""}`;
-  lines.push(theme?.bold ? theme.bold(trunc(header)) : trunc(header));
+  const header = ` PRs — ${open} open${merged ? `, ${merged} merged` : ""}`;
+  lines.push(bold(fg("accent", trunc(header))));
 
   const max = 12;
   for (const pr of prs.slice(0, max)) {
-    const title = `   [${labelFor(pr)}] #${pr.number} ${pr.title}`;
-    lines.push(trunc(title));
-    lines.push(dim(trunc(`      ${pr.url}`)));
+    const color = colorFor(pr);
+    const tag = fg(color, bold(labelFor(pr).toUpperCase()));
+    const head = trunc(`#${pr.number} ${pr.title}`);
+    lines.push(`   ${tag} ${fg("text", head)}`);
+    lines.push(`      ${fg("mdLinkUrl", trunc(pr.url))}`);
   }
-  if (prs.length > max) lines.push(trunc(`   +${prs.length - max} more`));
+  if (prs.length > max) lines.push(fg("dim", `   +${prs.length - max} more`));
   return lines;
 }
 
@@ -278,7 +288,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
     const cwd = ctx?.cwd ?? process.cwd();
     const command: string = event?.args?.command ?? "";
     const resultText = resultToText(event?.result);
-    extractPrs(`${command}\n${resultText}`, cwd);
+    extractPrs(`${command}\n${resultText}`);
 
     if (tracked.size !== before || JSON.stringify([...tracked.values()]) !== beforeSnapshot) {
       saveState(cwd);
