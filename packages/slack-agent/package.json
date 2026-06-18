@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-slack-agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Slack Agent that drives Pi via RPC with native streaming, thinking steps, and assistant APIs",
   "type": "module",
   "main": "dist/index.js",
