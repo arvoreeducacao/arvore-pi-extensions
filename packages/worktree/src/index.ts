@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@earendil-works/pi-ai";
 import { execSync, spawnSync, spawn } from "node:child_process";
-import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync, openSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
 
 let activeWorktree: string | null = null;
@@ -22,6 +22,29 @@ const TREE_NAMES = [
 ];
 
 const WORKTREES_DIR = ".worktrees";
+const SETUP_DIR = ".pi/worktree-setup";
+
+interface SetupConfig {
+  defaultSymlink?: string[];
+  background?: boolean;
+  repos?: Record<string, { symlink?: string[]; background?: boolean }>;
+}
+
+function getSetupDir(repoPath: string): string {
+  const root = findHubRoot(repoPath) || repoPath;
+  return join(root, SETUP_DIR);
+}
+
+function loadSetupConfig(repoPath: string): SetupConfig | null {
+  const path = join(getSetupDir(repoPath), "setup.json");
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf-8")) as SetupConfig;
+  } catch (e) {
+    process.stderr.write(`[pi-worktree] Invalid setup.json: ${(e as Error).message}\n`);
+    return null;
+  }
+}
 
 function pickAvailableName(repoPath: string): string | null {
   const dir = join(repoPath, WORKTREES_DIR);
@@ -100,21 +123,103 @@ function getExistingWorktrees(repoPath: string): Array<{ name: string; branch: s
   return entries;
 }
 
-function symlinkEnvFiles(repoPath: string, targetDir: string): void {
+function matchesPattern(entry: string, pattern: string): boolean {
+  if (pattern.endsWith("*")) return entry.startsWith(pattern.slice(0, -1));
+  return entry === pattern.replace(/\/$/, "");
+}
+
+function symlinkMatching(repoPath: string, targetDir: string, patterns: string[]): string[] {
+  const linked: string[] = [];
   for (const entry of readdirSync(repoPath)) {
-    if (!entry.startsWith(".env")) continue;
+    if (!patterns.some((p) => matchesPattern(entry, p))) continue;
     const src = join(repoPath, entry);
     const dest = join(targetDir, entry);
-    if (statSync(src).isFile() && !existsSync(dest)) {
-      try { symlinkSync(src, dest); } catch (e) {
-        process.stderr.write(`[pi-worktree] Failed to symlink ${entry}: ${(e as Error).message}\n`);
-      }
+    if (existsSync(dest)) continue;
+    try {
+      symlinkSync(src, dest);
+      linked.push(entry);
+    } catch (e) {
+      process.stderr.write(`[pi-worktree] Failed to symlink ${entry}: ${(e as Error).message}\n`);
     }
   }
+  return linked;
+}
+
+function autoInstall(repoPath: string, targetDir: string): void {
   if (existsSync(join(repoPath, "package.json")) && !existsSync(join(targetDir, "node_modules"))) {
     const pm = existsSync(join(repoPath, "pnpm-lock.yaml")) ? "pnpm" : existsSync(join(repoPath, "yarn.lock")) ? "yarn" : "npm";
     spawn(pm, ["install"], { cwd: targetDir, stdio: "ignore", detached: true }).unref();
   }
+}
+
+function runSetupScript(scriptPath: string, repoPath: string, targetDir: string): { ok: boolean; output: string } {
+  const result = spawnSync("bash", [scriptPath], {
+    cwd: targetDir,
+    encoding: "utf-8",
+    env: {
+      ...process.env,
+      WT_REPO: targetDir,
+      WT_MAIN: repoPath,
+      WT_NAME: basename(targetDir),
+      WT_REPO_NAME: basename(repoPath),
+    },
+  });
+  if (result.error) return { ok: false, output: result.error.message };
+  const output = [result.stdout, result.stderr].filter(Boolean).join("").trim();
+  return { ok: result.status === 0, output };
+}
+
+function setupLogPath(targetDir: string): string {
+  const gitFile = join(targetDir, ".git");
+  try {
+    const content = readFileSync(gitFile, "utf-8").trim();
+    const match = content.match(/^gitdir:\s*(.+)$/);
+    if (match) return join(match[1].trim(), "pi-worktree-setup.log");
+  } catch {}
+  return join(targetDir, ".pi-worktree-setup.log");
+}
+
+function runSetupScriptBackground(scriptPath: string, repoPath: string, targetDir: string): string {
+  const logPath = setupLogPath(targetDir);
+  const fd = openSync(logPath, "w");
+  const child = spawn("bash", [scriptPath], {
+    cwd: targetDir,
+    stdio: ["ignore", fd, fd],
+    detached: true,
+    env: {
+      ...process.env,
+      WT_REPO: targetDir,
+      WT_MAIN: repoPath,
+      WT_NAME: basename(targetDir),
+      WT_REPO_NAME: basename(repoPath),
+    },
+  });
+  child.unref();
+  return logPath;
+}
+
+function runRepoSetup(repoPath: string, targetDir: string): string {
+  const repoName = basename(repoPath);
+  const config = loadSetupConfig(repoPath);
+  const symlinkPatterns = config?.repos?.[repoName]?.symlink ?? config?.defaultSymlink ?? [".env*"];
+  const linked = symlinkMatching(repoPath, targetDir, symlinkPatterns);
+  const linkedNote = linked.length ? ` (linked ${linked.join(", ")})` : "";
+  const background = config?.repos?.[repoName]?.background ?? config?.background ?? false;
+
+  const scriptPath = join(getSetupDir(repoPath), `${repoName}.sh`);
+  if (existsSync(scriptPath)) {
+    if (background) {
+      const logPath = runSetupScriptBackground(scriptPath, repoPath, targetDir);
+      return `setup: ${repoName}.sh ⧖ background${linkedNote}\n  log: ${logPath}`;
+    }
+    const { ok, output } = runSetupScript(scriptPath, repoPath, targetDir);
+    if (ok) return `setup: ${repoName}.sh ✓${linkedNote}`;
+    const tail = output ? `\n${output.split("\n").slice(-6).join("\n")}` : "";
+    return `setup: ${repoName}.sh ✗${tail}`;
+  }
+
+  autoInstall(repoPath, targetDir);
+  return `setup: default${linkedNote}`;
 }
 
 function createWorktree(repoPath: string, name: string, branch?: string): { ok: boolean; message: string } {
@@ -137,14 +242,14 @@ function createWorktree(repoPath: string, name: string, branch?: string): { ok: 
         encoding: "utf-8",
       });
       if (result2.status !== 0) return { ok: false, message: `Failed: ${result2.stderr?.trim()}` };
-      symlinkEnvFiles(repoPath, targetDir);
-      return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} (existing branch)` };
+      const setup2 = runRepoSetup(repoPath, targetDir);
+      return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} (existing branch)\n  ${setup2}` };
     }
     return { ok: false, message: `Failed: ${err}` };
   }
 
-  symlinkEnvFiles(repoPath, targetDir);
-  return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} → branch wt/${name}` };
+  const setup = runRepoSetup(repoPath, targetDir);
+  return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} → branch wt/${name}\n  ${setup}` };
 }
 
 function removeWorktree(repoPath: string, name: string): { ok: boolean; message: string } {
@@ -176,6 +281,10 @@ function formatHelp(): string {
     "",
     "If --repos is omitted, shows interactive picker.",
     "If --name is omitted on create, picks a random tree name.",
+    "",
+    "Setup on create: runs .pi/worktree-setup/<repo>.sh if present (cwd=worktree,",
+    "  env: $WT_REPO $WT_MAIN $WT_NAME $WT_REPO_NAME). Otherwise symlinks .env* and",
+    "  auto-installs node deps. Symlink globs + background flag in .pi/worktree-setup/setup.json.",
   ].join("\n");
 }
 
