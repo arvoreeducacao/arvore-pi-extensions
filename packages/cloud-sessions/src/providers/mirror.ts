@@ -13,8 +13,9 @@ async function walk(dir: string, root: string, out: RemoteFile[]): Promise<void>
   let entries: Dirent[];
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw new Error(`Failed to read mirror directory: ${dir}`, { cause: error });
   }
   for (const entry of entries) {
     if (entry.name === ".git") continue;

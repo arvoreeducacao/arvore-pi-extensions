@@ -36,7 +36,18 @@ export class GitProvider implements SyncProvider {
   }
 
   async ensureReady(): Promise<void> {
-    if (this.isCloned()) return;
+    if (this.isCloned()) {
+      const currentRemote = await this.git(["remote", "get-url", this.remoteName]).catch(() => "");
+      if (currentRemote && currentRemote !== this.repo) {
+        throw new Error(
+          `cloud-sessions clone at ${this.clonePath} points to ${currentRemote}, not ${this.repo}. ` +
+            `Remove it to re-clone, or revert the repo setting.`,
+        );
+      }
+      await this.configureIdentity();
+      await this.git(["checkout", "-B", this.branch]).catch(() => "");
+      return;
+    }
     await mkdir(join(configDir(), "cloud-sessions"), { recursive: true });
     await exec("git", ["clone", "--branch", this.branch, this.repo, this.clonePath]).catch(
       async () => {
@@ -54,8 +65,8 @@ export class GitProvider implements SyncProvider {
 
   async pull(): Promise<void> {
     await this.ensureReady();
-    await this.git(["fetch", this.remoteName, this.branch]).catch(() => "");
-    await this.git(["reset", "--hard", `${this.remoteName}/${this.branch}`]).catch(() => "");
+    await this.git(["fetch", this.remoteName, this.branch]);
+    await this.git(["reset", "--hard", `${this.remoteName}/${this.branch}`]);
   }
 
   async listRemote(): Promise<RemoteFile[]> {

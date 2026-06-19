@@ -31,7 +31,7 @@ the same file are rare.
 
 Run the setup command inside pi:
 
-```
+```bash
 /cloud-sessions-setup
 ```
 
@@ -113,6 +113,6 @@ encryption layer — the JSONL is stored as-is.
 Place the built extension under a trusted pi extensions directory, or load it
 directly:
 
-```
+```bash
 pi -e ./packages/cloud-sessions/dist/index.js
 ```

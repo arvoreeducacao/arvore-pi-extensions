@@ -5,13 +5,14 @@ import {
   configFilePath,
   isProviderConfigured,
   loadConfig,
+  readRawConfigFile,
   type CloudSessionsConfig,
 } from "./config.js";
 import { Sync, type SyncResult } from "./sync.js";
 
 const STATUS_KEY = "cloud-sessions";
 
-let syncing = false;
+let activeSync: Promise<SyncResult | null> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -26,25 +27,27 @@ function summarize(result: SyncResult): string {
 }
 
 async function runSync(setStatus: Notify): Promise<SyncResult | null> {
-  if (syncing) return null;
-  syncing = true;
-  try {
-    const config = await loadConfig();
-    if (!isProviderConfigured(config)) {
-      setStatus(STATUS_KEY, "sessions: not configured");
-      return null;
+  if (activeSync) return activeSync;
+  activeSync = (async () => {
+    try {
+      const config = await loadConfig();
+      if (!isProviderConfigured(config)) {
+        setStatus(STATUS_KEY, "sessions: not configured");
+        return null;
+      }
+      setStatus(STATUS_KEY, `sessions: syncing (${config.provider})`);
+      const sync = new Sync(config);
+      const result = await sync.run();
+      setStatus(STATUS_KEY, `sessions: ${config.provider} ${summarize(result)}`);
+      return result;
+    } catch (error) {
+      setStatus(STATUS_KEY, "sessions: sync error");
+      throw error;
+    } finally {
+      activeSync = null;
     }
-    setStatus(STATUS_KEY, `sessions: syncing (${config.provider})`);
-    const sync = new Sync(config);
-    const result = await sync.run();
-    setStatus(STATUS_KEY, `sessions: ${config.provider} ${summarize(result)}`);
-    return result;
-  } catch (error) {
-    setStatus(STATUS_KEY, "sessions: sync error");
-    throw error;
-  } finally {
-    syncing = false;
-  }
+  })();
+  return activeSync;
 }
 
 function scheduleSync(config: CloudSessionsConfig, setStatus: Notify): void {
@@ -76,8 +79,16 @@ function stopTimers(): void {
 }
 
 async function writeConfig(partial: Record<string, unknown>): Promise<void> {
+  const current = await readRawConfigFile();
+  const merged: Record<string, unknown> = { ...current, ...partial };
+  if (partial.git || current.git) {
+    merged.git = { ...(current.git as object), ...(partial.git as object) };
+  }
+  if (partial.icloud || current.icloud) {
+    merged.icloud = { ...(current.icloud as object), ...(partial.icloud as object) };
+  }
   await mkdir(dirname(configFilePath()), { recursive: true });
-  await writeFile(configFilePath(), JSON.stringify(partial, null, 2));
+  await writeFile(configFilePath(), JSON.stringify(merged, null, 2));
 }
 
 export default function cloudSessions(pi: ExtensionAPI): void {

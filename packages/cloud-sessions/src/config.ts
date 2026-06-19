@@ -79,6 +79,15 @@ function asBool(value: string | undefined, fallback: boolean): boolean {
   return value !== "0" && value.toLowerCase() !== "false";
 }
 
+function numberFrom(value: string | undefined, fileValue: number | undefined, fallback: number): number {
+  if (value !== undefined && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  if (typeof fileValue === "number" && Number.isFinite(fileValue)) return fileValue;
+  return fallback;
+}
+
 export async function loadConfig(): Promise<CloudSessionsConfig> {
   const raw = await readRawConfig();
 
@@ -86,11 +95,10 @@ export async function loadConfig(): Promise<CloudSessionsConfig> {
     provider: resolveProvider(raw),
     autoPush: asBool(process.env.PI_CLOUD_SESSIONS_AUTO_PUSH, raw.autoPush ?? true),
     pullOnStart: asBool(process.env.PI_CLOUD_SESSIONS_PULL_ON_START, raw.pullOnStart ?? true),
-    pushDebounceMs: Number(process.env.PI_CLOUD_SESSIONS_DEBOUNCE_MS) || raw.pushDebounceMs || 4000,
-    pollIntervalMs:
-      Number(process.env.PI_CLOUD_SESSIONS_POLL_MS) ||
-      (raw.pollIntervalMs === undefined ? 60000 : raw.pollIntervalMs),
-    machineId: raw.machineId || defaultMachineId(),
+    pushDebounceMs: numberFrom(process.env.PI_CLOUD_SESSIONS_DEBOUNCE_MS, raw.pushDebounceMs, 4000),
+    pollIntervalMs: numberFrom(process.env.PI_CLOUD_SESSIONS_POLL_MS, raw.pollIntervalMs, 60000),
+    machineId:
+      process.env.PI_CLOUD_SESSIONS_MACHINE_ID || raw.machineId || defaultMachineId(),
     git: {
       repo: process.env.PI_CLOUD_SESSIONS_GIT_REPO || raw.git?.repo || "",
       branch: process.env.PI_CLOUD_SESSIONS_GIT_BRANCH || raw.git?.branch || "main",
@@ -100,6 +108,10 @@ export async function loadConfig(): Promise<CloudSessionsConfig> {
       dir: process.env.PI_CLOUD_SESSIONS_ICLOUD_DIR || raw.icloud?.dir || defaultIcloudDir(),
     },
   };
+}
+
+export async function readRawConfigFile(): Promise<Record<string, unknown>> {
+  return readRawConfig() as Promise<Record<string, unknown>>;
 }
 
 export function isProviderConfigured(config: CloudSessionsConfig): boolean {

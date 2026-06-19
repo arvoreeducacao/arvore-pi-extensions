@@ -78,7 +78,14 @@ export class Sync {
           result.unchanged += 1;
           continue;
         }
-        if (l.mtimeMs > r.mtimeMs + MTIME_TOLERANCE_MS) {
+        const delta = l.mtimeMs - r.mtimeMs;
+        if (delta > MTIME_TOLERANCE_MS) {
+          await this.provider.stageFromLocal(path, l.absolutePath);
+          result.pushed.push(path);
+        } else if (delta < -MTIME_TOLERANCE_MS) {
+          await copyRemoteToLocal(this.provider.mirrorPath(path), path);
+          result.pulled.push(path);
+        } else if (l.mtimeMs >= r.mtimeMs) {
           await this.provider.stageFromLocal(path, l.absolutePath);
           result.pushed.push(path);
         } else {

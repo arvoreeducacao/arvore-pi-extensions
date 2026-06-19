@@ -27,8 +27,9 @@ async function walkJsonl(dir: string, root: string, out: LocalSession[]): Promis
   let entries: Dirent[];
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw new Error(`Failed to read sessions directory: ${dir}`, { cause: error });
   }
 
   for (const entry of entries) {
