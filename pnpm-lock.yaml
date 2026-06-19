@@ -67,10 +67,10 @@ importers:
   packages/cloud-sessions:
     devDependencies:
       '@earendil-works/pi-ai':
-        specifier: latest
+        specifier: ^0.79.4
         version: 0.79.8(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-coding-agent':
-        specifier: latest
+        specifier: ^0.79.4
         version: 0.79.8(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui':
         specifier: 0.79.5
