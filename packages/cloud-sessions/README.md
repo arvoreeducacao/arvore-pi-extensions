@@ -17,6 +17,8 @@ pi stores each session as a JSONL file under
 extension mirrors that tree to the chosen backend:
 
 - On startup it **pulls** newer sessions from the backend into your local store.
+- Every `pollIntervalMs` (default 60s) it **pulls in the background**, so sessions created on another machine show up in `/resume` even while pi is open.
+- Before resuming/switching to a session it **pulls** so the loaded session is the freshest version.
 - After each turn it **pushes** the current state (debounced).
 - On shutdown it flushes a final sync.
 
@@ -61,9 +63,26 @@ The repo is cloned to `~/.config/pi/cloud-sessions/repo` and kept in sync.
 }
 ```
 
+## Resuming on another machine
+
+Everything is automatic — you never have to run a sync command:
+
+1. Use pi on machine A. Sessions push after each turn.
+2. Open pi on machine B (same project path). Startup pull brings A's sessions; background polling keeps them coming even if B was already open.
+3. Run `/resume` — A's session is listed. Pick it and continue.
+
+**Caveat — session must share the same `cwd`.** Sessions are stored per working
+directory (`--<project-path>--`). For a session to appear in `/resume` on machine
+B, B must be in the same absolute project path as A. If your username/home path
+differs between machines, the paths won't match.
+
+**Caveat — no live two-way editing.** The sync is serial: finish on one machine,
+continue on the other. A session already loaded in memory is not hot-reloaded
+when a newer version is pulled.
+
 ## Commands
 
-- `/cloud-sessions-sync` — pull + push now.
+- `/cloud-sessions-sync` — pull + push now (optional; sync is automatic).
 - `/cloud-sessions-status` — show config and current state.
 - `/cloud-sessions-setup` — configure the backend interactively.
 
@@ -77,6 +96,7 @@ All options can be set in `~/.config/pi/cloud-sessions.json` or via env vars:
 | Auto push      | `autoPush`       | `PI_CLOUD_SESSIONS_AUTO_PUSH`      | `true`                 |
 | Pull on start  | `pullOnStart`    | `PI_CLOUD_SESSIONS_PULL_ON_START`  | `true`                 |
 | Push debounce  | `pushDebounceMs` | `PI_CLOUD_SESSIONS_DEBOUNCE_MS`    | `4000`                 |
+| Poll interval  | `pollIntervalMs` | `PI_CLOUD_SESSIONS_POLL_MS`        | `60000` (0 disables)   |
 | Machine label  | `machineId`      | `PI_CLOUD_SESSIONS_MACHINE_ID`     | hostname               |
 | Git repo       | `git.repo`       | `PI_CLOUD_SESSIONS_GIT_REPO`       | —                      |
 | Git branch     | `git.branch`     | `PI_CLOUD_SESSIONS_GIT_BRANCH`     | `main`                 |

@@ -21,6 +21,7 @@ export interface CloudSessionsConfig {
   autoPush: boolean;
   pullOnStart: boolean;
   pushDebounceMs: number;
+  pollIntervalMs: number;
   machineId: string;
   git: GitProviderConfig;
   icloud: IcloudProviderConfig;
@@ -53,6 +54,7 @@ interface RawConfig {
   autoPush?: boolean;
   pullOnStart?: boolean;
   pushDebounceMs?: number;
+  pollIntervalMs?: number;
   machineId?: string;
   git?: Partial<GitProviderConfig>;
   icloud?: Partial<IcloudProviderConfig>;
@@ -85,6 +87,9 @@ export async function loadConfig(): Promise<CloudSessionsConfig> {
     autoPush: asBool(process.env.PI_CLOUD_SESSIONS_AUTO_PUSH, raw.autoPush ?? true),
     pullOnStart: asBool(process.env.PI_CLOUD_SESSIONS_PULL_ON_START, raw.pullOnStart ?? true),
     pushDebounceMs: Number(process.env.PI_CLOUD_SESSIONS_DEBOUNCE_MS) || raw.pushDebounceMs || 4000,
+    pollIntervalMs:
+      Number(process.env.PI_CLOUD_SESSIONS_POLL_MS) ||
+      (raw.pollIntervalMs === undefined ? 60000 : raw.pollIntervalMs),
     machineId: raw.machineId || defaultMachineId(),
     git: {
       repo: process.env.PI_CLOUD_SESSIONS_GIT_REPO || raw.git?.repo || "",

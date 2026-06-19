@@ -13,6 +13,7 @@ const STATUS_KEY = "cloud-sessions";
 
 let syncing = false;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 type Notify = (key: string, text: string | undefined) => void;
 
@@ -54,6 +55,26 @@ function scheduleSync(config: CloudSessionsConfig, setStatus: Notify): void {
   }, config.pushDebounceMs);
 }
 
+function startPolling(config: CloudSessionsConfig, setStatus: Notify): void {
+  if (pollTimer) clearInterval(pollTimer);
+  if (config.pollIntervalMs <= 0) return;
+  pollTimer = setInterval(() => {
+    void runSync(setStatus).catch(() => {});
+  }, config.pollIntervalMs);
+  if (typeof pollTimer.unref === "function") pollTimer.unref();
+}
+
+function stopTimers(): void {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
 async function writeConfig(partial: Record<string, unknown>): Promise<void> {
   await mkdir(dirname(configFilePath()), { recursive: true });
   await writeFile(configFilePath(), JSON.stringify(partial, null, 2));
@@ -78,6 +99,14 @@ export default function cloudSessions(pi: ExtensionAPI): void {
         );
       });
     }
+
+    startPolling(config, setStatus);
+  });
+
+  pi.on("session_before_switch", async (_event, ctx) => {
+    const config = await loadConfig();
+    if (!isProviderConfigured(config)) return;
+    await runSync((k, t) => ctx.ui.setStatus(k, t)).catch(() => {});
   });
 
   pi.on("turn_end", async (_event, ctx) => {
@@ -87,10 +116,7 @@ export default function cloudSessions(pi: ExtensionAPI): void {
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-      debounceTimer = null;
-    }
+    stopTimers();
     const config = await loadConfig();
     if (!config.autoPush || !isProviderConfigured(config)) return;
     await runSync((k, t) => ctx.ui.setStatus(k, t)).catch(() => {});
@@ -130,6 +156,7 @@ export default function cloudSessions(pi: ExtensionAPI): void {
         `configured: ${isProviderConfigured(config) ? "yes" : "no"}`,
         `autoPush: ${config.autoPush}`,
         `pullOnStart: ${config.pullOnStart}`,
+        `pollIntervalMs: ${config.pollIntervalMs}`,
         `machineId: ${config.machineId}`,
         config.provider === "git"
           ? `git repo: ${config.git.repo || "(unset)"} [${config.git.branch}]`
@@ -161,7 +188,7 @@ export default function cloudSessions(pi: ExtensionAPI): void {
         const branch = (await ctx.ui.input("Branch", "main")) || "main";
         await writeConfig({ provider: "git", git: { repo, branch } });
         ctx.ui.notify(
-          `Saved git backend to ${configFilePath()}. Run /cloud-sessions-sync.`,
+          `Saved git backend to ${configFilePath()}. Syncing automatically from now on.`,
           "info",
         );
       } else {
@@ -171,7 +198,7 @@ export default function cloudSessions(pi: ExtensionAPI): void {
           config.icloud.dir;
         await writeConfig({ provider: "icloud", icloud: { dir } });
         ctx.ui.notify(
-          `Saved iCloud backend to ${configFilePath()}. Run /cloud-sessions-sync.`,
+          `Saved iCloud backend to ${configFilePath()}. Syncing automatically from now on.`,
           "info",
         );
       }
