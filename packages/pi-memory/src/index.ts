@@ -26,6 +26,8 @@ import {
 const LOGIN_TIMEOUT_MS = 60_000;
 const MIN_TEXT_LENGTH = 10;
 const FLUSH_DEBOUNCE_MS = 4000;
+const SEARCH_LIMIT = 4;
+const SEARCH_THRESHOLD = 0.6;
 
 let incognito = false;
 let sessionId = "";
@@ -86,8 +88,8 @@ function collectMessages(entries: unknown[]): IngestMessage[] {
 
 function buildSearchQuery(entries: unknown[], prompt: string): string {
   const messages = collectMessages(entries);
-  const recent = messages.slice(-3).map((m) => m.text);
-  const combined = [...recent, prompt].join("\n").trim();
+  const previous = messages.slice(-1).map((m) => m.text);
+  const combined = [prompt, prompt, ...previous].join("\n").trim();
   return combined.slice(0, 800);
 }
 
@@ -203,7 +205,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       }
 
       const query = buildSearchQuery(ctx.sessionManager.getEntries(), prompt);
-      const results = await search(query, { limit: 10 });
+      const results = await search(query, { limit: SEARCH_LIMIT, threshold: SEARCH_THRESHOLD });
       lastSearchResults = results;
       if (results.length === 0) {
         return;
@@ -212,11 +214,13 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       const memoryBlock = [
         "## Team Memory (cloud)",
         "",
-        "This workspace uses a shared cloud team memory. Use the `memory_search` tool to recover",
-        "relevant decisions, conventions, incidents, domain knowledge and gotchas before non-trivial",
-        "tasks, and `memory_save` to persist durable knowledge the team should not rediscover.",
+        "The team keeps a shared cloud memory. The items below were retrieved by semantic",
+        "similarity to the current request and MAY be irrelevant. Treat them as optional hints,",
+        "not facts: if an item does not clearly relate to what the user is asking now, ignore it",
+        "entirely and do not let it steer the conversation. Use `memory_search` to look deeper only",
+        "when an item is clearly on-topic, and `memory_save` for durable knowledge worth keeping.",
         "",
-        "### Relevant context for the current request",
+        "### Possibly relevant context (verify before using)",
         ...results.map((r) => `- ${r.title ? `**${r.title}**: ` : ""}${r.content}`),
       ].join("\n");
 

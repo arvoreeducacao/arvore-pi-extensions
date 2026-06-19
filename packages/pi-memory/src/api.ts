@@ -62,7 +62,7 @@ export function ingest(sessionId: string, messages: IngestMessage[], final: bool
 
 export async function search(
   query: string,
-  options: { tier?: string; category?: string; limit?: number } = {},
+  options: { tier?: string; category?: string; limit?: number; threshold?: number } = {},
 ): Promise<SearchResult[]> {
   const data = await request<{ results: SearchResult[] }>("/search", "POST", { query, ...options });
   return data.results;
