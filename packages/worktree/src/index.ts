@@ -407,6 +407,36 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
   });
 
   pi.registerTool({
+    name: "list_worktrees",
+    label: "List Worktrees",
+    description: "Lists all existing worktrees on disk across repos, grouped by repo, with each worktree's branch and whether it is the currently active one. Use to discover available worktrees before activating, attaching, or deleting one.",
+    promptSnippet: "List all existing git worktrees across repos",
+    parameters: Type.Object({}),
+    async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
+      const repos = discoverRepos(ctx.cwd);
+      const lines: string[] = [];
+      const details: Array<{ repo: string; name: string; branch: string; path: string; active: boolean }> = [];
+
+      for (const repo of repos) {
+        const worktrees = getExistingWorktrees(repo);
+        if (worktrees.length === 0) continue;
+        lines.push(`${basename(repo)}:`);
+        for (const wt of worktrees) {
+          const isActive = activeWorktree === wt.name;
+          lines.push(`  ${wt.name} → ${wt.branch}${isActive ? " (active)" : ""}`);
+          details.push({ repo: basename(repo), name: wt.name, branch: wt.branch, path: wt.path, active: isActive });
+        }
+      }
+
+      const text = lines.length > 0 ? lines.join("\n") : "No worktrees found.";
+      return {
+        content: [{ type: "text", text }],
+        details: { worktrees: details },
+      };
+    },
+  });
+
+  pi.registerTool({
     name: "create_worktree",
     label: "Create Worktree",
     description: "Creates a new worktree for the specified repos and activates it. The worktree gets a random tree-themed name (from a fixed pool) and a new branch. All .env* files are symlinked into it. Do NOT pass a custom name — the name is always auto-generated.",
