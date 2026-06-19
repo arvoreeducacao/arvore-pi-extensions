@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@earendil-works/pi-ai";
 import { execSync, spawnSync, spawn } from "node:child_process";
-import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync, openSync } from "node:fs";
+import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync, openSync, closeSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
 
 let activeWorktree: string | null = null;
@@ -195,6 +195,7 @@ function runSetupScriptBackground(scriptPath: string, repoPath: string, targetDi
     },
   });
   child.unref();
+  closeSync(fd);
   return logPath;
 }
 
