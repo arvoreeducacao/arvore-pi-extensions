@@ -105,6 +105,25 @@ function getCurrentBranch(repoPath: string): string {
   }
 }
 
+function getDefaultBranch(repoPath: string): string | null {
+  try {
+    const ref = execSync("git symbolic-ref --quiet refs/remotes/origin/HEAD", { cwd: repoPath, encoding: "utf-8" }).trim();
+    const name = ref.replace(/^refs\/remotes\/origin\//, "");
+    return name || null;
+  } catch {
+    for (const candidate of ["main", "master"]) {
+      const check = spawnSync("git", ["show-ref", "--verify", "--quiet", `refs/remotes/origin/${candidate}`], { cwd: repoPath, encoding: "utf-8" });
+      if (check.status === 0) return candidate;
+    }
+    return null;
+  }
+}
+
+function fetchBase(repoPath: string, base: string): boolean {
+  const result = spawnSync("git", ["fetch", "origin", base, "--quiet"], { cwd: repoPath, encoding: "utf-8" });
+  return result.status === 0;
+}
+
 function getExistingWorktrees(repoPath: string): Array<{ name: string; branch: string; path: string }> {
   const dir = join(repoPath, WORKTREES_DIR);
   if (!existsSync(dir)) return [];
@@ -229,8 +248,17 @@ function createWorktree(repoPath: string, name: string, branch?: string): { ok: 
 
   ensureGitignore(repoPath);
 
-  const branchFlag = branch ? ["-b", branch] : ["-b", `wt/${name}`];
-  const result = spawnSync("git", ["worktree", "add", ...branchFlag, targetDir], {
+  const newBranch = branch || `wt/${name}`;
+  const defaultBranch = getDefaultBranch(repoPath);
+  let startPoint: string | null = null;
+  if (defaultBranch && fetchBase(repoPath, defaultBranch)) {
+    startPoint = `origin/${defaultBranch}`;
+  }
+
+  const addArgs = startPoint
+    ? ["worktree", "add", "-b", newBranch, targetDir, startPoint]
+    : ["worktree", "add", "-b", newBranch, targetDir];
+  const result = spawnSync("git", addArgs, {
     cwd: repoPath,
     encoding: "utf-8",
   });
@@ -250,7 +278,8 @@ function createWorktree(repoPath: string, name: string, branch?: string): { ok: 
   }
 
   const setup = runRepoSetup(repoPath, targetDir);
-  return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} → branch wt/${name}\n  ${setup}` };
+  const baseNote = startPoint ? ` (from ${startPoint})` : "";
+  return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} → branch ${newBranch}${baseNote}\n  ${setup}` };
 }
 
 function removeWorktree(repoPath: string, name: string): { ok: boolean; message: string } {
