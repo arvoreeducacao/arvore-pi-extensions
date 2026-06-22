@@ -239,8 +239,9 @@ function pruneStale(): void {
 function refreshAll(): boolean {
   let changed = false;
   for (const [key, pr] of tracked) {
+    const before = JSON.stringify(pr);
     const updated = fetchPrDetails(pr.number, pr.repo);
-    const next = updated ?? pr;
+    const next = updated ?? { ...pr };
     if (
       next.state === "MERGED" &&
       next.mergeCommit &&
@@ -251,7 +252,7 @@ function refreshAll(): boolean {
       const deploy = fetchDeploy(next.repo, next.mergeCommit);
       if (deploy) next.deploy = deploy;
     }
-    if (JSON.stringify(next) !== JSON.stringify(pr)) {
+    if (JSON.stringify(next) !== before) {
       tracked.set(key, next);
       changed = true;
     }

@@ -20,7 +20,7 @@ Or in `.pi/settings.json`:
 
 - Listens to `bash` tool executions. When a command contains `gh pr create` or its output prints a `github.com/<owner>/<repo>/pull/<n>` URL, the PR is captured automatically.
 - For each tracked PR it runs `gh pr view <n> --json ...` to read title, state, merge commit and the status check rollup (CI).
-- When a tracked PR becomes `MERGED`, it looks up the production deploy workflow run triggered by the push to `main` for that merge commit (`gh run list --commit <sha>`) and tracks it through `queued → in_progress → success/failure`.
+- When a tracked PR becomes `MERGED`, it looks up the production deploy workflow run triggered by the `push` for that merge commit (`gh run list --commit <sha>`) and tracks it through `queued → in_progress → success/failure`.
 - A widget pinned above the editor lists every tracked PR with:
   - State: `[open]` / `[draft]` / `[merged]` / `[closed]`
   - CI: `CI passed` / `CI failed` / `CI running` with check counts
