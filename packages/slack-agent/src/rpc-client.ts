@@ -7,6 +7,7 @@ export interface RpcClientOptions {
   bin: string;
   cwd: string;
   model?: string;
+  session?: string;
   onEvent: (event: RpcEvent) => void;
   onExit: (code: number | null) => void;
 }
@@ -28,9 +29,8 @@ export class RpcClient {
   constructor(options: RpcClientOptions) {
     this.options = options;
     const args = ["--mode", "rpc"];
-    if (options.model) {
-      args.push("--model", options.model);
-    }
+    if (options.model) args.push("--model", options.model);
+    if (options.session) args.push("--session-id", options.session);
 
     this.child = spawn(options.bin, args, {
       cwd: options.cwd,

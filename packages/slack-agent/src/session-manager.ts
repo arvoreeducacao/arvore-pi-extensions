@@ -1,5 +1,10 @@
+import { createHash } from "node:crypto";
 import { RpcClient, type RpcEvent, type RpcClientOptions } from "./rpc-client.js";
 import type { AgentConfig } from "./config.js";
+
+function sessionIdFor(threadTs: string): string {
+  return "slack-" + createHash("sha1").update(threadTs).digest("hex").slice(0, 12);
+}
 
 export interface SessionHandlers {
   onEvent: (event: RpcEvent) => void;
@@ -30,6 +35,7 @@ export class Session {
       bin: this.config.piBin,
       cwd: this.config.piCwd,
       model: this.config.piModel,
+      session: sessionIdFor(this.threadTs),
       onEvent: (event) => this.handleEvent(event),
       onExit: () => { this.client = undefined; this.streaming = false; this.handlers.onExit?.(); },
     });
