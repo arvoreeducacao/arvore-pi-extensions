@@ -114,15 +114,21 @@ function summarizeChecks(rollup: any[]): CiSummary | null {
   let failed = 0;
   let pending = 0;
   for (const c of rollup) {
-    const status: string = (c?.status ?? c?.state ?? "").toUpperCase();
-    const conclusion: string = (c?.conclusion ?? "").toUpperCase();
-    if (status && status !== "COMPLETED") {
-      pending++;
-      continue;
+    let outcome: string;
+    if (c?.__typename === "StatusContext") {
+      outcome = (c?.state ?? "").toUpperCase();
+    } else {
+      const status: string = (c?.status ?? "").toUpperCase();
+      if (status && status !== "COMPLETED") {
+        pending++;
+        continue;
+      }
+      outcome = (c?.conclusion ?? "").toUpperCase();
     }
-    const outcome = conclusion || status;
-    if (["SUCCESS", "NEUTRAL", "SKIPPED"].includes(outcome)) passed++;
-    else if (["FAILURE", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "ERROR", "STALE"].includes(outcome))
+    if (["SUCCESS", "NEUTRAL", "SKIPPED", "EXPECTED"].includes(outcome)) passed++;
+    else if (
+      ["FAILURE", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "ERROR", "STALE"].includes(outcome)
+    )
       failed++;
     else pending++;
   }
