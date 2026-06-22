@@ -3,6 +3,24 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 
+type CiState = "PENDING" | "PASS" | "FAIL" | "NONE";
+type DeployState = "QUEUED" | "IN_PROGRESS" | "SUCCESS" | "FAILURE" | "NONE";
+
+interface CiSummary {
+  state: CiState;
+  total: number;
+  passed: number;
+  failed: number;
+  pending: number;
+}
+
+interface DeployInfo {
+  state: DeployState;
+  workflow: string;
+  url: string;
+  databaseId: number;
+}
+
 interface TrackedPr {
   number: number;
   repo: string;
@@ -11,12 +29,17 @@ interface TrackedPr {
   state: "OPEN" | "MERGED" | "CLOSED";
   isDraft: boolean;
   mergedAt: number | null;
+  mergeCommit: string | null;
+  ci: CiSummary | null;
+  deploy: DeployInfo | null;
 }
 
 const POLL_INTERVAL_MS = 60_000;
 const MERGED_RETENTION_MS = 24 * 60 * 60 * 1000;
 const PR_URL_RE = /https?:\/\/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/g;
 const STATE_DIR = ".pi/prs-tracker-sessions";
+const DEPLOY_WORKFLOW_RE = /deploy/i;
+const DEPLOY_STAGING_RE = /staging/i;
 
 const tracked = new Map<string, TrackedPr>();
 let hidden = false;
@@ -85,9 +108,77 @@ function runGh(args: string): string | null {
   }
 }
 
+function summarizeChecks(rollup: any[]): CiSummary | null {
+  if (!Array.isArray(rollup) || rollup.length === 0) return null;
+  let passed = 0;
+  let failed = 0;
+  let pending = 0;
+  for (const c of rollup) {
+    const status: string = (c?.status ?? c?.state ?? "").toUpperCase();
+    const conclusion: string = (c?.conclusion ?? "").toUpperCase();
+    if (status && status !== "COMPLETED") {
+      pending++;
+      continue;
+    }
+    const outcome = conclusion || status;
+    if (["SUCCESS", "NEUTRAL", "SKIPPED"].includes(outcome)) passed++;
+    else if (["FAILURE", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "ERROR", "STALE"].includes(outcome))
+      failed++;
+    else pending++;
+  }
+  const total = rollup.length;
+  let state: CiState = "NONE";
+  if (failed > 0) state = "FAIL";
+  else if (pending > 0) state = "PENDING";
+  else if (passed > 0) state = "PASS";
+  return { state, total, passed, failed, pending };
+}
+
+function fetchDeploy(repo: string, sha: string): DeployInfo | null {
+  const out = runGh(
+    `run list --repo ${repo} --commit ${sha} --json databaseId,name,status,conclusion,url,event --limit 20`,
+  );
+  if (!out) return null;
+  try {
+    const runs = JSON.parse(out) as Array<{
+      databaseId: number;
+      name: string;
+      status: string;
+      conclusion: string | null;
+      url: string;
+      event: string;
+    }>;
+    const deployRun = runs.find(
+      (r) =>
+        r.event === "push" &&
+        DEPLOY_WORKFLOW_RE.test(r.name) &&
+        !DEPLOY_STAGING_RE.test(r.name),
+    );
+    if (!deployRun) return null;
+    let state: DeployState = "QUEUED";
+    const status = (deployRun.status ?? "").toUpperCase();
+    const conclusion = (deployRun.conclusion ?? "").toUpperCase();
+    if (status === "COMPLETED") {
+      state = conclusion === "SUCCESS" ? "SUCCESS" : "FAILURE";
+    } else if (status === "IN_PROGRESS") {
+      state = "IN_PROGRESS";
+    } else {
+      state = "QUEUED";
+    }
+    return {
+      state,
+      workflow: deployRun.name,
+      url: deployRun.url,
+      databaseId: deployRun.databaseId,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function fetchPrDetails(number: number, repo: string): TrackedPr | null {
   const out = runGh(
-    `pr view ${number} --repo ${repo} --json number,title,state,url,isDraft,mergedAt`,
+    `pr view ${number} --repo ${repo} --json number,title,state,url,isDraft,mergedAt,mergeCommit,statusCheckRollup`,
   );
   if (!out) return null;
   try {
@@ -98,7 +189,10 @@ function fetchPrDetails(number: number, repo: string): TrackedPr | null {
       url: string;
       isDraft: boolean;
       mergedAt: string | null;
+      mergeCommit: { oid: string } | null;
+      statusCheckRollup: any[];
     };
+    const prev = tracked.get(keyOf(repo, number));
     return {
       number: data.number,
       repo,
@@ -107,6 +201,9 @@ function fetchPrDetails(number: number, repo: string): TrackedPr | null {
       state: (data.state as TrackedPr["state"]) ?? "OPEN",
       isDraft: Boolean(data.isDraft),
       mergedAt: data.mergedAt ? new Date(data.mergedAt).getTime() : null,
+      mergeCommit: data.mergeCommit?.oid ?? null,
+      ci: summarizeChecks(data.statusCheckRollup),
+      deploy: prev?.deploy ?? null,
     };
   } catch {
     return null;
@@ -116,6 +213,10 @@ function fetchPrDetails(number: number, repo: string): TrackedPr | null {
 function trackPr(number: number, repo: string): boolean {
   const details = fetchPrDetails(number, repo);
   if (!details) return false;
+  if (details.state === "MERGED" && details.mergeCommit && !details.deploy) {
+    const deploy = fetchDeploy(repo, details.mergeCommit);
+    if (deploy) details.deploy = deploy;
+  }
   tracked.set(keyOf(repo, number), details);
   return true;
 }
@@ -128,6 +229,8 @@ function pruneStale(): void {
       continue;
     }
     if (pr.state === "MERGED" && pr.mergedAt && now - pr.mergedAt > MERGED_RETENTION_MS) {
+      if (pr.deploy && (pr.deploy.state === "QUEUED" || pr.deploy.state === "IN_PROGRESS"))
+        continue;
       tracked.delete(key);
     }
   }
@@ -136,9 +239,21 @@ function pruneStale(): void {
 function refreshAll(): boolean {
   let changed = false;
   for (const [key, pr] of tracked) {
+    const before = JSON.stringify(pr);
     const updated = fetchPrDetails(pr.number, pr.repo);
-    if (updated && JSON.stringify(updated) !== JSON.stringify(pr)) {
-      tracked.set(key, updated);
+    const next = updated ?? { ...pr };
+    if (
+      next.state === "MERGED" &&
+      next.mergeCommit &&
+      (!next.deploy ||
+        next.deploy.state === "QUEUED" ||
+        next.deploy.state === "IN_PROGRESS")
+    ) {
+      const deploy = fetchDeploy(next.repo, next.mergeCommit);
+      if (deploy) next.deploy = deploy;
+    }
+    if (JSON.stringify(next) !== before) {
+      tracked.set(key, next);
       changed = true;
     }
   }
@@ -173,7 +288,11 @@ function resultToText(result: any): string {
 }
 
 function sortedPrs(): TrackedPr[] {
-  const order = (pr: TrackedPr): number => (pr.state === "OPEN" ? 0 : 1);
+  const order = (pr: TrackedPr): number => {
+    if (pr.state === "OPEN") return 0;
+    if (pr.deploy && (pr.deploy.state === "QUEUED" || pr.deploy.state === "IN_PROGRESS")) return 1;
+    return 2;
+  };
   return [...tracked.values()].sort((a, b) => {
     const byState = order(a) - order(b);
     if (byState !== 0) return byState;
@@ -195,6 +314,34 @@ function colorFor(pr: TrackedPr): string {
   return "success";
 }
 
+function ciLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | null {
+  const ci = pr.ci;
+  if (!ci || ci.state === "NONE") return null;
+  const map: Record<CiState, [string, string]> = {
+    PASS: ["success", "CI passed"],
+    FAIL: ["error", "CI failed"],
+    PENDING: ["warning", "CI running"],
+    NONE: ["dim", "CI"],
+  };
+  const [color, label] = map[ci.state];
+  const detail = `${label} (${ci.passed}/${ci.total}${ci.failed ? `, ${ci.failed} failed` : ""})`;
+  return fg(color, detail);
+}
+
+function deployLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | null {
+  const d = pr.deploy;
+  if (!d || d.state === "NONE") return null;
+  const map: Record<DeployState, [string, string]> = {
+    QUEUED: ["warning", "deploy queued"],
+    IN_PROGRESS: ["warning", "deploying to main"],
+    SUCCESS: ["success", "deployed to main"],
+    FAILURE: ["error", "deploy failed"],
+    NONE: ["dim", "deploy"],
+  };
+  const [color, label] = map[d.state];
+  return fg(color, label);
+}
+
 function renderWidget(width: number, theme: any): string[] {
   const prs = sortedPrs();
   const lines: string[] = [];
@@ -204,7 +351,13 @@ function renderWidget(width: number, theme: any): string[] {
 
   const open = prs.filter((p) => p.state === "OPEN").length;
   const merged = prs.filter((p) => p.state === "MERGED").length;
-  const header = ` PRs — ${open} open${merged ? `, ${merged} merged` : ""}`;
+  const deploying = prs.filter(
+    (p) => p.deploy && (p.deploy.state === "QUEUED" || p.deploy.state === "IN_PROGRESS"),
+  ).length;
+  const headerParts = [`${open} open`];
+  if (merged) headerParts.push(`${merged} merged`);
+  if (deploying) headerParts.push(`${deploying} deploying`);
+  const header = ` PRs — ${headerParts.join(", ")}`;
   lines.push(bold(fg("accent", trunc(header))));
 
   const max = 12;
@@ -213,6 +366,10 @@ function renderWidget(width: number, theme: any): string[] {
     const tag = fg(color, bold(labelFor(pr).toUpperCase()));
     const head = trunc(`#${pr.number} ${pr.title}`);
     lines.push(`   ${tag} ${fg("text", head)}`);
+    const ci = ciLine(pr, fg);
+    const deploy = deployLine(pr, fg);
+    const status = [ci, deploy].filter(Boolean).join(fg("dim", "  ·  "));
+    if (status) lines.push(`      ${trunc(status)}`);
     lines.push(`      ${fg("mdLinkUrl", trunc(pr.url))}`);
   }
   if (prs.length > max) lines.push(fg("dim", `   +${prs.length - max} more`));
