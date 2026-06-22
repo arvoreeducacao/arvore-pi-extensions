@@ -10,12 +10,39 @@ import type { RemoteFile, SyncProvider } from "./types.js";
 
 const exec = promisify(execFile);
 
+const nonInteractiveEnv: NodeJS.ProcessEnv = {
+  ...process.env,
+  GIT_TERMINAL_PROMPT: "0",
+  GIT_ASKPASS: "",
+  SSH_ASKPASS: "",
+  GCM_INTERACTIVE: "never",
+  GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new",
+};
+
+const nonInteractiveOptions = {
+  maxBuffer: 32 * 1024 * 1024,
+  env: nonInteractiveEnv,
+};
+
+function isGithubHttpsRepo(repo: string): boolean {
+  return /^https:\/\/github\.com\//i.test(repo);
+}
+
+async function resolveGithubToken(): Promise<string> {
+  const fromGh = await exec("gh", ["auth", "token"], { env: process.env })
+    .then(({ stdout }) => stdout.trim())
+    .catch(() => "");
+  if (fromGh) return fromGh;
+  return process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "";
+}
+
 export class GitProvider implements SyncProvider {
   readonly kind = "git";
   private readonly repo: string;
   private readonly branch: string;
   private readonly remoteName: string;
   private readonly clonePath: string;
+  private cachedToken: string | null = null;
 
   constructor(config: GitProviderConfig) {
     this.repo = config.repo;
@@ -24,11 +51,30 @@ export class GitProvider implements SyncProvider {
     this.clonePath = join(configDir(), "cloud-sessions", "repo");
   }
 
+  private async authArgs(): Promise<string[]> {
+    if (!isGithubHttpsRepo(this.repo)) return [];
+    if (this.cachedToken === null) {
+      this.cachedToken = await resolveGithubToken();
+    }
+    if (!this.cachedToken) return [];
+    const header = `AUTHORIZATION: basic ${Buffer.from(
+      `x-access-token:${this.cachedToken}`,
+    ).toString("base64")}`;
+    return ["-c", `http.extraheader=${header}`];
+  }
+
   private async git(args: string[]): Promise<string> {
-    const { stdout } = await exec("git", ["-C", this.clonePath, ...args], {
-      maxBuffer: 32 * 1024 * 1024,
-    });
+    const { stdout } = await exec(
+      "git",
+      ["-C", this.clonePath, ...args],
+      nonInteractiveOptions,
+    );
     return stdout.trim();
+  }
+
+  private async gitNetwork(args: string[]): Promise<string> {
+    const auth = await this.authArgs();
+    return this.git([...auth, ...args]);
   }
 
   private isCloned(): boolean {
@@ -49,13 +95,24 @@ export class GitProvider implements SyncProvider {
       return;
     }
     await mkdir(join(configDir(), "cloud-sessions"), { recursive: true });
-    await exec("git", ["clone", "--branch", this.branch, this.repo, this.clonePath]).catch(
-      async () => {
-        await exec("git", ["clone", this.repo, this.clonePath]);
-        await this.git(["checkout", "-B", this.branch]);
-      },
-    );
+    const auth = await this.authArgs();
+    const cloned = await exec(
+      "git",
+      [...auth, "clone", "--branch", this.branch, this.repo, this.clonePath],
+      nonInteractiveOptions,
+    )
+      .then(() => true)
+      .catch(() =>
+        exec("git", [...auth, "clone", this.repo, this.clonePath], nonInteractiveOptions)
+          .then(() => true)
+          .catch(() => false),
+      );
+    if (!cloned) {
+      await exec("git", ["init", this.clonePath], nonInteractiveOptions);
+      await this.git(["remote", "add", this.remoteName, this.repo]);
+    }
     await this.configureIdentity();
+    await this.git(["checkout", "-B", this.branch]).catch(() => "");
   }
 
   private async configureIdentity(): Promise<void> {
@@ -65,8 +122,8 @@ export class GitProvider implements SyncProvider {
 
   async pull(): Promise<void> {
     await this.ensureReady();
-    await this.git(["fetch", this.remoteName, this.branch]);
-    await this.git(["reset", "--hard", `${this.remoteName}/${this.branch}`]);
+    await this.gitNetwork(["fetch", this.remoteName, this.branch]).catch(() => "");
+    await this.git(["reset", "--hard", `${this.remoteName}/${this.branch}`]).catch(() => "");
   }
 
   async listRemote(): Promise<RemoteFile[]> {
@@ -86,6 +143,6 @@ export class GitProvider implements SyncProvider {
     const status = await this.git(["status", "--porcelain"]);
     if (status.length === 0) return;
     await this.git(["commit", "-m", message]);
-    await this.git(["push", this.remoteName, `HEAD:${this.branch}`]);
+    await this.gitNetwork(["push", this.remoteName, `HEAD:${this.branch}`]);
   }
 }
