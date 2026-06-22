@@ -17,6 +17,28 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 type Notify = (key: string, text: string | undefined) => void;
+type NotifyUser = (text: string, level: "info" | "warning" | "error") => void;
+
+let lastSyncFailed = false;
+
+function shortReason(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  const text = raw.toLowerCase();
+  if (text.includes("could not read") || text.includes("authentication failed") || text.includes("403") || text.includes("401")) {
+    return "auth failed (run `gh auth login`)";
+  }
+  if (text.includes("gh auth token") || text.includes("github_token") || text.includes("no token")) {
+    return "no github token";
+  }
+  if (text.includes("could not resolve host") || text.includes("timed out") || text.includes("network")) {
+    return "network unreachable";
+  }
+  if (text.includes("terminal prompts disabled")) {
+    return "credentials required (run `gh auth login`)";
+  }
+  const firstLine = raw.split("\n")[0]?.trim() ?? raw;
+  return firstLine.length > 60 ? `${firstLine.slice(0, 57)}...` : firstLine;
+}
 
 function summarize(result: SyncResult): string {
   const parts: string[] = [];
@@ -26,7 +48,7 @@ function summarize(result: SyncResult): string {
   return parts.join(" ");
 }
 
-async function runSync(setStatus: Notify): Promise<SyncResult | null> {
+async function runSync(setStatus: Notify, notifyUser?: NotifyUser): Promise<SyncResult | null> {
   if (activeSync) return activeSync;
   activeSync = (async () => {
     try {
@@ -39,9 +61,15 @@ async function runSync(setStatus: Notify): Promise<SyncResult | null> {
       const sync = new Sync(config);
       const result = await sync.run();
       setStatus(STATUS_KEY, `sessions: ${config.provider} ${summarize(result)}`);
+      lastSyncFailed = false;
       return result;
     } catch (error) {
-      setStatus(STATUS_KEY, "sessions: sync error");
+      const reason = shortReason(error);
+      setStatus(STATUS_KEY, `sessions: sync error (${reason})`);
+      if (!lastSyncFailed) {
+        notifyUser?.(`cloud-sessions sync failed: ${reason}`, "warning");
+      }
+      lastSyncFailed = true;
       throw error;
     } finally {
       activeSync = null;
@@ -50,19 +78,19 @@ async function runSync(setStatus: Notify): Promise<SyncResult | null> {
   return activeSync;
 }
 
-function scheduleSync(config: CloudSessionsConfig, setStatus: Notify): void {
+function scheduleSync(config: CloudSessionsConfig, setStatus: Notify, notifyUser?: NotifyUser): void {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
-    void runSync(setStatus).catch(() => {});
+    void runSync(setStatus, notifyUser).catch(() => {});
   }, config.pushDebounceMs);
 }
 
-function startPolling(config: CloudSessionsConfig, setStatus: Notify): void {
+function startPolling(config: CloudSessionsConfig, setStatus: Notify, notifyUser?: NotifyUser): void {
   if (pollTimer) clearInterval(pollTimer);
   if (config.pollIntervalMs <= 0) return;
   pollTimer = setInterval(() => {
-    void runSync(setStatus).catch(() => {});
+    void runSync(setStatus, notifyUser).catch(() => {});
   }, config.pollIntervalMs);
   if (typeof pollTimer.unref === "function") pollTimer.unref();
 }
@@ -95,6 +123,7 @@ export default function cloudSessions(pi: ExtensionAPI): void {
   pi.on("session_start", async (event, ctx) => {
     const config = await loadConfig();
     const setStatus: Notify = (k, t) => ctx.ui.setStatus(k, t);
+    const notifyUser: NotifyUser = (text, level) => ctx.ui.notify(text, level);
 
     if (!isProviderConfigured(config)) {
       setStatus(STATUS_KEY, "sessions: not configured");
@@ -103,34 +132,39 @@ export default function cloudSessions(pi: ExtensionAPI): void {
     setStatus(STATUS_KEY, `sessions: ${config.provider}`);
 
     if (config.pullOnStart && event.reason === "startup") {
-      await runSync(setStatus).catch((error) => {
-        ctx.ui.notify(
-          `cloud-sessions sync failed: ${error instanceof Error ? error.message : String(error)}`,
-          "warning",
-        );
-      });
+      await runSync(setStatus, notifyUser).catch(() => {});
     }
 
-    startPolling(config, setStatus);
+    startPolling(config, setStatus, notifyUser);
   });
 
   pi.on("session_before_switch", async (_event, ctx) => {
     const config = await loadConfig();
     if (!isProviderConfigured(config)) return;
-    await runSync((k, t) => ctx.ui.setStatus(k, t)).catch(() => {});
+    await runSync(
+      (k, t) => ctx.ui.setStatus(k, t),
+      (text, level) => ctx.ui.notify(text, level),
+    ).catch(() => {});
   });
 
   pi.on("turn_end", async (_event, ctx) => {
     const config = await loadConfig();
     if (!config.autoPush || !isProviderConfigured(config)) return;
-    scheduleSync(config, (k, t) => ctx.ui.setStatus(k, t));
+    scheduleSync(
+      config,
+      (k, t) => ctx.ui.setStatus(k, t),
+      (text, level) => ctx.ui.notify(text, level),
+    );
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
     stopTimers();
     const config = await loadConfig();
     if (!config.autoPush || !isProviderConfigured(config)) return;
-    await runSync((k, t) => ctx.ui.setStatus(k, t)).catch(() => {});
+    await runSync(
+      (k, t) => ctx.ui.setStatus(k, t),
+      (text, level) => ctx.ui.notify(text, level),
+    ).catch(() => {});
   });
 
   pi.registerCommand("cloud-sessions-sync", {
