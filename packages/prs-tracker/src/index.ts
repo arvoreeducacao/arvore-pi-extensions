@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 
 type CiState = "PENDING" | "PASS" | "FAIL" | "NONE";
-type DeployState = "QUEUED" | "IN_PROGRESS" | "SUCCESS" | "FAILURE" | "NONE";
+type DeployState = "QUEUED" | "IN_PROGRESS" | "SUCCESS" | "FAILURE" | "SKIPPED" | "NONE";
 
 interface CiSummary {
   state: CiState;
@@ -38,7 +38,7 @@ const POLL_INTERVAL_MS = 60_000;
 const MERGED_RETENTION_MS = 24 * 60 * 60 * 1000;
 const PR_URL_RE = /https?:\/\/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/g;
 const STATE_DIR = ".pi/prs-tracker-sessions";
-const DEPLOY_WORKFLOW_RE = /deploy/i;
+const DEPLOY_WORKFLOW_RE = /deploy|publish|release/i;
 const DEPLOY_STAGING_RE = /staging/i;
 
 const tracked = new Map<string, TrackedPr>();
@@ -140,6 +140,38 @@ function summarizeChecks(rollup: any[]): CiSummary | null {
   return { state, total, passed, failed, pending };
 }
 
+function jobStateToDeploy(status: string, conclusion: string): DeployState {
+  const s = status.toUpperCase();
+  const c = conclusion.toUpperCase();
+  if (s === "COMPLETED") {
+    if (c === "SUCCESS") return "SUCCESS";
+    if (c === "SKIPPED" || c === "NEUTRAL") return "SKIPPED";
+    return "FAILURE";
+  }
+  if (s === "IN_PROGRESS") return "IN_PROGRESS";
+  return "QUEUED";
+}
+
+function findDeployJob(
+  repo: string,
+  databaseId: number,
+): { name: string; status: string; conclusion: string } | null {
+  const out = runGh(`run view ${databaseId} --repo ${repo} --json jobs`);
+  if (!out) return null;
+  try {
+    const data = JSON.parse(out) as {
+      jobs?: Array<{ name: string; status: string; conclusion: string | null }>;
+    };
+    const job = (data.jobs ?? []).find(
+      (j) => DEPLOY_WORKFLOW_RE.test(j.name) && !DEPLOY_STAGING_RE.test(j.name),
+    );
+    if (!job) return null;
+    return { name: job.name, status: job.status ?? "", conclusion: job.conclusion ?? "" };
+  } catch {
+    return null;
+  }
+}
+
 function fetchDeploy(repo: string, sha: string): DeployInfo | null {
   const out = runGh(
     `run list --repo ${repo} --commit ${sha} --json databaseId,name,status,conclusion,url,event --limit 20`,
@@ -154,29 +186,32 @@ function fetchDeploy(repo: string, sha: string): DeployInfo | null {
       url: string;
       event: string;
     }>;
-    const deployRun = runs.find(
-      (r) =>
-        r.event === "push" &&
-        DEPLOY_WORKFLOW_RE.test(r.name) &&
-        !DEPLOY_STAGING_RE.test(r.name),
+    const pushRuns = runs.filter((r) => r.event === "push");
+
+    const namedRun = pushRuns.find(
+      (r) => DEPLOY_WORKFLOW_RE.test(r.name) && !DEPLOY_STAGING_RE.test(r.name),
     );
-    if (!deployRun) return null;
-    let state: DeployState = "QUEUED";
-    const status = (deployRun.status ?? "").toUpperCase();
-    const conclusion = (deployRun.conclusion ?? "").toUpperCase();
-    if (status === "COMPLETED") {
-      state = conclusion === "SUCCESS" ? "SUCCESS" : "FAILURE";
-    } else if (status === "IN_PROGRESS") {
-      state = "IN_PROGRESS";
-    } else {
-      state = "QUEUED";
+    if (namedRun) {
+      return {
+        state: jobStateToDeploy(namedRun.status ?? "", namedRun.conclusion ?? ""),
+        workflow: namedRun.name,
+        url: namedRun.url,
+        databaseId: namedRun.databaseId,
+      };
     }
-    return {
-      state,
-      workflow: deployRun.name,
-      url: deployRun.url,
-      databaseId: deployRun.databaseId,
-    };
+
+    for (const run of pushRuns) {
+      const job = findDeployJob(repo, run.databaseId);
+      if (job) {
+        return {
+          state: jobStateToDeploy(job.status, job.conclusion),
+          workflow: `${run.name} / ${job.name}`,
+          url: run.url,
+          databaseId: run.databaseId,
+        };
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -342,6 +377,7 @@ function deployLine(pr: TrackedPr, fg: (c: string, s: string) => string): string
     IN_PROGRESS: ["warning", "deploying to main"],
     SUCCESS: ["success", "deployed to main"],
     FAILURE: ["error", "deploy failed"],
+    SKIPPED: ["dim", "deploy skipped"],
     NONE: ["dim", "deploy"],
   };
   const [color, label] = map[d.state];
