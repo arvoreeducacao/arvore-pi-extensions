@@ -238,8 +238,8 @@ export default function elevenlabsStt(pi: ExtensionAPI) {
         ctx.ui.notify("No speech detected.", "info");
       } else {
         const current = ctx.ui.getEditorText();
-        const next = current ? `${current}${current.endsWith(" ") ? "" : " "}${text}` : text;
-        ctx.ui.setEditorText(next);
+        const needsSpace = current.length > 0 && !/\s$/.test(current);
+        ctx.ui.pasteToEditor(needsSpace ? ` ${text}` : text);
         ctx.ui.notify("Transcription inserted.", "info");
       }
     } catch (error) {
