@@ -1,0 +1,50 @@
+{
+  "name": "@arvoretech/pi-git-review",
+  "version": "0.1.0",
+  "description": "PI extension that opens a browser-based git diff reviewer; selected code + comments are sent to the agent in real time",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "web"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-coding-agent": "latest",
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "parse-diff": "^0.11.1",
+    "ws": "^8.18.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "git",
+    "diff",
+    "code-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/git-review"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}

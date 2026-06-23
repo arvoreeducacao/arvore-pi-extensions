@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>git-review</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+      :root {
+        --bg: #151e23;
+        --bg-dark: #121d24;
+        --bg-elev: #1a2830;
+        --bg-subtle: #1a2a2e;
+        --bg-statusline: #0d1b22;
+        --border: #2a3a42;
+        --border-strong: #406a76;
+        --fg: #e6faf7;
+        --fg-dim: #7c98a1;
+        --fg-gutter: #406a76;
+        --accent: #40cab6;
+        --accent-bright: #66dcce;
+        --accent-bg: #40cab6;
+        --add-bg: #1e2e24;
+        --add-gutter: #2a4231;
+        --del-bg: #2e1a1e;
+        --del-gutter: #44262a;
+        --success: #4ec685;
+        --error: #fa5371;
+        --warning: #fdd351;
+        --sel: rgba(64, 202, 182, 0.22);
+        --shadow: rgba(5, 16, 20, 0.4);
+        --shadow-lg: rgba(5, 16, 20, 0.6);
+        --radius: 10px;
+        --radius-sm: 8px;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        --sans: Averta, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        font-size: 14px;
+      }
+      body.dragging {
+        user-select: none;
+        -webkit-user-select: none;
+        cursor: ns-resize;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .spacer {
+        flex: 1;
+      }
+      select,
+      input[type="text"],
+      button {
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 10px;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent-bg);
+        border-color: var(--accent-bg);
+        color: var(--bg-dark);
+      }
+      button.primary:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .status {
+        font-size: 12px;
+        color: var(--fg-dim);
+      }
+      .status .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        background: var(--error);
+        vertical-align: middle;
+      }
+      .status.connected .dot {
+        background: var(--success);
+      }
+      main {
+        padding: 16px;
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+      .file {
+        margin-bottom: 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .repo-group {
+        margin-bottom: 28px;
+      }
+      .repo-head {
+        position: sticky;
+        top: 53px;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: linear-gradient(var(--bg), var(--bg-elev));
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 12px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .repo-head:hover {
+        border-color: var(--accent);
+      }
+      .repo-head .chevron {
+        color: var(--fg-dim);
+        transition: transform 0.15s ease;
+        display: inline-block;
+        width: 12px;
+      }
+      .repo-group.open .repo-head .chevron {
+        transform: rotate(90deg);
+      }
+      .repo-group:not(.open) .repo-head {
+        margin-bottom: 0;
+      }
+      .repo-body {
+        display: none;
+      }
+      .repo-group.open .repo-body {
+        display: block;
+      }
+      .repo-head .repo-name {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .repo-head .badge {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--fg-dim);
+      }
+      .repo-head .badge.branch {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .repo-head .badge.worktree {
+        border-color: var(--warning);
+        color: var(--warning);
+      }
+      .repo-head .count {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--fg-dim);
+      }
+      .file-head {
+        padding: 8px 12px;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+        font-family: var(--mono);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .file:not(.open) .file-head {
+        border-bottom: none;
+      }
+      .file-head:hover {
+        background: var(--bg-subtle);
+      }
+      .file-head .chevron {
+        color: var(--fg-dim);
+        font-size: 10px;
+        transition: transform 0.15s ease;
+        display: inline-block;
+        width: 10px;
+      }
+      .file.open .file-head .chevron {
+        transform: rotate(90deg);
+      }
+      .file-head .file-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .file-body {
+        display: none;
+      }
+      .file.open .file-body {
+        display: block;
+      }
+      .file-head .stat-add {
+        color: var(--success);
+      }
+      .file-head .badge-new,
+      .file-head .badge-del {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .file-head .badge-new {
+        background: var(--add-gutter);
+        color: var(--success);
+      }
+      .file-head .badge-del {
+        background: var(--del-gutter);
+        color: var(--error);
+      }
+      .file-head .stat-del {
+        color: var(--error);
+      }
+      table.diff {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.55;
+      }
+      table.diff td {
+        padding: 0 8px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        vertical-align: top;
+      }
+      table.diff td.code ::selection,
+      table.diff td.code::selection {
+        background: transparent;
+      }
+      table.diff td.code ::-moz-selection,
+      table.diff td.code::-moz-selection {
+        background: transparent;
+      }
+      td.gutter {
+        width: 1px;
+        padding: 0 10px;
+        text-align: right;
+        white-space: nowrap;
+        color: var(--fg-dim);
+        user-select: none;
+        cursor: pointer;
+        border-right: 1px solid var(--border);
+        -webkit-user-select: none;
+      }
+      td.gutter .num {
+        display: inline-block;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      td.code {
+        width: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      td.code .hljs {
+        background: transparent;
+        padding: 0;
+      }
+      tr.add td.code {
+        background: var(--add-bg);
+      }
+      tr.add td.gutter {
+        background: var(--add-gutter);
+      }
+      tr.del td.code {
+        background: var(--del-bg);
+      }
+      tr.del td.gutter {
+        background: var(--del-gutter);
+      }
+      tr.hunk td {
+        color: var(--fg-dim);
+        background: var(--bg-subtle);
+        user-select: none;
+      }
+      tr.selected td.code {
+        background: var(--sel) !important;
+      }
+      tr.selected td.gutter {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+      table.diff.split {
+        table-layout: auto;
+      }
+      table.diff.split td.gutter.side {
+        width: 1px;
+      }
+      table.diff.split td.code {
+        width: 50%;
+      }
+      td.side.del {
+        background: var(--del-bg);
+      }
+      td.gutter.side.del {
+        background: var(--del-gutter);
+      }
+      td.side.add {
+        background: var(--add-bg);
+      }
+      td.gutter.side.add {
+        background: var(--add-gutter);
+      }
+      td.side.empty {
+        background: var(--bg-subtle);
+        cursor: default;
+      }
+      table.diff.split td.gutter.side:nth-child(3) {
+        border-left: 1px solid var(--border);
+      }
+      table.diff.split tr.selected td.code {
+        background: var(--sel) !important;
+      }
+      .popover {
+        position: fixed;
+        z-index: 50;
+        width: min(440px, 92vw);
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 8px 28px var(--shadow-lg);
+        padding: 12px;
+      }
+      .popover .loc {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--fg-dim);
+        margin-bottom: 8px;
+      }
+      .popover textarea {
+        width: 100%;
+        min-height: 80px;
+        resize: vertical;
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+      }
+      .popover .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+      .empty {
+        color: var(--fg-dim);
+        text-align: center;
+        padding: 60px 0;
+      }
+      #sentlog {
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        width: min(320px, 90vw);
+        z-index: 40;
+      }
+      .toast {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--fg-dim);
+        animation: fade 0.2s ease;
+      }
+      .toast strong {
+        color: var(--fg);
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--fg-dim);
+      }
+      #askbtn {
+        position: fixed;
+        z-index: 45;
+        display: none;
+        background: var(--accent-bg);
+        color: var(--bg-dark);
+        border: none;
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 14px var(--shadow-lg);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>git-review</h1>
+      <select id="scope">
+        <option value="working">Working tree (vs HEAD)</option>
+        <option value="staged">Staged</option>
+        <option value="branch">Branch vs base</option>
+      </select>
+      <input id="base" type="text" value="main" size="10" title="base ref for branch scope" />
+      <select id="view" title="diff layout">
+        <option value="unified">Unified</option>
+        <option value="split">Split</option>
+      </select>
+      <button id="refresh">Refresh</button>
+      <span class="spacer"></span>
+      <span class="hint">Drag line numbers or select code, then ask the agent</span>
+      <span id="status" class="status"><span class="dot"></span><span id="statustext">connecting…</span></span>
+    </header>
+    <main id="content"><div class="empty">Loading diff…</div></main>
+    <button id="askbtn">Ask about selection</button>
+    <div id="sentlog"></div>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const TOKEN = params.get("token") || "";
+      let ws = null;
+      const statusEl = document.getElementById("status");
+      const statusText = document.getElementById("statustext");
+      const content = document.getElementById("content");
+      const scopeSel = document.getElementById("scope");
+      const baseInput = document.getElementById("base");
+      const viewSel = document.getElementById("view");
+      let viewMode = localStorage.getItem("gr-view") || "unified";
+      viewSel.value = viewMode;
+      let lastGroups = [];
+
+      if (params.get("scope")) scopeSel.value = params.get("scope");
+      if (params.get("base")) baseInput.value = params.get("base");
+
+      function setStatus(connected, text) {
+        statusEl.classList.toggle("connected", connected);
+        statusText.textContent = text;
+      }
+
+      function connect() {
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${proto}://${location.host}/ws?token=${TOKEN}`);
+        ws.onopen = () => setStatus(true, "connected");
+        ws.onclose = () => {
+          setStatus(false, "disconnected — retrying");
+          setTimeout(connect, 1500);
+        };
+        ws.onerror = () => ws.close();
+        ws.onmessage = (e) => {
+          try {
+            const m = JSON.parse(e.data);
+            if (m.type === "session") setStatus(true, `connected · ${m.name}`);
+          } catch {}
+        };
+      }
+
+      function escapeHtml(s) {
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      let selection = null;
+
+      async function loadDiff() {
+        content.innerHTML = '<div class="empty">Loading diff…</div>';
+        const scope = scopeSel.value;
+        const base = baseInput.value || "main";
+        try {
+          const res = await fetch(
+            `/api/diff?token=${TOKEN}&scope=${scope}&base=${encodeURIComponent(base)}`,
+          );
+          const data = await res.json();
+          lastGroups = data.groups || [];
+          renderDiff(lastGroups);
+        } catch (err) {
+          content.innerHTML = `<div class="empty">Failed to load diff: ${escapeHtml(String(err))}</div>`;
+        }
+      }
+
+      function fileName(f) {
+        if (f.to && f.to !== "/dev/null") return f.to;
+        if (f.from && f.from !== "/dev/null") return f.from;
+        return "unknown";
+      }
+
+      function renderDiff(groups) {
+        if (!groups.length) {
+          content.innerHTML = '<div class="empty">No changes in this scope.</div>';
+          return;
+        }
+        content.innerHTML = "";
+        let fi = 0;
+        groups.forEach((group) => {
+          const groupEl = document.createElement("div");
+          groupEl.className = "repo-group";
+
+          const head = document.createElement("div");
+          head.className = "repo-head";
+          const fileCount = group.files.length;
+          let badges = `<span class="badge branch">${escapeHtml(group.branch)}</span>`;
+          if (group.worktree) {
+            badges += `<span class="badge worktree">⌥ ${escapeHtml(group.worktree)}</span>`;
+          }
+          head.innerHTML =
+            `<span class="chevron">▶</span>` +
+            `<span class="repo-name">${escapeHtml(group.repo)}</span>` +
+            badges +
+            `<span class="count">${fileCount} file${fileCount === 1 ? "" : "s"}</span>`;
+          groupEl.appendChild(head);
+
+          const body = document.createElement("div");
+          body.className = "repo-body";
+          groupEl.appendChild(body);
+
+          const stripPrefix = group.worktree
+            ? `${group.repo}/.worktrees/${group.worktree}/`
+            : `${group.repo}/`;
+          group.files.forEach((file) => {
+            renderFile(file, fi++, body, stripPrefix);
+          });
+
+          head.addEventListener("click", () => {
+            groupEl.classList.toggle("open");
+          });
+          if (groups.length === 1) groupEl.classList.add("open");
+          content.appendChild(groupEl);
+        });
+
+        wireSelection();
+      }
+
+      function highlightCode(raw, lang) {
+        try {
+          return lang && hljs.getLanguage(lang)
+            ? hljs.highlight(raw, { language: lang }).value
+            : escapeHtml(raw);
+        } catch {
+          return escapeHtml(raw);
+        }
+      }
+
+      function renderFile(file, fi, container, stripPrefix) {
+        const name = fileName(file);
+        const display =
+          stripPrefix && name.startsWith(stripPrefix) ? name.slice(stripPrefix.length) : name;
+        const lang = (name.split(".").pop() || "").toLowerCase();
+        const wrap = document.createElement("div");
+        wrap.className = "file";
+
+        const head = document.createElement("div");
+        head.className = "file-head";
+        head.innerHTML =
+          `<span class="chevron">\u25b6</span>` +
+          `<span class="file-name">${escapeHtml(display)}</span>` +
+          (file.new ? `<span class="badge-new">new</span>` : "") +
+          (file.deleted ? `<span class="badge-del">deleted</span>` : "") +
+          `<span class="stat-add">+${file.additions || 0}</span>` +
+          `<span class="stat-del">-${file.deletions || 0}</span>`;
+        wrap.appendChild(head);
+
+        const fileBody = document.createElement("div");
+        fileBody.className = "file-body";
+        const table = document.createElement("table");
+        table.className = viewMode === "split" ? "diff split" : "diff";
+        const tbody = document.createElement("tbody");
+        if (viewMode === "split") {
+          renderSplitBody(tbody, file, fi, name, lang);
+        } else {
+          renderUnifiedBody(tbody, file, fi, name, lang);
+        }
+        table.appendChild(tbody);
+        fileBody.appendChild(table);
+        wrap.appendChild(fileBody);
+        head.addEventListener("click", () => {
+          wrap.classList.toggle("open");
+        });
+        container.appendChild(wrap);
+      }
+
+      function renderUnifiedBody(tbody, file, fi, name, lang) {
+        (file.chunks || []).forEach((chunk) => {
+          const hunkRow = document.createElement("tr");
+          hunkRow.className = "hunk";
+          hunkRow.innerHTML = `<td></td><td class="code">${escapeHtml(chunk.content)}</td>`;
+          tbody.appendChild(hunkRow);
+
+          (chunk.changes || []).forEach((ch) => {
+            const tr = document.createElement("tr");
+            const lineNo = ch.type === "del" ? ch.ln : ch.type === "add" ? ch.ln : ch.ln2;
+            tr.className = ch.type === "add" ? "add" : ch.type === "del" ? "del" : "";
+            tr.dataset.file = name;
+            tr.dataset.fileIdx = String(fi);
+            tr.dataset.line = lineNo != null ? String(lineNo) : "";
+            const raw = ch.content.replace(/^[+\- ]/, "");
+            const html = highlightCode(raw, lang);
+            const marker = ch.type === "add" ? "+" : ch.type === "del" ? "-" : " ";
+            tr.innerHTML =
+              `<td class="gutter"><span class="num">${lineNo != null ? lineNo : ""}</span></td>` +
+              `<td class="code">${escapeHtml(marker)}${html}</td>`;
+            tbody.appendChild(tr);
+          });
+        });
+      }
+
+      function pairChanges(changes) {
+        const rows = [];
+        let dels = [];
+        let adds = [];
+        const flush = () => {
+          const n = Math.max(dels.length, adds.length);
+          for (let i = 0; i < n; i++) {
+            rows.push({ left: dels[i] || null, right: adds[i] || null });
+          }
+          dels = [];
+          adds = [];
+        };
+        changes.forEach((ch) => {
+          if (ch.type === "del") {
+            dels.push(ch);
+          } else if (ch.type === "add") {
+            adds.push(ch);
+          } else {
+            flush();
+            rows.push({ left: ch, right: ch, normal: true });
+          }
+        });
+        flush();
+        return rows;
+      }
+
+      function renderSplitBody(tbody, file, fi, name, lang) {
+        (file.chunks || []).forEach((chunk) => {
+          const hunkRow = document.createElement("tr");
+          hunkRow.className = "hunk";
+          hunkRow.innerHTML =
+            `<td></td><td class="code"></td><td></td><td class="code">${escapeHtml(chunk.content)}</td>`;
+          tbody.appendChild(hunkRow);
+
+          pairChanges(chunk.changes || []).forEach((pair) => {
+            const tr = document.createElement("tr");
+            const leftLine = pair.left ? pair.left.ln || pair.left.ln1 : null;
+            const rightLine = pair.right
+              ? pair.right.ln2 != null
+                ? pair.right.ln2
+                : pair.right.ln
+              : null;
+            tr.dataset.file = name;
+            tr.dataset.fileIdx = String(fi);
+            const sel = rightLine != null ? rightLine : leftLine;
+            tr.dataset.line = sel != null ? String(sel) : "";
+
+            const leftCls = pair.normal ? "" : pair.left ? "del" : "empty";
+            const rightCls = pair.normal ? "" : pair.right ? "add" : "empty";
+            const leftRaw = pair.left ? pair.left.content.replace(/^[+\- ]/, "") : "";
+            const rightRaw = pair.right ? pair.right.content.replace(/^[+\- ]/, "") : "";
+            const leftHtml = pair.left ? highlightCode(leftRaw, lang) : "";
+            const rightHtml = pair.right ? highlightCode(rightRaw, lang) : "";
+
+            tr.innerHTML =
+              `<td class="gutter side ${leftCls}"><span class="num">${leftLine != null ? leftLine : ""}</span></td>` +
+              `<td class="code side ${leftCls}">${leftHtml}</td>` +
+              `<td class="gutter side ${rightCls}"><span class="num">${rightLine != null ? rightLine : ""}</span></td>` +
+              `<td class="code side ${rightCls}">${rightHtml}</td>`;
+            tbody.appendChild(tr);
+          });
+        });
+      }
+
+      function clearSelection() {
+        document
+          .querySelectorAll("tr.selected")
+          .forEach((tr) => tr.classList.remove("selected"));
+      }
+
+      let dragState = { active: false, fileIdx: null, anchorIdx: null };
+      let mouseupBound = false;
+
+      function rowFromGutter(target) {
+        if (!target || !target.closest) return null;
+        const td = target.closest("td.gutter");
+        if (!td) return null;
+        const tr = td.parentElement;
+        return tr && tr.dataset && tr.dataset.line ? tr : null;
+      }
+
+      function wireSelection() {
+        if (!mouseupBound) {
+          mouseupBound = true;
+
+          content.addEventListener("mouseover", (ev) => {
+            if (!dragState.active) return;
+            const tr = rowFromGutter(ev.target);
+            if (!tr || tr.dataset.fileIdx !== dragState.fileIdx) return;
+            applyRange(dragState.fileIdx, dragState.anchorIdx, rowIndex(tr));
+          });
+
+          document.addEventListener("mouseup", (ev) => {
+            if (!dragState.active) return;
+            dragState.active = false;
+            document.body.classList.remove("dragging");
+            if (selection && selection.rows.length) {
+              const last = selection.rows[selection.rows.length - 1];
+              const anchorTd = last.querySelector("td.gutter");
+              openPopover(anchorTd || ev.target);
+            }
+          });
+        }
+
+        const gutters = content.querySelectorAll("td.gutter");
+        gutters.forEach((td) => {
+          const tr = td.parentElement;
+          if (!tr.dataset.line) return;
+          const fileIdx = tr.dataset.fileIdx;
+
+          td.addEventListener("mousedown", (ev) => {
+            if (ev.button !== 0) return;
+            ev.preventDefault();
+            closePopover();
+            dragState = { active: true, fileIdx, anchorIdx: rowIndex(tr) };
+            clearSelection();
+            selection = {
+              fileIdx,
+              file: tr.dataset.file,
+              anchorRowIndex: dragState.anchorIdx,
+              rows: [tr],
+            };
+            tr.classList.add("selected");
+            document.body.classList.add("dragging");
+          });
+
+          td.addEventListener("click", (ev) => {
+            if (ev.shiftKey && selection && selection.fileIdx === fileIdx) {
+              applyRange(fileIdx, selection.anchorRowIndex, rowIndex(tr));
+              openPopover(td);
+            }
+          });
+        });
+      }
+
+      function rowIndex(tr) {
+        return Array.prototype.indexOf.call(tr.parentElement.children, tr);
+      }
+
+      function applyRange(fileIdx, fromIdx, toIdx) {
+        clearSelection();
+        const lo = Math.min(fromIdx, toIdx);
+        const hi = Math.max(fromIdx, toIdx);
+        const rows = [];
+        document
+          .querySelectorAll(`tr[data-file-idx="${fileIdx}"]`)
+          .forEach((tr) => {
+            const idx = rowIndex(tr);
+            if (idx >= lo && idx <= hi && tr.dataset.line) {
+              tr.classList.add("selected");
+              rows.push(tr);
+            }
+          });
+        selection.rows = rows;
+      }
+
+      let popover = null;
+      function closePopover() {
+        if (popover) {
+          popover.remove();
+          popover = null;
+        }
+      }
+
+      function selectedCode() {
+        if (!selection) return { code: "", start: null, end: null };
+        const rows = selection.rows.filter((r) => r.dataset.line);
+        const code = rows
+          .map((r) => {
+            const cells = r.querySelectorAll("td.code");
+            if (cells.length > 1) {
+              const right = cells[cells.length - 1].textContent;
+              return right.trim() ? right : cells[0].textContent;
+            }
+            return cells[0] ? cells[0].textContent : "";
+          })
+          .join("\n");
+        const lines = rows
+          .map((r) => Number(r.dataset.line))
+          .filter((n) => !Number.isNaN(n));
+        return {
+          code,
+          start: lines.length ? Math.min(...lines) : null,
+          end: lines.length ? Math.max(...lines) : null,
+        };
+      }
+
+      function openPopover(anchorTd) {
+        closePopover();
+        const { start, end } = selectedCode();
+        const rect = anchorTd.getBoundingClientRect();
+        popover = document.createElement("div");
+        popover.className = "popover";
+        const loc =
+          start && end && start !== end
+            ? `${selection.file}:${start}-${end}`
+            : start
+              ? `${selection.file}:${start}`
+              : selection.file;
+        popover.innerHTML =
+          `<div class="loc">${escapeHtml(loc)}</div>` +
+          `<textarea placeholder="Ask the agent about this code…"></textarea>` +
+          `<div class="actions">` +
+          `<button data-act="cancel">Cancel</button>` +
+          `<button class="primary" data-act="send">Send to agent</button>` +
+          `</div>`;
+        document.body.appendChild(popover);
+        const top = Math.min(rect.bottom + 6, window.innerHeight - popover.offsetHeight - 12);
+        popover.style.top = Math.max(12, top) + "px";
+        popover.style.left =
+          Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12) + "px";
+
+        const ta = popover.querySelector("textarea");
+        ta.focus();
+        popover.querySelector('[data-act="cancel"]').onclick = () => {
+          closePopover();
+          clearSelection();
+        };
+        popover.querySelector('[data-act="send"]').onclick = () => send(ta.value);
+        ta.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            send(ta.value);
+          }
+          if (e.key === "Escape") {
+            closePopover();
+            clearSelection();
+          }
+        });
+      }
+
+      function send(question) {
+        if (!question.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+        const { code, start, end } = selectedCode();
+        ws.send(
+          JSON.stringify({
+            type: "comment",
+            file: selection.file,
+            startLine: start,
+            endLine: end,
+            code,
+            question,
+          }),
+        );
+        toast(selection.file, start, end, question);
+        closePopover();
+        clearSelection();
+      }
+
+      function toast(file, start, end, question) {
+        const log = document.getElementById("sentlog");
+        const el = document.createElement("div");
+        el.className = "toast";
+        const loc = start ? `${file}:${start}${end && end !== start ? "-" + end : ""}` : file;
+        const q = question.length > 80 ? question.slice(0, 80) + "…" : question;
+        el.innerHTML = `<strong>Sent →</strong> ${escapeHtml(loc)}<br />${escapeHtml(q)}`;
+        log.appendChild(el);
+        setTimeout(() => el.remove(), 6000);
+      }
+
+      const askBtn = document.getElementById("askbtn");
+
+      function rowFromNode(node) {
+        let el = node.nodeType === 1 ? node : node.parentElement;
+        while (el && el.tagName !== "TR") el = el.parentElement;
+        return el && el.dataset && el.dataset.line ? el : null;
+      }
+
+      function buildSelectionFromText(sel) {
+        const range = sel.getRangeAt(0);
+        const startRow = rowFromNode(range.startContainer);
+        const endRow = rowFromNode(range.endContainer);
+        if (!startRow || !endRow) return false;
+        if (startRow.dataset.fileIdx !== endRow.dataset.fileIdx) return false;
+        selection = {
+          fileIdx: startRow.dataset.fileIdx,
+          file: startRow.dataset.file,
+          anchorRowIndex: rowIndex(startRow),
+          rows: [],
+        };
+        applyRange(
+          startRow.dataset.fileIdx,
+          rowIndex(startRow),
+          rowIndex(endRow),
+        );
+        return selection.rows.length > 0;
+      }
+
+      function hideAskBtn() {
+        askBtn.style.display = "none";
+      }
+
+      let textDragging = false;
+      content.addEventListener("mousedown", (e) => {
+        if (e.target.closest && e.target.closest("td.gutter")) return;
+        if (e.target.closest && e.target.closest("td.code")) {
+          textDragging = true;
+        }
+      });
+      document.addEventListener("selectionchange", () => {
+        if (!textDragging) return;
+        const sel = window.getSelection();
+        if (!sel.rangeCount || !sel.toString().trim()) return;
+        if (!content.contains(sel.anchorNode)) return;
+        buildSelectionFromText(sel);
+      });
+
+      document.addEventListener("mouseup", (e) => {
+        if (dragState.active) return;
+        textDragging = false;
+        if (e.target.closest && e.target.closest("td.gutter")) return;
+        if (popover && popover.contains(e.target)) return;
+        setTimeout(() => {
+          const sel = window.getSelection();
+          const text = sel.toString();
+          if (!text.trim() || !content.contains(sel.anchorNode)) {
+            return;
+          }
+          if (!buildSelectionFromText(sel)) {
+            return;
+          }
+          const last = selection.rows[selection.rows.length - 1];
+          sel.removeAllRanges();
+          openPopover(last.querySelector("td.gutter"));
+        }, 0);
+      });
+
+      askBtn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        hideAskBtn();
+        if (!selection || !selection.rows.length) return;
+        const last = selection.rows[selection.rows.length - 1];
+        openPopover(last.querySelector("td.gutter"));
+      });
+
+      document.getElementById("refresh").onclick = loadDiff;
+      scopeSel.onchange = loadDiff;
+      viewSel.onchange = () => {
+        viewMode = viewSel.value;
+        localStorage.setItem("gr-view", viewMode);
+        closePopover();
+        clearSelection();
+        selection = null;
+        hideAskBtn();
+        renderDiff(lastGroups);
+      };
+      baseInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") loadDiff();
+      });
+      document.addEventListener("click", (e) => {
+        if (popover && popover.contains(e.target)) return;
+        if (e.target.closest && e.target.closest("td.gutter")) return;
+        if (popover) closePopover();
+      });
+
+      connect();
+      loadDiff();
+    </script>
+  </body>
+</html>
