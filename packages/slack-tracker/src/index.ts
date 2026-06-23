@@ -169,16 +169,25 @@ export default function slackTrackerExtension(pi: ExtensionAPI): void {
     updateWidget(ctx);
   });
 
+  const ingest = (text: string, ctx: any): void => {
+    const detected = detectFromText(text);
+    if (!detected) return;
+    if (current?.url === detected.url) return;
+    current = detected;
+    hidden = false;
+    saveState(ctx?.cwd ?? process.cwd());
+    updateWidget(ctx);
+  };
+
+  pi.on("before_agent_start", async (event: any, ctx: any) => {
+    ingest(event?.prompt ?? "", ctx);
+  });
+
   pi.on("tool_execution_end", async (event: any, ctx: any) => {
     if (event?.isError) return;
     const command: string = event?.args?.command ?? "";
     const resultText = resultToText(event?.result);
-    const detected = detectFromText(`${command}\n${resultText}`);
-    if (!detected) return;
-    if (current?.url === detected.url) return;
-    current = detected;
-    saveState(ctx?.cwd ?? process.cwd());
-    updateWidget(ctx);
+    ingest(`${command}\n${resultText}`, ctx);
   });
 
   pi.registerCommand("slack", {

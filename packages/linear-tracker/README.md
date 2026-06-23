@@ -18,7 +18,7 @@ Or in `.pi/settings.json`:
 
 ## How it works
 
-- Listens to tool executions. When a command or its output contains a Linear issue URL, the latest one is captured automatically and pinned.
+- Listens to tool executions and to your chat messages. When a command, its output, or a message you send contains a Linear issue URL, the latest one is captured automatically and pinned.
 - The widget pinned above the editor shows the issue ID (e.g. `EXP-231`), a title derived from the URL slug when present, and the full URL.
 - State is persisted per session, so the pinned issue survives restarts of the same session.
 
