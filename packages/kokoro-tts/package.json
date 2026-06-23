@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-kokoro-tts",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "PI extension that speaks the assistant's responses out loud using a Kokoro-FastAPI text-to-speech endpoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,6 +27,7 @@
     ]
   },
   "keywords": [
+    "pi-package",
     "pi",
     "extension",
     "text-to-speech",

@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-bee-context",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension that injects confirmed personal facts from the Bee wearable assistant into the system prompt for personalized responses",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,6 +28,7 @@
     ]
   },
   "keywords": [
+    "pi-package",
     "pi",
     "extension",
     "bee",

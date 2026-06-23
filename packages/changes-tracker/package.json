@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-changes-tracker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PI extension that shows changed repos and files with /changed and /changes commands",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,5 +33,8 @@
     "directory": "packages/changes-tracker"
   },
   "author": "Arvore",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "pi-package"
+  ]
 }

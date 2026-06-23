@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-smart-context",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Intelligent model routing and prompt compression for Pi/Kiro",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,5 +35,8 @@
     "directory": "packages/smart-context"
   },
   "author": "Arvore",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "pi-package"
+  ]
 }

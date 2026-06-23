@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-turn-notification",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "PI extension that sends a native desktop notification at the end of each agent turn (macOS and Linux)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,6 +27,7 @@
     ]
   },
   "keywords": [
+    "pi-package",
     "pi",
     "extension",
     "notification",
