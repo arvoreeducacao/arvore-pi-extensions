@@ -35,10 +35,10 @@ In the tab:
 
 - Click a line number to start a comment on that line.
 - **Shift-click** another line number in the same file to select a range.
-- Type your question and hit **Send to agent** (or `Cmd/Ctrl+Enter`).
+- Type your question and hit **Send to agent** (or `Enter`). Use `Shift+Enter` for newlines.
 - The question, the file/line location, and the selected code are sent to the agent.
 
-It scans the workspace for git repos (`.git` up to depth 2) and aggregates their diffs,
+It scans the workspace for git repos (`.git` up to depth 4, pruning `node_modules`) and aggregates their diffs,
 prefixing paths per repo — so it works in a multi-repo workspace too.
 
 ## Security

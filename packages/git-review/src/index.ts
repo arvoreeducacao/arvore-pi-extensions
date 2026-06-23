@@ -90,14 +90,14 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const srv = await ensureServer(ctx);
-      if (!srv) return;
-
       const { scope, base, error } = parseScopeArgs(args);
       if (error) {
         ctx.ui.notify(error, "error");
         return;
       }
+
+      const srv = await ensureServer(ctx);
+      if (!srv) return;
       const url = `${srv.url}&scope=${scope}&base=${encodeURIComponent(base)}`;
       openBrowser(pi, url);
       ctx.ui.notify(

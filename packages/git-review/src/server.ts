@@ -54,18 +54,23 @@ async function detectBranch(pi: ExtensionAPI, dir: string): Promise<string> {
 }
 
 async function findRepoDirs(pi: ExtensionAPI): Promise<RepoDir[]> {
-  const { stdout } = await pi.exec("find", [
-    ".",
-    "-maxdepth",
-    "4",
-    "-name",
-    "node_modules",
-    "-prune",
-    "-o",
-    "-name",
-    ".git",
-    "-print",
-  ]);
+  let stdout = "";
+  try {
+    ({ stdout } = await pi.exec("find", [
+      ".",
+      "-maxdepth",
+      "4",
+      "-name",
+      "node_modules",
+      "-prune",
+      "-o",
+      "-name",
+      ".git",
+      "-print",
+    ]));
+  } catch {
+    return [{ dir: ".", prefix: "", label: "." }];
+  }
   const found = stdout
     .split("\n")
     .map((l) => l.trim())
