@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-plan-mode",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension providing a Cursor-style plan mode with a hard tool gate: read-only exploration, plan generation, manual /build approval, and execution tracking",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,6 +32,7 @@
     ]
   },
   "keywords": [
+    "pi-package",
     "pi",
     "extension",
     "plan-mode",

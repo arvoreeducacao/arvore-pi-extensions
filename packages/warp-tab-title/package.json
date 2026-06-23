@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-warp-tab-title",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension that lets the LLM rename the Warp terminal tab to reflect the current task focus",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -31,6 +31,7 @@
     ]
   },
   "keywords": [
+    "pi-package",
     "pi",
     "extension",
     "warp",
