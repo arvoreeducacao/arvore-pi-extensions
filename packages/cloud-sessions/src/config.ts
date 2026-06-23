@@ -27,6 +27,12 @@ export interface CloudSessionsConfig {
   icloud: IcloudProviderConfig;
 }
 
+function expandTilde(value: string): string {
+  if (value === "~") return homedir();
+  if (value.startsWith("~/")) return join(homedir(), value.slice(2));
+  return value;
+}
+
 const CONFIG_DIR = join(homedir(), ".config", "pi");
 const CONFIG_FILE = join(CONFIG_DIR, "cloud-sessions.json");
 
@@ -105,7 +111,9 @@ export async function loadConfig(): Promise<CloudSessionsConfig> {
       remoteName: raw.git?.remoteName || "origin",
     },
     icloud: {
-      dir: process.env.PI_CLOUD_SESSIONS_ICLOUD_DIR || raw.icloud?.dir || defaultIcloudDir(),
+      dir: expandTilde(
+        process.env.PI_CLOUD_SESSIONS_ICLOUD_DIR || raw.icloud?.dir || defaultIcloudDir(),
+      ),
     },
   };
 }
