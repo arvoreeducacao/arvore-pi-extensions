@@ -7,7 +7,9 @@ PI extension for push-to-talk speech-to-text using the [ElevenLabs Scribe](https
 Registers a keyboard shortcut that toggles microphone recording. Press once to start recording from your default mic, press again to stop and transcribe. The resulting text is appended to the editor input.
 
 - **First press**: starts recording from the selected microphone via `ffmpeg` (shows `🎙 recording` in the footer).
-- **Second press**: stops recording, sends the audio to ElevenLabs Scribe, and inserts the transcript into the editor (`⏳ transcribing…`).
+- **Second press**: stops recording, sends the audio to ElevenLabs Scribe, and inserts the transcript at the cursor (`⏳ transcribing…`).
+
+The transcript is inserted via the editor's paste pipeline (`pasteToEditor`), so it composes with custom editors such as [pi-vim](https://www.npmjs.com/package/pi-vim) instead of overwriting the input buffer. With a modal editor, dictate while in insert mode — text is inserted at the cursor and the editor's mode/cursor state is preserved.
 
 ## Commands
 
