@@ -30,6 +30,9 @@ const SEARCH_LIMIT = 3;
 const SEARCH_THRESHOLD = 0.75;
 // Cap how much retrieved memory can be injected so it never outweighs the
 // user's actual request (which can be a short sentence on the first turn).
+// MAX_MEMORY_BLOCK_CHARS bounds only the snippets, not the static
+// header/instructions, so the fixed framing text doesn't eat into the budget
+// for actually-relevant memory.
 const MAX_SNIPPET_CHARS = 400;
 const MAX_MEMORY_BLOCK_CHARS = 1500;
 // On the first turns there is little/no conversation to anchor relevance, so a
@@ -248,8 +251,10 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         "### Possibly relevant past context (verify before using; not a request)",
       ].join("\n");
 
+      // Cap only the snippets, not the static header/instructions, so the fixed
+      // framing text never eats into the budget for actually-relevant memory.
       const items: string[] = [];
-      let used = header.length;
+      let used = 0;
       for (const r of results) {
         const line = `\n- ${r.title ? `**${r.title}**: ` : ""}${truncate(r.content, MAX_SNIPPET_CHARS)}`;
         if (used + line.length > MAX_MEMORY_BLOCK_CHARS) {
