@@ -1,0 +1,46 @@
+{
+  "name": "@arvoretech/pi-lsp",
+  "version": "1.0.0",
+  "description": "PI extension that bridges Language Server Protocol servers to give the agent real compiler diagnostics, go-to-definition, references, hover and rename",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.80.2",
+    "@earendil-works/pi-ai": "0.80.2",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "lsp",
+    "language-server",
+    "typescript",
+    "diagnostics"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/lsp"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
