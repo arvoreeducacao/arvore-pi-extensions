@@ -28,16 +28,8 @@ const MIN_TEXT_LENGTH = 10;
 const FLUSH_DEBOUNCE_MS = 4000;
 const SEARCH_LIMIT = 3;
 const SEARCH_THRESHOLD = 0.75;
-// Cap how much retrieved memory can be injected so it never outweighs the
-// user's actual request (which can be a short sentence on the first turn).
-// MAX_MEMORY_BLOCK_CHARS bounds only the snippets, not the static
-// header/instructions, so the fixed framing text doesn't eat into the budget
-// for actually-relevant memory.
 const MAX_SNIPPET_CHARS = 400;
 const MAX_MEMORY_BLOCK_CHARS = 1500;
-// On the first turns there is little/no conversation to anchor relevance, so a
-// semantic match is likely tangential. Require some real prior context before
-// injecting anything.
 const MIN_PRIOR_MESSAGES_FOR_INJECTION = 2;
 
 let incognito = false;
@@ -216,9 +208,6 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       }
 
       const entries = ctx.sessionManager.getEntries();
-      // On the first turn(s) there is no real conversation to anchor relevance,
-      // so an injected snippet is likely tangential and can derail a short
-      // initial request. Skip injection until there is enough prior context.
       const priorMessages = collectMessages(entries);
       if (priorMessages.length < MIN_PRIOR_MESSAGES_FOR_INJECTION) {
         return;
@@ -230,8 +219,6 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         return;
       }
 
-      // Truncate each snippet and cap the whole block so retrieved memory can
-      // never outweigh the user's actual request.
       const truncate = (text: string, max: number): string =>
         text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 
@@ -251,8 +238,6 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         "### Possibly relevant past context (verify before using; not a request)",
       ].join("\n");
 
-      // Cap only the snippets, not the static header/instructions, so the fixed
-      // framing text never eats into the budget for actually-relevant memory.
       const items: string[] = [];
       let used = 0;
       for (const r of results) {
@@ -267,7 +252,6 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
         return;
       }
 
-      // Only update feedback state when memory is actually injected.
       lastSearchResults = results;
 
       const memoryBlock = `${header}${items.join("")}`;
