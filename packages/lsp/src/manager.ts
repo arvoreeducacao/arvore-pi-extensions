@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { LspClient } from "./client.js";
 import type {
   Diagnostic,
@@ -32,7 +32,7 @@ export type Notifier = (message: string, level?: "info" | "warning" | "error") =
 
 function uriToPath(uri: string): string {
   if (!uri.startsWith("file://")) return uri;
-  return decodeURIComponent(uri.replace(/^file:\/\//, ""));
+  return fileURLToPath(uri);
 }
 
 export class LspManager {

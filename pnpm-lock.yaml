@@ -174,10 +174,10 @@ importers:
   packages/lsp:
     devDependencies:
       '@earendil-works/pi-ai':
-        specifier: latest
+        specifier: 0.80.2
         version: 0.80.2(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-coding-agent':
-        specifier: latest
+        specifier: 0.80.2
         version: 0.80.2(ws@8.20.0)(zod@4.4.3)
       '@types/node':
         specifier: ^20.10.0

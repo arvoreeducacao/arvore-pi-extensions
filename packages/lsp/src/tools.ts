@@ -1,5 +1,6 @@
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { fileURLToPath } from "node:url";
 import type { LspManager } from "./manager.js";
 import {
   type Diagnostic,
@@ -45,7 +46,7 @@ function formatDiagnostics(path: string, cwd: string, diagnostics: Diagnostic[])
 }
 
 function uriToRel(uri: string, cwd: string): string {
-  const path = uri.startsWith("file://") ? decodeURIComponent(uri.replace(/^file:\/\//, "")) : uri;
+  const path = uri.startsWith("file://") ? fileURLToPath(uri) : uri;
   return relativize(path, cwd);
 }
 

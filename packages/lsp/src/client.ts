@@ -12,6 +12,7 @@ interface PendingRequest {
   resolve: (value: unknown) => void;
   reject: (reason: unknown) => void;
   method: string;
+  timer: ReturnType<typeof setTimeout>;
 }
 
 const HEADER_SEPARATOR = "\r\n\r\n";
@@ -74,6 +75,7 @@ export class LspClient extends EventEmitter {
 
       this.pending.set(id, {
         method,
+        timer,
         resolve: (value) => {
           clearTimeout(timer);
           resolve(value as T);
@@ -183,15 +185,15 @@ export class LspClient extends EventEmitter {
       this.writeRaw({
         jsonrpc: "2.0",
         id: message.id,
-        result: this.defaultServerRequestResult(message.method),
+        result: this.defaultServerRequestResult(message.method, message.params),
       });
     }
   }
 
-  private defaultServerRequestResult(method: string): unknown {
+  private defaultServerRequestResult(method: string, params: unknown): unknown {
     switch (method) {
       case "workspace/configuration":
-        return [null];
+        return ((params as { items?: unknown[] } | undefined)?.items ?? []).map(() => null);
       case "client/registerCapability":
       case "client/unregisterCapability":
       case "window/workDoneProgress/create":
@@ -202,7 +204,10 @@ export class LspClient extends EventEmitter {
   }
 
   private rejectAll(reason: unknown): void {
-    for (const pending of this.pending.values()) pending.reject(reason);
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(reason);
+    }
     this.pending.clear();
   }
 }
