@@ -37,18 +37,21 @@ export default function (pi: ExtensionAPI) {
       await pi.setModel(resolved);
       if (debug) ctx.ui.notify(`smart-context: routed → ${model.provider}/${model.model}`, "info");
     } catch (err) {
-      if (debug) {
-        const msg = err instanceof Error ? err.message : String(err);
-        ctx.ui.notify(`smart-context routing error: ${msg} [${getDiagnostics()}]`, "warning");
-      }
+      const msg = err instanceof Error ? err.message : String(err);
+      ctx.ui.notify(`smart-context routing error: ${msg} [${getDiagnostics()}]`, "warning");
+    } finally {
+      ctx.ui.setWorkingMessage();
     }
   });
 
   pi.on("context", async (event, ctx) => {
     ctx.ui.setWorkingMessage("Compressing...");
-    const messages = await compressor.compress(event.messages as any[], ctx);
-    ctx.ui.setWorkingMessage();
-    return { messages } as any;
+    try {
+      const messages = await compressor.compress(event.messages as any[], ctx);
+      return { messages } as any;
+    } finally {
+      ctx.ui.setWorkingMessage();
+    }
   });
 
   pi.on("tool_result", async (event) => {

@@ -151,11 +151,13 @@ export function createCompressor(deps: CompressorDeps) {
     }
 
     if (summarizeQueue.length > 0) {
-      const compressed = await Promise.all(
+      const settled = await Promise.allSettled(
         summarizeQueue.map(({ msg, score }) => maybeCompressMessage(msg, score, ctx, profile)),
       );
       for (let j = 0; j < summarizeQueue.length; j++) {
-        result[summarizeQueue[j].index] = compressed[j] ?? summarizeQueue[j].msg;
+        const r = settled[j];
+        result[summarizeQueue[j].index] =
+          r.status === "fulfilled" && r.value ? r.value : summarizeQueue[j].msg;
       }
     }
 

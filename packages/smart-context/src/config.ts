@@ -77,7 +77,7 @@ function mergeConfig(base: SmartContextConfig, raw: Record<string, unknown>): Sm
     },
     largeContext: {
       thresholdTokens:
-        typeof threshold === "number" && Number.isFinite(threshold)
+        typeof threshold === "number" && Number.isFinite(threshold) && threshold > 0
           ? threshold
           : base.largeContext.thresholdTokens,
       model: mergeRef(base.largeContext.model, rawLarge.model),
