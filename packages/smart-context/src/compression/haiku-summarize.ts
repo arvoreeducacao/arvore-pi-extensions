@@ -1,4 +1,5 @@
 import { getComplete } from "../host-ai.js";
+import { loadConfig } from "../config.js";
 import { createHash } from "node:crypto";
 
 const SUMMARIZE_PROMPT = `You compress conversation messages for an AI coding agent's context. Produce a dense summary that preserves ALL load-bearing facts: decisions made, file paths, function/variable names, API contracts, error messages, requirements, and open questions. Drop filler, pleasantries, and verbose explanations.
@@ -18,7 +19,8 @@ export function createSummarizer() {
       return cached;
     }
 
-    const model = ctx.modelRegistry?.find?.("kiro", "claude-haiku-4-5");
+    const { classifier } = loadConfig(ctx.cwd);
+    const model = ctx.modelRegistry?.find?.(classifier.provider, classifier.model);
     if (!model) return null;
 
     const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
