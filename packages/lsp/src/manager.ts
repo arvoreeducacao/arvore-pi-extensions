@@ -224,18 +224,18 @@ export class LspManager {
     });
   }
 
-  async diagnostics(filePath: string): Promise<{ path: string; diagnostics: Diagnostic[] } | null> {
+  async diagnostics(filePath: string): Promise<{ path: string; diagnostics: Diagnostic[] } | undefined> {
     const instance = await this.getOrCreate(filePath);
-    if (!instance) return null;
+    if (!instance) return undefined;
     const abs = this.absPath(filePath);
     await this.ensureOpen(instance, filePath);
     await this.waitForDiagnostics(instance, abs, 6_000);
     return { path: abs, diagnostics: instance.diagnostics.get(abs) ?? [] };
   }
 
-  async definition(filePath: string, position: Position): Promise<Location[] | null> {
+  async definition(filePath: string, position: Position): Promise<Location[] | undefined> {
     const instance = await this.getOrCreate(filePath);
-    if (!instance) return null;
+    if (!instance) return undefined;
     const uri = await this.ensureOpen(instance, filePath);
     const result = await instance.client.request<Location | Location[] | LocationLink[] | null>(
       "textDocument/definition",
@@ -244,9 +244,9 @@ export class LspManager {
     return normalizeLocations(result);
   }
 
-  async references(filePath: string, position: Position): Promise<Location[] | null> {
+  async references(filePath: string, position: Position): Promise<Location[] | undefined> {
     const instance = await this.getOrCreate(filePath);
-    if (!instance) return null;
+    if (!instance) return undefined;
     const uri = await this.ensureOpen(instance, filePath);
     const result = await instance.client.request<Location[] | null>("textDocument/references", {
       textDocument: { uri },
@@ -256,9 +256,9 @@ export class LspManager {
     return result ?? [];
   }
 
-  async hover(filePath: string, position: Position): Promise<Hover | null> {
+  async hover(filePath: string, position: Position): Promise<Hover | null | undefined> {
     const instance = await this.getOrCreate(filePath);
-    if (!instance) return null;
+    if (!instance) return undefined;
     const uri = await this.ensureOpen(instance, filePath);
     return instance.client.request<Hover | null>("textDocument/hover", {
       textDocument: { uri },
@@ -266,9 +266,9 @@ export class LspManager {
     });
   }
 
-  async rename(filePath: string, position: Position, newName: string): Promise<WorkspaceEdit | null> {
+  async rename(filePath: string, position: Position, newName: string): Promise<WorkspaceEdit | null | undefined> {
     const instance = await this.getOrCreate(filePath);
-    if (!instance) return null;
+    if (!instance) return undefined;
     const uri = await this.ensureOpen(instance, filePath);
     return instance.client.request<WorkspaceEdit | null>("textDocument/rename", {
       textDocument: { uri },
