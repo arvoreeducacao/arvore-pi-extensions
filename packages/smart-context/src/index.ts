@@ -18,23 +18,24 @@ export default function (pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event, ctx) => {
     if (!enabled) return;
     try {
+      ctx.ui.setWorkingMessage("Routing...");
       const model = await router.pick(event.prompt, ctx);
       if (!model) {
         if (debug) ctx.ui.notify("smart-context: no route (keeping current model)", "info");
         return;
       }
-      const resolved = ctx.modelRegistry.find("kiro", model);
+      const resolved = ctx.modelRegistry.find(model.provider, model.model);
       if (!resolved) {
-        if (debug) ctx.ui.notify(`smart-context: model ${model} not found`, "warning");
+        if (debug) ctx.ui.notify(`smart-context: model ${model.provider}/${model.model} not found`, "warning");
         return;
       }
       const auth = await ctx.modelRegistry.getApiKeyAndHeaders(resolved);
       if (!auth.ok || !auth.apiKey) {
-        if (debug) ctx.ui.notify(`smart-context: no auth for ${model}`, "warning");
+        if (debug) ctx.ui.notify(`smart-context: no auth for ${model.provider}/${model.model}`, "warning");
         return;
       }
       await pi.setModel(resolved);
-      if (debug) ctx.ui.notify(`smart-context: routed → ${model}`, "info");
+      if (debug) ctx.ui.notify(`smart-context: routed → ${model.provider}/${model.model}`, "info");
     } catch (err) {
       if (debug) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -44,7 +45,9 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("context", async (event, ctx) => {
+    ctx.ui.setWorkingMessage("Compressing...");
     const messages = await compressor.compress(event.messages as any[], ctx);
+    ctx.ui.setWorkingMessage();
     return { messages } as any;
   });
 

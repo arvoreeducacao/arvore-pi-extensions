@@ -100,13 +100,14 @@ export function createCompressor(deps: CompressorDeps) {
     const protectedBoundary = findProtectedBoundary(messages, profile.protectedTurns);
 
     const scored = scoreMessages(messages, query, protectedBoundary);
-    const result: Message[] = [];
+    const result: (Message | null)[] = new Array(messages.length).fill(null);
+    const summarizeQueue: Array<{ index: number; msg: Message; score: number | undefined }> = [];
 
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
 
       if (i >= protectedBoundary) {
-        result.push(msg);
+        result[i] = msg;
         continue;
       }
 
@@ -114,34 +115,53 @@ export function createCompressor(deps: CompressorDeps) {
         if (!cacheActive || profile.compressDespiteCache) {
           const delta = deltaCompress(msg, state.previousToolHashes);
           if (delta) {
-            result.push(delta);
+            result[i] = delta;
             continue;
           }
           const trimmed = maybeTrimLargeToolOutput(msg, profile);
           if (trimmed) {
-            result.push(trimmed);
+            result[i] = trimmed;
             continue;
           }
         }
-        result.push(compressToolMessage(msg));
+        result[i] = compressToolMessage(msg);
         continue;
       }
 
       if (msg.role === "assistant" || msg.role === "user") {
         if (cacheActive && !profile.compressDespiteCache) {
-          result.push(msg);
+          result[i] = msg;
           continue;
         }
-        const compressed = await maybeCompressMessage(msg, scored.get(i), ctx, profile);
-        result.push(compressed ?? msg);
+        const stableKey = store.makeId(extractText(msg));
+        const cachedForm = state.stableCompressions.get(stableKey);
+        if (cachedForm !== undefined) {
+          result[i] = replaceText(msg, cachedForm);
+          continue;
+        }
+        if (extractText(msg).length >= profile.summarizeMinChars) {
+          summarizeQueue.push({ index: i, msg, score: scored.get(i) });
+        } else {
+          result[i] = msg;
+        }
         continue;
       }
 
-      result.push(msg);
+      result[i] = msg;
     }
 
-    trackStats(messages, result);
-    return result;
+    if (summarizeQueue.length > 0) {
+      const compressed = await Promise.all(
+        summarizeQueue.map(({ msg, score }) => maybeCompressMessage(msg, score, ctx, profile)),
+      );
+      for (let j = 0; j < summarizeQueue.length; j++) {
+        result[summarizeQueue[j].index] = compressed[j] ?? summarizeQueue[j].msg;
+      }
+    }
+
+    const finalResult = result.filter((m): m is Message => m !== null);
+    trackStats(messages, finalResult);
+    return finalResult;
   }
 
   async function maybeCompressMessage(
@@ -266,7 +286,7 @@ export function createCompressor(deps: CompressorDeps) {
     const scorable: ScoredMessage[] = [];
     for (let i = 0; i < boundary; i++) {
       const text = extractText(messages[i]);
-      if (text.length > 20) {
+      if (text.length > 20 && !state.stableCompressions.has(store.makeId(text))) {
         scorable.push({ text, index: i });
       }
     }

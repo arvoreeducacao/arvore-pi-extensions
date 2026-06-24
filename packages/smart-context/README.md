@@ -6,15 +6,17 @@ Intelligent model routing and retrieval-augmented prompt compression for Pi/Kiro
 
 ### Model Routing
 
-Uses **Haiku** (fast, cheap) to classify task complexity based on the full conversation context — not just the current message. So "bora" after a complex architecture discussion correctly routes to Opus.
+Uses a cheap classifier model (Haiku by default) to classify task complexity based on the full conversation context — not just the current message. So "bora" after a complex architecture discussion correctly routes to Opus.
 
-| Classification | Model | When |
+| Classification | Default model | When |
 |---|---|---|
 | trivial | `claude-haiku-4-5` | Greetings, meta-conversation, no pending task |
 | simple | `claude-sonnet-4-6` | Single-file fixes, quick questions |
-| medium | `claude-sonnet-4-6` | Standard multi-file work (deterministic baseline) |
+| medium | `claude-opus-4-8` | Standard multi-file work |
 | complex | `claude-opus-4-8` | Architecture, large refactors, security audits |
 | Large context (>500K) | `claude-sonnet-4-6` | 1M window needed |
+
+Every slot above — provider and model — is configurable (see [Configuration](#configuration)).
 
 ### Retrieval-Augmented Compression
 
@@ -57,12 +59,59 @@ Detection uses `ctx.getModel().contextWindow` and `ctx.getContextUsage().tokens`
 
 - `/smart-context` — Stats: chars saved, avg ratio, Haiku calls/cache hits, recoverable items
 
+## Configuration
+
+Model routing is fully configurable via a project-local `.pi/smart-context.json` file. The extension walks up from the current working directory looking for the nearest `.pi`/`.git` root, then reads `.pi/smart-context.json` from it. If the file is missing or malformed, the built-in defaults are used (behavior identical to no config).
+
+Every slot is a `{ "provider", "model" }` pair, so you are **not** locked to the `kiro` provider — you can mix providers and models freely across slots. The `provider`/`model` strings must match what `modelRegistry.find(provider, model)` resolves for your Pi setup.
+
+```json
+{
+  "classifier": { "provider": "kiro", "model": "claude-haiku-4-5" },
+
+  "routing": {
+    "trivial": { "provider": "kiro", "model": "claude-haiku-4-5" },
+    "simple":  { "provider": "kiro", "model": "claude-sonnet-4-6" },
+    "medium":  { "provider": "kiro", "model": "claude-opus-4-8" },
+    "complex": { "provider": "kiro", "model": "claude-opus-4-8" }
+  },
+
+  "largeContext": {
+    "thresholdTokens": 500000,
+    "model": { "provider": "kiro", "model": "claude-sonnet-4-6" }
+  }
+}
+```
+
+| Key | Purpose |
+|---|---|
+| `classifier` | The cheap model that classifies task complexity. Also reused by the compression summarizer. |
+| `routing.trivial` / `.simple` / `.medium` / `.complex` | Model picked for each classified complexity. |
+| `largeContext.thresholdTokens` | When context usage exceeds this, skip classification and use `largeContext.model` directly. |
+| `largeContext.model` | Model forced for very large contexts. |
+
+Partial configs are deep-merged over the defaults — you only need to specify the slots you want to override. Each slot independently falls back to its default if the value is missing or not a valid `{ provider, model }` pair.
+
+### Example: use a different provider
+
+```json
+{
+  "classifier": { "provider": "anthropic", "model": "claude-haiku-4-5" },
+  "routing": {
+    "complex": { "provider": "openai", "model": "gpt-5" }
+  }
+}
+```
+
+This classifies with Anthropic Haiku, routes `complex` tasks to OpenAI, and keeps the defaults for every other slot.
+
 ## Architecture
 
 ```
 src/
 ├── index.ts                      # Hooks + recover_context tool
-├── router.ts                     # Haiku-based complexity classification
+├── config.ts                     # .pi/smart-context.json loader (provider+model per slot)
+├── router.ts                     # Classifier-based complexity routing
 └── compression/
     ├── pipeline.ts               # Orchestrates stages, cache-stable, retrieval-augmented
     ├── store.ts                  # Content store for recover_context
