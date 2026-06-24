@@ -90,7 +90,7 @@ export function registerLspTools(pi: ExtensionAPI, getManager: () => LspManager)
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
       const result = await getManager().diagnostics(params.file);
-      if (!result) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (result === undefined) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
       return {
         content: [{ type: "text", text: formatDiagnostics(result.path, ctx.cwd, result.diagnostics) }],
         details: { path: result.path, count: result.diagnostics.length },
@@ -114,7 +114,7 @@ export function registerLspTools(pi: ExtensionAPI, getManager: () => LspManager)
         line: params.line - 1,
         character: params.column - 1,
       });
-      if (locations === null) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (locations === undefined) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
       return {
         content: [{ type: "text", text: formatLocations(locations, ctx.cwd) }],
         details: { count: locations.length },
@@ -138,7 +138,7 @@ export function registerLspTools(pi: ExtensionAPI, getManager: () => LspManager)
         line: params.line - 1,
         character: params.column - 1,
       });
-      if (locations === null) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (locations === undefined) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
       return {
         content: [{ type: "text", text: formatLocations(locations, ctx.cwd) }],
         details: { count: locations.length },
@@ -162,7 +162,8 @@ export function registerLspTools(pi: ExtensionAPI, getManager: () => LspManager)
         line: params.line - 1,
         character: params.column - 1,
       });
-      if (hover === null) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (hover === undefined) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (hover === null) return { content: [{ type: "text", text: "No hover information." }], details: {} };
       return { content: [{ type: "text", text: formatHover(hover) }], details: {} };
     },
   });
@@ -189,7 +190,8 @@ export function registerLspTools(pi: ExtensionAPI, getManager: () => LspManager)
         { line: params.line - 1, character: params.column - 1 },
         params.newName,
       );
-      if (edit === null) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (edit === undefined) return { content: [{ type: "text", text: NOT_AVAILABLE }], details: {} };
+      if (edit === null) return { content: [{ type: "text", text: "Rename produced no edits (symbol may not be renameable here)." }], details: {} };
 
       const changes: Record<string, Array<{ range: unknown; newText: string }>> = {};
       if (edit.changes) {
