@@ -54,27 +54,50 @@ function collectCandidateDirs(): string[] {
   return Array.from(dirs);
 }
 
-function findPiAiEntries(): string[] {
+function findCompatEntries(): string[] {
   const found = new Set<string>();
-  for (const dir of collectCandidateDirs()) {
-    const candidate = join(dir, "node_modules", "@earendil-works", "pi-ai", "dist", "index.js");
-    if (existsSync(candidate)) found.add(candidate);
-  }
+
+  const fromDir = (dir: string) => {
+    const base = join(dir, "node_modules", "@earendil-works", "pi-ai", "dist");
+    const compat = join(base, "compat.js");
+    if (existsSync(compat)) found.add(compat);
+    const index = join(base, "index.js");
+    if (existsSync(index)) found.add(index);
+  };
+
+  for (const dir of collectCandidateDirs()) fromDir(dir);
+
   try {
     const req = createRequire(import.meta.url);
-    const resolved = req.resolve("@earendil-works/pi-ai/package.json");
-    const entry = join(dirname(resolved), "dist", "index.js");
-    if (existsSync(entry)) found.add(entry);
+    const pkg = req.resolve("@earendil-works/pi-ai/package.json");
+    const base = join(dirname(pkg), "dist");
+    if (existsSync(join(base, "compat.js"))) found.add(join(base, "compat.js"));
+    if (existsSync(join(base, "index.js"))) found.add(join(base, "index.js"));
   } catch {
     // ignore
   }
-  return Array.from(found);
+
+  return Array.from(found).sort((a, b) => {
+    const score = (p: string) =>
+      (p.includes("pi-coding-agent") ? -100 : 0) + (p.endsWith("compat.js") ? -10 : 0);
+    return score(a) - score(b);
+  });
+}
+
+function tag(entry: string): string {
+  const base = entry.endsWith("compat.js") ? "compat" : "index";
+  const loc = entry.includes("pi-coding-agent")
+    ? "host"
+    : entry.includes(".pi/npm")
+      ? "pi-npm"
+      : "local";
+  return `${loc}/${base}`;
 }
 
 export async function getComplete(): Promise<CompleteFn | null> {
   if (cached !== undefined) return cached;
 
-  const entries = findPiAiEntries();
+  const entries = findCompatEntries();
   const diag: string[] = [`argv1=${process.argv[1] ?? "?"}`, `entries=${entries.length}`];
 
   let withRegistry: CompleteFn | null = null;
@@ -83,17 +106,33 @@ export async function getComplete(): Promise<CompleteFn | null> {
   for (const entry of entries) {
     try {
       const mod = await import(pathToFileURL(entry).href);
-      if (typeof mod.complete !== "function") continue;
-      anyComplete = mod.complete as CompleteFn;
+      const completeFn =
+        typeof mod.complete === "function"
+          ? (mod.complete as CompleteFn)
+          : typeof mod.completeSimple === "function"
+            ? (mod.completeSimple as CompleteFn)
+            : null;
+      if (!completeFn) {
+        diag.push(`${tag(entry)}:no-complete`);
+        continue;
+      }
+      anyComplete ??= completeFn;
       const getProvider = mod.getApiProvider as ((api: string) => unknown) | undefined;
-      const hasKiro = typeof getProvider === "function" && getProvider("kiro-api");
-      diag.push(`${entry.includes(".pi/npm") ? "pi-npm" : entry.includes("pi-coding-agent") ? "host" : "local"}:kiro=${hasKiro ? "yes" : "no"}`);
+      let hasKiro = false;
+      if (typeof getProvider === "function") {
+        try {
+          hasKiro = Boolean(getProvider("kiro-api"));
+        } catch {
+          hasKiro = false;
+        }
+      }
+      diag.push(`${tag(entry)}:kiro=${hasKiro ? "yes" : "no"}`);
       if (hasKiro) {
-        withRegistry = mod.complete as CompleteFn;
+        withRegistry = completeFn;
         break;
       }
     } catch (err) {
-      diag.push(`err:${err instanceof Error ? err.message.slice(0, 40) : "?"}`);
+      diag.push(`${tag(entry)}:err:${err instanceof Error ? err.message.slice(0, 40) : "?"}`);
     }
   }
 

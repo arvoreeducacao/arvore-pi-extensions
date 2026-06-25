@@ -41,12 +41,31 @@ const STATE_DIR = ".pi/prs-tracker-sessions";
 const DEPLOY_WORKFLOW_RE = /deploy|publish|release/i;
 const DEPLOY_STAGING_RE = /staging/i;
 
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const SPINNER_INTERVAL_MS = 120;
+
 const tracked = new Map<string, TrackedPr>();
 let hidden = false;
+let hideMerged = false;
 let widgetVisible = false;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+let spinnerTimer: ReturnType<typeof setInterval> | null = null;
+let spinnerTick = 0;
 let uiCtx: any = null;
 let sessionId = `mem-${Date.now()}`;
+
+function spinnerFrame(): string {
+  return SPINNER_FRAMES[spinnerTick % SPINNER_FRAMES.length];
+}
+
+function hasActiveState(): boolean {
+  for (const pr of tracked.values()) {
+    if (pr.state !== "OPEN" && pr.state !== "MERGED") continue;
+    if (pr.ci && pr.ci.state === "PENDING") return true;
+    if (pr.deploy && (pr.deploy.state === "QUEUED" || pr.deploy.state === "IN_PROGRESS")) return true;
+  }
+  return false;
+}
 
 function getSessionId(ctx: any): string {
   const file = ctx?.sessionManager?.getSessionFile?.() || "";
@@ -74,7 +93,7 @@ function saveState(cwd: string): void {
   if (!path) return;
   try {
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, JSON.stringify({ hidden, prs: [...tracked.values()] }, null, 2));
+    writeFileSync(path, JSON.stringify({ hidden, hideMerged, prs: [...tracked.values()] }, null, 2));
   } catch {}
 }
 
@@ -84,9 +103,11 @@ function loadState(cwd: string): void {
   try {
     const state = JSON.parse(readFileSync(path, "utf-8")) as {
       hidden?: boolean;
+      hideMerged?: boolean;
       prs?: TrackedPr[];
     };
     hidden = Boolean(state.hidden);
+    hideMerged = Boolean(state.hideMerged);
     tracked.clear();
     for (const pr of state.prs ?? []) {
       if (pr && typeof pr.number === "number" && pr.repo) {
@@ -334,11 +355,13 @@ function sortedPrs(): TrackedPr[] {
     if (pr.deploy && (pr.deploy.state === "QUEUED" || pr.deploy.state === "IN_PROGRESS")) return 1;
     return 2;
   };
-  return [...tracked.values()].sort((a, b) => {
-    const byState = order(a) - order(b);
-    if (byState !== 0) return byState;
-    return b.number - a.number;
-  });
+  return [...tracked.values()]
+    .filter((pr) => !(hideMerged && pr.state === "MERGED"))
+    .sort((a, b) => {
+      const byState = order(a) - order(b);
+      if (byState !== 0) return byState;
+      return b.number - a.number;
+    });
 }
 
 function labelFor(pr: TrackedPr): string {
@@ -361,7 +384,7 @@ function ciLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | n
   const map: Record<CiState, [string, string]> = {
     PASS: ["success", "CI passed"],
     FAIL: ["error", "CI failed"],
-    PENDING: ["warning", "CI running"],
+    PENDING: ["warning", `${spinnerFrame()} CI running`],
     NONE: ["dim", "CI"],
   };
   const [color, label] = map[ci.state];
@@ -373,12 +396,12 @@ function deployLine(pr: TrackedPr, fg: (c: string, s: string) => string): string
   const d = pr.deploy;
   if (!d || d.state === "NONE") return null;
   const map: Record<DeployState, [string, string]> = {
-    QUEUED: ["warning", "deploy queued"],
-    IN_PROGRESS: ["warning", "deploying to main"],
-    SUCCESS: ["success", "deployed to main"],
-    FAILURE: ["error", "deploy failed"],
-    SKIPPED: ["dim", "deploy skipped"],
-    NONE: ["dim", "deploy"],
+    QUEUED: ["warning", `${spinnerFrame()} Deploy queued`],
+    IN_PROGRESS: ["warning", `${spinnerFrame()} Deploying to main`],
+    SUCCESS: ["success", "Deployed to main"],
+    FAILURE: ["error", "Deploy failed"],
+    SKIPPED: ["dim", "Deploy skipped"],
+    NONE: ["dim", "Deploy"],
   };
   const [color, label] = map[d.state];
   return fg(color, label);
@@ -391,13 +414,14 @@ function renderWidget(width: number, theme: any): string[] {
   const fg = (color: string, s: string): string => (theme?.fg ? theme.fg(color, s) : s);
   const bold = (s: string): string => (theme?.bold ? theme.bold(s) : s);
 
-  const open = prs.filter((p) => p.state === "OPEN").length;
-  const merged = prs.filter((p) => p.state === "MERGED").length;
-  const deploying = prs.filter(
+  const all = [...tracked.values()];
+  const open = all.filter((p) => p.state === "OPEN").length;
+  const merged = all.filter((p) => p.state === "MERGED").length;
+  const deploying = all.filter(
     (p) => p.deploy && (p.deploy.state === "QUEUED" || p.deploy.state === "IN_PROGRESS"),
   ).length;
   const headerParts = [`${open} open`];
-  if (merged) headerParts.push(`${merged} merged`);
+  if (merged) headerParts.push(hideMerged ? `${merged} merged (hidden)` : `${merged} merged`);
   if (deploying) headerParts.push(`${deploying} deploying`);
   const header = ` PRs — ${headerParts.join(", ")}`;
   lines.push(bold(fg("accent", trunc(header))));
@@ -427,9 +451,49 @@ function updateWidget(ctx: any): void {
       ctx.ui.setWidget("pi-prs-tracker", undefined);
       widgetVisible = false;
     }
+    stopSpinner();
     return;
   }
 
+  ctx.ui.setWidget(
+    "pi-prs-tracker",
+    (_tui: any, theme: any) => ({
+      render(width: number): string[] {
+        return renderWidget(width, theme);
+      },
+      invalidate(): void {
+        widgetVisible = false;
+      },
+    }),
+    { placement: "aboveEditor" },
+  );
+  widgetVisible = true;
+  if (hasActiveState()) startSpinner(ctx);
+  else stopSpinner();
+}
+
+function startSpinner(ctx: any): void {
+  if (spinnerTimer) return;
+  spinnerTimer = setInterval(() => {
+    if (hidden || tracked.size === 0 || !hasActiveState()) {
+      stopSpinner();
+      return;
+    }
+    spinnerTick++;
+    renderWidgetNow(ctx ?? uiCtx);
+  }, SPINNER_INTERVAL_MS);
+  if (typeof spinnerTimer.unref === "function") spinnerTimer.unref();
+}
+
+function stopSpinner(): void {
+  if (spinnerTimer) {
+    clearInterval(spinnerTimer);
+    spinnerTimer = null;
+  }
+}
+
+function renderWidgetNow(ctx: any): void {
+  if (!ctx?.ui?.setWidget || hidden || tracked.size === 0) return;
   ctx.ui.setWidget(
     "pi-prs-tracker",
     (_tui: any, theme: any) => ({
@@ -476,6 +540,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
 
   pi.on("session_shutdown", async () => {
     stopPolling();
+    stopSpinner();
   });
 
   pi.on("tool_execution_end", async (event: any, ctx: any) => {
@@ -496,7 +561,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
   });
 
   pi.registerCommand("prs", {
-    description: "Manage the pinned PRs widget. Usage: /prs [show|hide|refresh]",
+    description: "Manage the pinned PRs widget. Usage: /prs [show|hide|merged|refresh]",
     handler: async (args, ctx) => {
       const sub = (args ?? "").trim().toLowerCase();
 
@@ -533,8 +598,18 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
           break;
         }
 
+        case "merged":
+          hideMerged = !hideMerged;
+          saveState(ctx?.cwd ?? process.cwd());
+          updateWidget(ctx);
+          ctx.ui.notify(
+            hideMerged ? "PRs merged ocultos." : "PRs merged visíveis.",
+            "info",
+          );
+          break;
+
         default:
-          ctx.ui.notify("Usage: /prs [show|hide|refresh]", "warning");
+          ctx.ui.notify("Usage: /prs [show|hide|merged|refresh]", "warning");
       }
     },
   });

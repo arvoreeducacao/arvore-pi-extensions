@@ -1,7 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getComplete } from "./host-ai.js";
-
-type Complexity = "trivial" | "simple" | "medium" | "complex";
+import { loadConfig, configFilePath, type Complexity, type ModelRef } from "./config.js";
 
 const CLASSIFICATION_PROMPT = `You are a task complexity classifier for a coding agent. Based on the recent conversation context and the user's latest message, classify the TASK complexity (not the message complexity).
 
@@ -18,20 +17,43 @@ Respond with ONLY one word: trivial, simple, medium, or complex`;
 
 export function createRouter(pi: ExtensionAPI) {
   return {
-    async pick(prompt: string, ctx: any): Promise<string | null> {
+    async pick(prompt: string, ctx: any): Promise<ModelRef | null> {
+      const config = loadConfig(ctx.cwd);
+      const debug = process.env.SMART_CONTEXT_DEBUG === "1";
+      const log = (msg: string) => {
+        if (debug) ctx.ui?.notify?.(`smart-context[pick] ${msg}`, "info");
+      };
+
       const usage = ctx.getContextUsage?.();
-      if (usage && usage.tokens > 500_000) {
-        return "claude-sonnet-4-6";
+      if (debug) {
+        log(
+          `cwd=${ctx.cwd} cfg=${configFilePath(ctx.cwd) ?? "<none>"} ` +
+            `tokens=${usage?.tokens ?? "n/a"} threshold=${config.largeContext.thresholdTokens} ` +
+            `classifier=${config.classifier.provider}/${config.classifier.model}`,
+        );
       }
 
-      const model = ctx.modelRegistry.find("kiro", "claude-haiku-4-5");
-      if (!model) return null;
+      if (usage && usage.tokens > config.largeContext.thresholdTokens) {
+        log(`branch=largeContext → ${config.largeContext.model.provider}/${config.largeContext.model.model}`);
+        return config.largeContext.model;
+      }
+
+      const { classifier } = config;
+      const model = ctx.modelRegistry.find(classifier.provider, classifier.model);
+      if (!model) {
+        log(`branch=classifier-find-null (${classifier.provider}/${classifier.model})`);
+        return null;
+      }
 
       const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
-      if (!auth.ok || !auth.apiKey) return null;
+      if (!auth.ok || !auth.apiKey) {
+        log(`branch=classifier-auth-fail ok=${auth.ok}`);
+        return null;
+      }
 
       const complete = await getComplete();
       if (!complete) throw new Error("could not resolve host pi-ai complete()");
+      log("branch=classifier-running");
 
       const recentContext = buildRecentContext(ctx);
 
@@ -60,7 +82,9 @@ export function createRouter(pi: ExtensionAPI) {
         .join("");
 
       const complexity = parseComplexity(answer);
-      return modelForComplexity(complexity);
+      const chosen = config.routing[complexity];
+      log(`branch=classifier-done complexity=${complexity} → ${chosen.provider}/${chosen.model}`);
+      return chosen;
     },
   };
 }
@@ -108,17 +132,4 @@ function parseComplexity(answer: string): Complexity {
   const match = answer.trim().toLowerCase().match(/\b(trivial|simple|medium|complex)\b/);
   if (match) return match[1] as Complexity;
   return "medium";
-}
-
-function modelForComplexity(complexity: Complexity): string | null {
-  switch (complexity) {
-    case "trivial":
-      return "claude-haiku-4-5";
-    case "simple":
-      return "claude-sonnet-4-6";
-    case "complex":
-    case "medium":
-    default:
-      return "claude-opus-4-8";
-  }
 }
