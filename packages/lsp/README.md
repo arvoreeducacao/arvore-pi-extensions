@@ -36,7 +36,8 @@ If a server is missing, the tools return a clear message and the extension stays
 
 ## How it works
 
-- One server instance per `(language, project root)`, lazy-spawned on first use. Root is detected via `tsconfig.json` / `jsconfig.json` / `package.json` / `.git`.
+- One server instance per `(language, project root)`, lazy-spawned on first use. Root is detected by walking up from the file and preferring the nearest `tsconfig.json` / `jsconfig.json` / `package.json` over `.git`, so files inside a subproject of a monorepo resolve to the subproject (which has its own TypeScript install) rather than the repo root.
+- If a server fails to initialize (e.g. no TypeScript found at the resolved root), the instance is not cached as permanently unavailable — a later call can retry once the root resolution improves.
 - Documents are synced (`didOpen` / `didChange`) from disk on each call; diagnostics are awaited with a short quiet-period debounce.
 - Servers are shut down cleanly on `session_shutdown`.
 
