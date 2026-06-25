@@ -99,6 +99,127 @@
         background: var(--accent);
         border-color: var(--accent);
       }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 3px;
+      }
+      .tabs button {
+        border: 0;
+        background: transparent;
+        padding: 5px 14px;
+        border-radius: 6px;
+        color: var(--fg-dim);
+      }
+      .tabs button:hover {
+        border-color: transparent;
+        color: var(--fg);
+      }
+      .tabs button.active {
+        background: var(--accent-bg);
+        color: var(--bg-dark);
+      }
+      .pr-list {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+      .pr-repo-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-family: var(--mono);
+      }
+      .pr-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-elev);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 0.12s;
+      }
+      .pr-card:hover {
+        border-color: var(--accent);
+      }
+      .pr-num {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--fg-dim);
+        min-width: 48px;
+      }
+      .pr-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .pr-title {
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pr-meta {
+        font-size: 12px;
+        color: var(--fg-dim);
+        margin-top: 3px;
+      }
+      .pr-badge {
+        font-size: 11px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+      }
+      .pr-badge.draft {
+        color: var(--fg-dim);
+      }
+      .pr-stat-add {
+        color: var(--success);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .pr-stat-del {
+        color: var(--error);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .pr-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        margin-bottom: 16px;
+        border: 1px solid var(--accent);
+        border-radius: var(--radius);
+        background: var(--bg-elev);
+      }
+      .pr-banner .pr-banner-title {
+        flex: 1;
+        min-width: 0;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pr-banner a {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 12px;
+      }
+      .pr-banner a:hover {
+        text-decoration: underline;
+      }
       .status {
         font-size: 12px;
         color: var(--fg-dim);
@@ -442,12 +563,18 @@
   <body>
     <header>
       <h1>git-review</h1>
-      <select id="scope">
-        <option value="working">Working tree (vs HEAD)</option>
-        <option value="staged">Staged</option>
-        <option value="branch">Branch vs base</option>
-      </select>
-      <input id="base" type="text" value="main" size="10" title="base ref for branch scope" />
+      <div class="tabs">
+        <button id="tab-diff" class="active" data-mode="diff">Diff</button>
+        <button id="tab-prs" data-mode="prs">PRs</button>
+      </div>
+      <span id="diff-controls" style="display: contents">
+        <select id="scope">
+          <option value="working">Working tree (vs HEAD)</option>
+          <option value="staged">Staged</option>
+          <option value="branch">Branch vs base</option>
+        </select>
+        <input id="base" type="text" value="main" size="10" title="base ref for branch scope" />
+      </span>
       <select id="view" title="diff layout">
         <option value="unified">Unified</option>
         <option value="split">Split</option>
@@ -474,6 +601,13 @@
       let viewMode = localStorage.getItem("gr-view") || "unified";
       viewSel.value = viewMode;
       let lastGroups = [];
+
+      const diffControls = document.getElementById("diff-controls");
+      const tabDiff = document.getElementById("tab-diff");
+      const tabPrs = document.getElementById("tab-prs");
+      let appMode = "diff";
+      let currentPr = null;
+      let prRequestSeq = 0;
 
       if (params.get("scope")) scopeSel.value = params.get("scope");
       if (params.get("base")) baseInput.value = params.get("base");
@@ -531,12 +665,179 @@
         return "unknown";
       }
 
-      function renderDiff(groups) {
+      function timeAgo(iso) {
+        const then = new Date(iso).getTime();
+        if (Number.isNaN(then)) return "";
+        const secs = Math.max(0, (Date.now() - then) / 1000);
+        const units = [
+          ["y", 31536000],
+          ["mo", 2592000],
+          ["d", 86400],
+          ["h", 3600],
+          ["m", 60],
+        ];
+        for (const [label, size] of units) {
+          const v = Math.floor(secs / size);
+          if (v >= 1) return `${v}${label} ago`;
+        }
+        return "just now";
+      }
+
+      async function loadPrs() {
+        const requestSeq = ++prRequestSeq;
+        content.innerHTML = '<div class="empty">Loading open PRs…</div>';
+        try {
+          const res = await fetch(`/api/prs?token=${TOKEN}`);
+          const data = await res.json();
+          if (requestSeq !== prRequestSeq || appMode !== "prs") return;
+          renderPrList(data.groups || []);
+        } catch (err) {
+          content.innerHTML = `<div class="empty">Failed to load PRs: ${escapeHtml(String(err))}</div>`;
+        }
+      }
+
+      function renderPrList(groups) {
         if (!groups.length) {
-          content.innerHTML = '<div class="empty">No changes in this scope.</div>';
+          content.innerHTML =
+            '<div class="empty">No open PRs found across repos.<br/>Requires the <code>gh</code> CLI authenticated.</div>';
           return;
         }
         content.innerHTML = "";
+        const list = document.createElement("div");
+        list.className = "pr-list";
+        groups.forEach((group) => {
+          const repoEl = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "pr-repo-name";
+          name.textContent = group.repo;
+          repoEl.appendChild(name);
+          group.prs.forEach((pr) => {
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "pr-card";
+            const draft = pr.isDraft
+              ? '<span class="pr-badge draft">draft</span>'
+              : "";
+            card.innerHTML =
+              `<span class="pr-num">#${pr.number}</span>` +
+              `<div class="pr-main">` +
+              `<div class="pr-title">${escapeHtml(pr.title)}</div>` +
+              `<div class="pr-meta">${escapeHtml(pr.author)} · ${escapeHtml(pr.headRefName)} → ${escapeHtml(pr.baseRefName)} · ${escapeHtml(timeAgo(pr.updatedAt))}</div>` +
+              `</div>` +
+              draft +
+              `<span class="pr-stat-add">+${pr.additions}</span>` +
+              `<span class="pr-stat-del">-${pr.deletions}</span>`;
+            card.addEventListener("click", () => openPr(pr));
+            repoEl.appendChild(card);
+          });
+          list.appendChild(repoEl);
+        });
+        content.appendChild(list);
+      }
+
+      async function openPr(pr) {
+        const requestSeq = ++prRequestSeq;
+        content.innerHTML = `<div class="empty">Loading PR #${pr.number}…</div>`;
+        try {
+          const res = await fetch(
+            `/api/pr-diff?token=${TOKEN}&repo=${encodeURIComponent(pr.repo)}&number=${pr.number}`,
+          );
+          const data = await res.json();
+          if (requestSeq !== prRequestSeq || appMode !== "prs") return;
+          if (data.error) {
+            content.innerHTML = `<div class="empty">Failed to load PR: ${escapeHtml(String(data.error))}</div>`;
+            return;
+          }
+          const wasStarted =
+            currentPr &&
+            currentPr.repo === pr.repo &&
+            currentPr.number === pr.number &&
+            currentPr.started;
+          currentPr = {
+            ...pr,
+            context: data.context,
+            started: Boolean(pr.started || wasStarted),
+          };
+          lastGroups = [
+            {
+              repo: `${pr.repo} · PR #${pr.number}`,
+              branch: pr.headRefName,
+              worktree: null,
+              files: data.files || [],
+            },
+          ];
+          renderPrDiff(currentPr, lastGroups);
+        } catch (err) {
+          if (requestSeq !== prRequestSeq || appMode !== "prs") return;
+          content.innerHTML = `<div class="empty">Failed to load PR: ${escapeHtml(String(err))}</div>`;
+        }
+      }
+
+      function startReview() {
+        if (!currentPr || currentPr.started) return;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          toast(`${currentPr.repo} #${currentPr.number}`, null, null, "Not connected — try again");
+          return;
+        }
+        ws.send(JSON.stringify(currentPr.context));
+        currentPr.started = true;
+        toast(`${currentPr.repo} #${currentPr.number}`, null, null, "PR context sent to agent");
+        const btn = document.getElementById("pr-start");
+        if (btn) {
+          btn.textContent = "Review started";
+          btn.disabled = true;
+          btn.classList.remove("primary");
+        }
+      }
+
+      function renderPrDiff(pr, groups) {
+        content.innerHTML = "";
+        const banner = document.createElement("div");
+        banner.className = "pr-banner";
+        const startLabel = pr.started ? "Review started" : "Start review";
+        const startCls = pr.started ? "" : "primary";
+        banner.innerHTML =
+          `<button id="pr-back">← PRs</button>` +
+          `<span class="pr-num">#${pr.number}</span>` +
+          `<span class="pr-banner-title">${escapeHtml(pr.title)}</span>` +
+          `<a href="${escapeHtml(pr.url)}" target="_blank" rel="noreferrer">open on GitHub ↗</a>` +
+          `<button id="pr-start" class="${startCls}"${pr.started ? " disabled" : ""}>${startLabel}</button>`;
+        content.appendChild(banner);
+        banner.querySelector("#pr-back").onclick = () => {
+          currentPr = null;
+          loadPrs();
+        };
+        banner.querySelector("#pr-start").onclick = startReview;
+        const diffHost = document.createElement("div");
+        content.appendChild(diffHost);
+        renderDiff(groups, diffHost);
+      }
+
+      function setMode(mode) {
+        appMode = mode;
+        tabDiff.classList.toggle("active", mode === "diff");
+        tabPrs.classList.toggle("active", mode === "prs");
+        diffControls.style.display = mode === "diff" ? "contents" : "none";
+        closePopover();
+        clearSelection();
+        selection = null;
+        hideAskBtn();
+        if (mode === "diff") {
+          currentPr = null;
+          loadDiff();
+        } else {
+          currentPr = null;
+          loadPrs();
+        }
+      }
+
+      function renderDiff(groups, host) {
+        const target = host || content;
+        if (!groups.length) {
+          target.innerHTML = '<div class="empty">No changes in this scope.</div>';
+          return;
+        }
+        target.innerHTML = "";
         let fi = 0;
         groups.forEach((group) => {
           const groupEl = document.createElement("div");
@@ -571,7 +872,7 @@
             groupEl.classList.toggle("open");
           });
           if (groups.length === 1) groupEl.classList.add("open");
-          content.appendChild(groupEl);
+          target.appendChild(groupEl);
         });
 
         wireSelection();
@@ -985,8 +1286,16 @@
         openPopover(last.querySelector("td.gutter"));
       });
 
-      document.getElementById("refresh").onclick = loadDiff;
+      document.getElementById("refresh").onclick = () => {
+        if (appMode === "prs") {
+          currentPr ? openPr(currentPr) : loadPrs();
+        } else {
+          loadDiff();
+        }
+      };
       scopeSel.onchange = loadDiff;
+      tabDiff.onclick = () => setMode("diff");
+      tabPrs.onclick = () => setMode("prs");
       viewSel.onchange = () => {
         viewMode = viewSel.value;
         localStorage.setItem("gr-view", viewMode);
@@ -994,7 +1303,11 @@
         clearSelection();
         selection = null;
         hideAskBtn();
-        renderDiff(lastGroups);
+        if (appMode === "prs" && currentPr) {
+          renderPrDiff(currentPr, lastGroups);
+        } else if (appMode === "diff") {
+          renderDiff(lastGroups);
+        }
       };
       baseInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") loadDiff();
@@ -1006,7 +1319,11 @@
       });
 
       connect();
-      loadDiff();
+      if (params.get("mode") === "prs") {
+        setMode("prs");
+      } else {
+        loadDiff();
+      }
     </script>
   </body>
 </html>

@@ -44,6 +44,37 @@ export interface RepoGroup {
   files: parseDiff.File[];
 }
 
+export interface PullRequest {
+  repo: string;
+  number: number;
+  title: string;
+  author: string;
+  url: string;
+  baseRefName: string;
+  headRefName: string;
+  isDraft: boolean;
+  updatedAt: string;
+  additions: number;
+  deletions: number;
+}
+
+export interface PullRequestGroup {
+  repo: string;
+  prs: PullRequest[];
+}
+
+export interface PrContext {
+  type: "pr_context";
+  repo: string;
+  number: number;
+  title: string;
+  author: string;
+  url: string;
+  baseRefName: string;
+  headRefName: string;
+  body: string;
+}
+
 async function detectBranch(pi: ExtensionAPI, dir: string): Promise<string> {
   try {
     const { stdout } = await pi.exec("git", ["-C", dir, "rev-parse", "--abbrev-ref", "HEAD"]);
@@ -174,6 +205,115 @@ async function collectRepoGroups(
   return groups;
 }
 
+async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]> {
+  const repos = await findRepoDirs(pi);
+  const seen = new Set<string>();
+  const groups: PullRequestGroup[] = [];
+
+  for (const { dir, label } of repos) {
+    if (seen.has(label)) continue;
+    seen.add(label);
+    try {
+      const { stdout } = await pi.exec("gh", [
+        "pr",
+        "list",
+        "--state",
+        "open",
+        "--limit",
+        "200",
+        "--json",
+        "number,title,author,url,baseRefName,headRefName,isDraft,updatedAt,additions,deletions",
+      ], { cwd: dir });
+      const parsed = JSON.parse(stdout || "[]") as Array<{
+        number: number;
+        title: string;
+        author?: { login?: string };
+        url: string;
+        baseRefName: string;
+        headRefName: string;
+        isDraft: boolean;
+        updatedAt: string;
+        additions?: number;
+        deletions?: number;
+      }>;
+      if (!parsed.length) continue;
+      const prs: PullRequest[] = parsed.map((p) => ({
+        repo: label,
+        number: p.number,
+        title: p.title,
+        author: p.author?.login || "unknown",
+        url: p.url,
+        baseRefName: p.baseRefName,
+        headRefName: p.headRefName,
+        isDraft: p.isDraft,
+        updatedAt: p.updatedAt,
+        additions: p.additions || 0,
+        deletions: p.deletions || 0,
+      }));
+      prs.sort((a, b) => b.number - a.number);
+      groups.push({ repo: label, prs });
+    } catch {}
+  }
+
+  groups.sort((a, b) => a.repo.localeCompare(b.repo));
+  return groups;
+}
+
+function repoDirForLabel(repos: RepoDir[], label: string): string | null {
+  const match = repos.find((r) => r.label === label);
+  return match ? match.dir : null;
+}
+
+async function collectPrDiff(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+): Promise<{ files: parseDiff.File[]; context: PrContext } | null> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) return null;
+  const prefix = repo === "." ? "" : repo + "/";
+
+  const { stdout: viewOut } = await pi.exec("gh", [
+    "pr",
+    "view",
+    String(prNumber),
+    "--json",
+    "number,title,author,url,baseRefName,headRefName,body",
+  ], { cwd: dir });
+  const view = JSON.parse(viewOut) as {
+    number: number;
+    title: string;
+    author?: { login?: string };
+    url: string;
+    baseRefName: string;
+    headRefName: string;
+    body: string;
+  };
+
+  const { stdout: diffOut } = await pi.exec("gh", ["pr", "diff", String(prNumber)], {
+    cwd: dir,
+  });
+  const prefixed = diffOut
+    .replace(/^diff --git a\//gm, `diff --git a/${prefix}`)
+    .replace(/^(\+\+\+|---) ([ab])\//gm, `$1 $2/${prefix}`);
+  const files = parseDiff(prefixed);
+
+  const context: PrContext = {
+    type: "pr_context",
+    repo,
+    number: view.number,
+    title: view.title,
+    author: view.author?.login || "unknown",
+    url: view.url,
+    baseRefName: view.baseRefName,
+    headRefName: view.headRefName,
+    body: view.body || "",
+  };
+
+  return { files, context };
+}
+
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
@@ -199,7 +339,7 @@ export function startGitReviewServer(
   port: number,
   pi: ExtensionAPI,
   clients: Set<WebSocket>,
-  onComment: (comment: ReviewComment) => void,
+  onMessage: (msg: ReviewComment | PrContext) => void,
 ): Promise<GitReviewServer> {
   const token = randomBytes(16).toString("hex");
 
@@ -228,6 +368,44 @@ export function startGitReviewServer(
         return;
       }
 
+      if (url.pathname === "/api/prs") {
+        if (url.searchParams.get("token") !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        try {
+          const groups = await collectPullRequests(pi);
+          sendJson(res, 200, { groups });
+        } catch (err) {
+          sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/pr-diff") {
+        if (url.searchParams.get("token") !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        const repo = url.searchParams.get("repo") || ".";
+        const number = Number(url.searchParams.get("number"));
+        if (!Number.isInteger(number) || number <= 0) {
+          sendJson(res, 400, { error: "invalid pr number" });
+          return;
+        }
+        try {
+          const result = await collectPrDiff(pi, repo, number);
+          if (!result) {
+            sendJson(res, 404, { error: "repo not found" });
+            return;
+          }
+          sendJson(res, 200, { repo, number, context: result.context, files: result.files });
+        } catch (err) {
+          sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
       res.writeHead(404, { "Content-Type": "text/plain" });
       res.end("Not found");
     });
@@ -248,7 +426,9 @@ export function startGitReviewServer(
         try {
           const msg = JSON.parse(raw.toString());
           if (msg.type === "comment" && typeof msg.question === "string" && msg.question.trim()) {
-            onComment(msg as ReviewComment);
+            onMessage(msg as ReviewComment);
+          } else if (msg.type === "pr_context" && typeof msg.url === "string") {
+            onMessage(msg as PrContext);
           }
         } catch {}
       });
