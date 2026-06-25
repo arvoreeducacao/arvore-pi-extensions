@@ -138,11 +138,15 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        width: 100%;
         padding: 12px 14px;
         margin-bottom: 8px;
         border: 1px solid var(--border);
         border-radius: var(--radius);
         background: var(--bg-elev);
+        color: inherit;
+        font: inherit;
+        text-align: left;
         cursor: pointer;
         transition: border-color 0.12s;
       }
@@ -603,6 +607,7 @@
       const tabPrs = document.getElementById("tab-prs");
       let appMode = "diff";
       let currentPr = null;
+      let prRequestSeq = 0;
 
       if (params.get("scope")) scopeSel.value = params.get("scope");
       if (params.get("base")) baseInput.value = params.get("base");
@@ -679,10 +684,12 @@
       }
 
       async function loadPrs() {
+        const requestSeq = ++prRequestSeq;
         content.innerHTML = '<div class="empty">Loading open PRs…</div>';
         try {
           const res = await fetch(`/api/prs?token=${TOKEN}`);
           const data = await res.json();
+          if (requestSeq !== prRequestSeq || appMode !== "prs") return;
           renderPrList(data.groups || []);
         } catch (err) {
           content.innerHTML = `<div class="empty">Failed to load PRs: ${escapeHtml(String(err))}</div>`;
@@ -705,7 +712,8 @@
           name.textContent = group.repo;
           repoEl.appendChild(name);
           group.prs.forEach((pr) => {
-            const card = document.createElement("div");
+            const card = document.createElement("button");
+            card.type = "button";
             card.className = "pr-card";
             const draft = pr.isDraft
               ? '<span class="pr-badge draft">draft</span>'
@@ -728,17 +736,28 @@
       }
 
       async function openPr(pr) {
+        const requestSeq = ++prRequestSeq;
         content.innerHTML = `<div class="empty">Loading PR #${pr.number}…</div>`;
         try {
           const res = await fetch(
             `/api/pr-diff?token=${TOKEN}&repo=${encodeURIComponent(pr.repo)}&number=${pr.number}`,
           );
           const data = await res.json();
+          if (requestSeq !== prRequestSeq || appMode !== "prs") return;
           if (data.error) {
             content.innerHTML = `<div class="empty">Failed to load PR: ${escapeHtml(String(data.error))}</div>`;
             return;
           }
-          currentPr = { ...pr, context: data.context, started: false };
+          const wasStarted =
+            currentPr &&
+            currentPr.repo === pr.repo &&
+            currentPr.number === pr.number &&
+            currentPr.started;
+          currentPr = {
+            ...pr,
+            context: data.context,
+            started: Boolean(pr.started || wasStarted),
+          };
           lastGroups = [
             {
               repo: `${pr.repo} · PR #${pr.number}`,
@@ -747,8 +766,9 @@
               files: data.files || [],
             },
           ];
-          renderPrDiff(pr, lastGroups);
+          renderPrDiff(currentPr, lastGroups);
         } catch (err) {
+          if (requestSeq !== prRequestSeq || appMode !== "prs") return;
           content.innerHTML = `<div class="empty">Failed to load PR: ${escapeHtml(String(err))}</div>`;
         }
       }
@@ -806,6 +826,7 @@
           currentPr = null;
           loadDiff();
         } else {
+          currentPr = null;
           loadPrs();
         }
       }

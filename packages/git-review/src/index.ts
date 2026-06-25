@@ -85,10 +85,17 @@ function formatPrContext(c: PrContext): string {
     lines.push("(No description provided.)");
   }
   lines.push("");
+  const slug = repoSlugFromUrl(c.url);
+  const repoFlag = slug ? ` -R ${slug}` : "";
   lines.push(
-    `I'll ask about specific lines next. Use \`gh pr view ${c.number} -R ${c.repo}\` or \`gh pr diff ${c.number} -R ${c.repo}\` if you need more than the snippets I send.`,
+    `I'll ask about specific lines next. Use \`gh pr view ${c.number}${repoFlag}\` or \`gh pr diff ${c.number}${repoFlag}\` if you need more than the snippets I send.`,
   );
   return lines.join("\n");
+}
+
+function repoSlugFromUrl(url: string): string | null {
+  const match = /github\.com\/([^/]+\/[^/]+)\/pull\//.exec(url);
+  return match ? match[1] : null;
 }
 
 export default function (pi: ExtensionAPI) {

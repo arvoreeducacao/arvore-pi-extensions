@@ -220,7 +220,7 @@ async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]
         "--state",
         "open",
         "--limit",
-        "50",
+        "200",
         "--json",
         "number,title,author,url,baseRefName,headRefName,isDraft,updatedAt,additions,deletions",
       ], { cwd: dir });
