@@ -9,11 +9,14 @@ a user message. The agent's answers appear in your terminal (PI TUI).
 ```
 /review  ──►  extension starts a localhost HTTP+WS server, opens a browser tab
               │
-   browser ──┤  GET /api/diff     → parsed `git diff` (per file + hunks)
-              │  GET /api/prs      → open PRs per repo (`gh pr list`)
-              │  GET /api/pr-diff  → parsed PR diff + metadata (`gh pr diff/view`)
-              │  WS /ws            → you send { file, lines, code, question }
-              │                       or a pr_context primer when a PR is opened
+   browser ──┤  GET /api/diff       → parsed `git diff` (per file + hunks)
+              │  GET /api/prs        → open PRs per repo (`gh pr list`)
+              │  GET /api/pr-diff    → parsed PR diff + metadata (`gh pr diff/view`)
+              │  GET /api/pr-comments→ PR review + conversation comments (REST + GraphQL)
+              │  POST /api/pr-comment→ new inline review comment
+              │  POST /api/pr-reply  → reply to a review thread
+              │  WS /ws              → you send { file, lines, code, question },
+              │                        a pr_context primer, or comment_thread/comment_batch
               ▼
    extension calls pi.sendUserMessage(...)  → agent answers in the terminal
 ```
@@ -46,6 +49,34 @@ The **PRs** tab runs `gh pr list` in each discovered repo and shows every open P
 agent so it understands what it is reviewing. Every line question you ask afterwards is
 answered with that context in mind. The banner links back to the PR list and out to
 GitHub.
+
+#### GitHub comments
+
+The **Comments** button in the PR banner toggles a side panel that pulls the PR's existing
+GitHub comments into the tab:
+
+- **Review comments** (line-anchored) are grouped into threads and, when their line is in
+  the diff, mark the row with a dot. Click a thread's location to jump to and highlight it.
+- **Conversation comments** (general, non-line PR discussion) are listed in their own
+  section.
+- Resolved threads are **hidden by default**; toggle *Show resolved* to reveal them.
+  Resolved/outdated threads are badged.
+
+From each thread you can:
+
+- **Send to agent** — pipes that comment thread to the agent with a header marking it as a
+  GitHub comment (single, instant).
+- **batch** checkbox — select several threads, then the sticky batch bar lets you add one
+  shared note and send them all to the agent as a single prompt.
+- **Reply** — post a reply into the existing review thread on GitHub.
+
+To add a **new inline comment**, select line(s) in the diff and choose *Comment on GitHub*
+in the popover. It posts a review comment anchored to that line/range (RIGHT side by
+default, LEFT for deletions) as your authenticated `gh` user. The panel refreshes after
+any successful post or reply.
+
+> Posting comments and replies requires the `gh` CLI to be authenticated with write access
+> to the repo.
 
 > Requires the [`gh` CLI](https://cli.github.com) installed and authenticated
 > (`gh auth status`).

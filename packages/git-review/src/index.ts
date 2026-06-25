@@ -7,6 +7,10 @@ import {
   type GitReviewServer,
   type PrContext,
   type ReviewComment,
+  type CommentThreadMessage,
+  type CommentBatchMessage,
+  type PrCommentThread,
+  type IncomingMessage_,
 } from "./server.js";
 
 const PORT_RANGE_START = 9890;
@@ -98,13 +102,92 @@ function repoSlugFromUrl(url: string): string | null {
   return match ? match[1] : null;
 }
 
+function threadLocation(t: PrCommentThread): string {
+  if (t.kind === "conversation") return "PR conversation";
+  if (!t.path) return "unknown location";
+  if (t.startLine && t.line && t.startLine !== t.line) {
+    return `${t.path}:${t.startLine}-${t.line}`;
+  }
+  if (t.line) return `${t.path}:${t.line}`;
+  return t.path;
+}
+
+function renderThread(t: PrCommentThread): string {
+  const lines: string[] = [];
+  const tags: string[] = [];
+  if (t.isResolved) tags.push("resolved");
+  if (t.isOutdated) tags.push("outdated");
+  const suffix = tags.length ? ` (${tags.join(", ")})` : "";
+  const kind = t.kind === "review" ? "review comment" : "conversation comment";
+  const lead = t.comments[0];
+  lines.push(`GitHub ${kind} on ${threadLocation(t)}${suffix} — thread by @${lead?.author || "unknown"}:`);
+  lines.push("");
+  for (const c of t.comments) {
+    lines.push(`@${c.author}:`);
+    lines.push("```");
+    lines.push(c.body.replace(/```/g, "\u02bc\u02bc\u02bc"));
+    lines.push("```");
+    lines.push("");
+  }
+  lines.push(`Link: ${t.htmlUrl}`);
+  return lines.join("\n").trim();
+}
+
+function formatCommentThread(msg: CommentThreadMessage): string {
+  const lines: string[] = [];
+  lines.push(`I'm looking at a GitHub PR comment (repo ${msg.repo}, PR #${msg.number}).`);
+  lines.push("");
+  lines.push(renderThread(msg.thread));
+  if (msg.question?.trim()) {
+    lines.push("");
+    lines.push("My question:");
+    lines.push("");
+    lines.push(msg.question.trim());
+  }
+  return lines.join("\n");
+}
+
+function formatCommentBatch(msg: CommentBatchMessage): string {
+  const lines: string[] = [];
+  lines.push(
+    `I'm sending a batch of ${msg.threads.length} GitHub PR comment thread(s) (repo ${msg.repo}, PR #${msg.number}).`,
+  );
+  lines.push("");
+  if (msg.note?.trim()) {
+    lines.push("My note:");
+    lines.push("");
+    lines.push(msg.note.trim());
+    lines.push("");
+  }
+  msg.threads.forEach((t, i) => {
+    lines.push(`--- Comment ${i + 1} of ${msg.threads.length} ---`);
+    lines.push("");
+    lines.push(renderThread(t));
+    lines.push("");
+  });
+  return lines.join("\n").trim();
+}
+
 export default function (pi: ExtensionAPI) {
   let server: GitReviewServer | null = null;
   const clients: Set<WebSocket> = new Set();
   let isIdle: () => boolean = () => true;
 
-  const handleMessage = (msg: ReviewComment | PrContext) => {
-    const message = msg.type === "pr_context" ? formatPrContext(msg) : formatComment(msg);
+  const handleMessage = (msg: IncomingMessage_) => {
+    let message: string;
+    switch (msg.type) {
+      case "pr_context":
+        message = formatPrContext(msg);
+        break;
+      case "comment_thread":
+        message = formatCommentThread(msg);
+        break;
+      case "comment_batch":
+        message = formatCommentBatch(msg);
+        break;
+      default:
+        message = formatComment(msg);
+    }
     if (isIdle()) {
       pi.sendUserMessage(message);
     } else {
