@@ -349,6 +349,64 @@ function resultToText(result: any): string {
   return parts.join("\n");
 }
 
+const CONTEXT_CUSTOM_TYPE = "prs-tracker-context";
+
+function ciLabel(ci: CiSummary | null): string {
+  if (!ci || ci.state === "NONE") return "sem CI";
+  if (ci.state === "PENDING") return `CI rodando (${ci.passed}/${ci.total} ok, ${ci.pending} pendente, ${ci.failed} falha)`;
+  if (ci.state === "FAIL") return `CI FALHOU (${ci.failed}/${ci.total} falharam)`;
+  return `CI passou (${ci.passed}/${ci.total})`;
+}
+
+function deployLabel(deploy: DeployInfo | null): string | null {
+  if (!deploy || deploy.state === "NONE") return null;
+  switch (deploy.state) {
+    case "QUEUED":
+      return `deploy na fila (${deploy.workflow})`;
+    case "IN_PROGRESS":
+      return `deploy em andamento (${deploy.workflow})`;
+    case "SUCCESS":
+      return `deploy concluído (${deploy.workflow})`;
+    case "FAILURE":
+      return `deploy FALHOU (${deploy.workflow})`;
+    case "SKIPPED":
+      return `deploy pulado (${deploy.workflow})`;
+    default:
+      return null;
+  }
+}
+
+function prStateLabel(pr: TrackedPr): string {
+  if (pr.state === "MERGED") return "MERGED";
+  if (pr.state === "CLOSED") return "CLOSED (sem merge)";
+  return pr.isDraft ? "OPEN (draft)" : "OPEN";
+}
+
+function buildContextSummary(): string | null {
+  const prs = [...tracked.values()].filter(
+    (pr) => pr.state === "OPEN" || pr.state === "MERGED" || pr.state === "CLOSED",
+  );
+  if (prs.length === 0) return null;
+  const lines = prs
+    .sort((a, b) => b.number - a.number)
+    .map((pr) => {
+      const parts = [
+        `${pr.repo}#${pr.number} "${pr.title}"`,
+        `estado=${prStateLabel(pr)}`,
+        ciLabel(pr.ci),
+      ];
+      const dep = deployLabel(pr.deploy);
+      if (dep) parts.push(dep);
+      parts.push(pr.url);
+      return `- ${parts.join(" | ")}`;
+    });
+  return [
+    "[PRS RASTREADOS — estado atual, atualizado automaticamente]",
+    "Status real dos PRs rastreados nesta sessão (poll via gh). Use como fonte de verdade; não afirme merge/CI/deploy sem checar este bloco ou rodar gh.",
+    ...lines,
+  ].join("\n");
+}
+
 function sortedPrs(): TrackedPr[] {
   const order = (pr: TrackedPr): number => {
     if (pr.state === "OPEN") return 0;
@@ -541,6 +599,22 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
   pi.on("session_shutdown", async () => {
     stopPolling();
     stopSpinner();
+  });
+
+  pi.on("context", async (event: any) => {
+    const messages = event.messages.filter(
+      (m: any) => m?.customType !== CONTEXT_CUSTOM_TYPE,
+    );
+    const summary = buildContextSummary();
+    if (!summary) return { messages };
+    messages.push({
+      role: "custom",
+      customType: CONTEXT_CUSTOM_TYPE,
+      content: summary,
+      display: false,
+      timestamp: Date.now(),
+    });
+    return { messages };
   });
 
   pi.on("tool_execution_end", async (event: any, ctx: any) => {

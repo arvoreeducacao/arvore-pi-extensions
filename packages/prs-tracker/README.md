@@ -1,6 +1,6 @@
 # @arvoretech/pi-prs-tracker
 
-Keeps your open and recently-merged PRs pinned in the chat as a persistent widget — now with CI and production deploy status. PRs are auto-detected from `gh pr create` calls (and any GitHub PR URL) the agent runs during the session, and their status is refreshed in the background.
+Keeps your open and recently-merged PRs pinned in the chat as a persistent widget — now with CI and production deploy status. PRs are auto-detected from `gh pr create` calls (and any GitHub PR URL) the agent runs during the session, and their status is refreshed in the background. The current status of every tracked PR is also injected into the AI's context on each LLM call, so the agent always knows whether a PR is merged and how its CI/deploy is doing.
 
 ## Install
 
@@ -26,6 +26,10 @@ Or in `.pi/settings.json`:
   - CI: `CI passed` / `CI failed` / `CI running` with check counts
   - Deploy: `deploy queued` / `deploying to main` / `deployed to main` / `deploy failed`
 - Background polling (every 60s) refreshes CI and deploy statuses. Merged PRs stay for 24h (and are kept longer if a deploy is still in flight); closed PRs drop off immediately.
+
+## AI context injection
+
+On every LLM call the extension injects a non-displayed `custom` message (`customType: "prs-tracker-context"`) with a fresh snapshot of all tracked PRs — state (`OPEN`/`MERGED`/`CLOSED`), CI summary and deploy status. The block is rebuilt each call from the latest background poll and the previous one is filtered out, so the history is never polluted and the agent always sees the current state instead of stale info. This lets the agent answer "is this PR merged / did CI pass / did it deploy?" without re-running `gh`.
 
 ## Deploy detection
 
