@@ -72,8 +72,52 @@ export interface PrContext {
   url: string;
   baseRefName: string;
   headRefName: string;
+  headRefOid: string;
   body: string;
 }
+
+export interface PrCommentEntry {
+  id: number;
+  author: string;
+  body: string;
+  createdAt: string;
+  htmlUrl: string;
+}
+
+export interface PrCommentThread {
+  id: string;
+  kind: "review" | "conversation";
+  path?: string;
+  line?: number;
+  startLine?: number;
+  side?: "LEFT" | "RIGHT";
+  isResolved: boolean;
+  isOutdated: boolean;
+  htmlUrl: string;
+  comments: PrCommentEntry[];
+}
+
+export interface CommentThreadMessage {
+  type: "comment_thread";
+  repo: string;
+  number: number;
+  thread: PrCommentThread;
+  question?: string;
+}
+
+export interface CommentBatchMessage {
+  type: "comment_batch";
+  repo: string;
+  number: number;
+  threads: PrCommentThread[];
+  note?: string;
+}
+
+export type IncomingMessage_ =
+  | ReviewComment
+  | PrContext
+  | CommentThreadMessage
+  | CommentBatchMessage;
 
 async function detectBranch(pi: ExtensionAPI, dir: string): Promise<string> {
   try {
@@ -279,7 +323,7 @@ async function collectPrDiff(
     "view",
     String(prNumber),
     "--json",
-    "number,title,author,url,baseRefName,headRefName,body",
+    "number,title,author,url,baseRefName,headRefName,headRefOid,body",
   ], { cwd: dir });
   const view = JSON.parse(viewOut) as {
     number: number;
@@ -288,6 +332,7 @@ async function collectPrDiff(
     url: string;
     baseRefName: string;
     headRefName: string;
+    headRefOid: string;
     body: string;
   };
 
@@ -308,10 +353,348 @@ async function collectPrDiff(
     url: view.url,
     baseRefName: view.baseRefName,
     headRefName: view.headRefName,
+    headRefOid: view.headRefOid,
     body: view.body || "",
   };
 
   return { files, context };
+}
+
+function repoSlugFromUrl(url: string): string | null {
+  const match = /github\.com\/([^/]+\/[^/]+)\/pull\//.exec(url);
+  return match ? match[1] : null;
+}
+
+async function prUrlForNumber(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+): Promise<string | null> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) return null;
+  try {
+    const { stdout } = await pi.exec("gh", ["pr", "view", String(prNumber), "--json", "url"], {
+      cwd: dir,
+    });
+    const parsed = JSON.parse(stdout) as { url?: string };
+    return parsed.url || null;
+  } catch {
+    return null;
+  }
+}
+
+function stripHtmlComments(body: string): string {
+  return body.replace(/<!--[\s\S]*?-->/g, "").trim();
+}
+
+async function collectPrComments(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+): Promise<{ threads: PrCommentThread[] } | null> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) return null;
+
+  const url = await prUrlForNumber(pi, repo, prNumber);
+  const slug = url ? repoSlugFromUrl(url) : null;
+  if (!slug) return { threads: [] };
+  const [owner, name] = slug.split("/");
+
+  const reviewComments = await fetchReviewComments(pi, dir, slug, prNumber);
+  const issueComments = await fetchIssueComments(pi, dir, slug, prNumber);
+  const threadState = await fetchReviewThreadState(pi, dir, owner, name, prNumber);
+
+  const threads = buildReviewThreads(reviewComments, threadState);
+  const conversation = buildConversationThreads(issueComments);
+
+  return { threads: [...threads, ...conversation] };
+}
+
+interface RawReviewComment {
+  id: number;
+  in_reply_to_id?: number;
+  path: string;
+  line?: number | null;
+  start_line?: number | null;
+  side?: "LEFT" | "RIGHT" | null;
+  body: string;
+  created_at: string;
+  html_url: string;
+  user?: { login?: string };
+}
+
+interface RawIssueComment {
+  id: number;
+  body: string;
+  created_at: string;
+  html_url: string;
+  user?: { login?: string };
+}
+
+interface ThreadState {
+  isResolved: boolean;
+  isOutdated: boolean;
+}
+
+async function fetchReviewComments(
+  pi: ExtensionAPI,
+  dir: string,
+  slug: string,
+  prNumber: number,
+): Promise<RawReviewComment[]> {
+  try {
+    const { stdout } = await pi.exec(
+      "gh",
+      ["api", "--paginate", "--slurp", `repos/${slug}/pulls/${prNumber}/comments?per_page=100`],
+      { cwd: dir },
+    );
+    const pages = JSON.parse(stdout || "[]") as RawReviewComment[][];
+    return pages.flat();
+  } catch {
+    return [];
+  }
+}
+
+async function fetchIssueComments(
+  pi: ExtensionAPI,
+  dir: string,
+  slug: string,
+  prNumber: number,
+): Promise<RawIssueComment[]> {
+  try {
+    const { stdout } = await pi.exec(
+      "gh",
+      ["api", "--paginate", "--slurp", `repos/${slug}/issues/${prNumber}/comments?per_page=100`],
+      { cwd: dir },
+    );
+    const pages = JSON.parse(stdout || "[]") as RawIssueComment[][];
+    return pages.flat();
+  } catch {
+    return [];
+  }
+}
+
+async function fetchReviewThreadState(
+  pi: ExtensionAPI,
+  dir: string,
+  owner: string,
+  name: string,
+  prNumber: number,
+): Promise<Map<number, ThreadState>> {
+  const state = new Map<number, ThreadState>();
+  try {
+    let cursor: string | null = null;
+    let hasNext = true;
+    while (hasNext) {
+      const query =
+        `query($owner:String!,$name:String!,$number:Int!,$cursor:String){` +
+        `repository(owner:$owner,name:$name){pullRequest(number:$number){` +
+        `reviewThreads(first:100,after:$cursor){pageInfo{hasNextPage endCursor} nodes{isResolved isOutdated ` +
+        `comments(first:100){nodes{databaseId}}}}}}}`;
+      const args = [
+        "api",
+        "graphql",
+        "-f",
+        `query=${query}`,
+        "-F",
+        `owner=${owner}`,
+        "-F",
+        `name=${name}`,
+        "-F",
+        `number=${prNumber}`,
+      ];
+      if (cursor) args.push("-F", `cursor=${cursor}`);
+      const { stdout } = await pi.exec("gh", args, { cwd: dir });
+      const parsed = JSON.parse(stdout) as {
+        data?: {
+          repository?: {
+            pullRequest?: {
+              reviewThreads?: {
+                pageInfo?: { hasNextPage: boolean; endCursor: string | null };
+                nodes?: Array<{
+                  isResolved: boolean;
+                  isOutdated: boolean;
+                  comments?: { nodes?: Array<{ databaseId: number }> };
+                }>;
+              };
+            };
+          };
+        };
+      };
+      const threads = parsed.data?.repository?.pullRequest?.reviewThreads;
+      const nodes = threads?.nodes || [];
+      for (const node of nodes) {
+        const ts: ThreadState = { isResolved: node.isResolved, isOutdated: node.isOutdated };
+        for (const c of node.comments?.nodes || []) {
+          state.set(c.databaseId, ts);
+        }
+      }
+      const pageInfo = threads?.pageInfo;
+      hasNext = Boolean(pageInfo?.hasNextPage && pageInfo?.endCursor);
+      cursor = pageInfo?.endCursor || null;
+    }
+  } catch {}
+  return state;
+}
+
+function buildReviewThreads(
+  comments: RawReviewComment[],
+  threadState: Map<number, ThreadState>,
+): PrCommentThread[] {
+  const byId = new Map<number, RawReviewComment>();
+  for (const c of comments) byId.set(c.id, c);
+
+  const rootIdFor = (c: RawReviewComment): number => {
+    let current = c;
+    const guard = new Set<number>();
+    while (current.in_reply_to_id && byId.has(current.in_reply_to_id)) {
+      if (guard.has(current.id)) break;
+      guard.add(current.id);
+      current = byId.get(current.in_reply_to_id)!;
+    }
+    return current.id;
+  };
+
+  const grouped = new Map<number, RawReviewComment[]>();
+  for (const c of comments) {
+    const root = rootIdFor(c);
+    const arr = grouped.get(root) || [];
+    arr.push(c);
+    grouped.set(root, arr);
+  }
+
+  const threads: PrCommentThread[] = [];
+  for (const [rootId, members] of grouped) {
+    members.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const root = byId.get(rootId)!;
+    const state = threadState.get(rootId) || { isResolved: false, isOutdated: false };
+    threads.push({
+      id: String(rootId),
+      kind: "review",
+      path: root.path,
+      line: root.line ?? undefined,
+      startLine: root.start_line ?? undefined,
+      side: root.side ?? undefined,
+      isResolved: state.isResolved,
+      isOutdated: state.isOutdated,
+      htmlUrl: root.html_url,
+      comments: members.map((m) => ({
+        id: m.id,
+        author: m.user?.login || "unknown",
+        body: stripHtmlComments(m.body),
+        createdAt: m.created_at,
+        htmlUrl: m.html_url,
+      })),
+    });
+  }
+
+  threads.sort((a, b) => {
+    const pathCmp = (a.path || "").localeCompare(b.path || "");
+    if (pathCmp !== 0) return pathCmp;
+    return (a.line || 0) - (b.line || 0);
+  });
+  return threads;
+}
+
+function buildConversationThreads(comments: RawIssueComment[]): PrCommentThread[] {
+  return comments
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .map((c) => ({
+      id: `issue-${c.id}`,
+      kind: "conversation" as const,
+      isResolved: false,
+      isOutdated: false,
+      htmlUrl: c.html_url,
+      comments: [
+        {
+          id: c.id,
+          author: c.user?.login || "unknown",
+          body: stripHtmlComments(c.body),
+          createdAt: c.created_at,
+          htmlUrl: c.html_url,
+        },
+      ],
+    }));
+}
+
+async function postReviewComment(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+  input: {
+    body: string;
+    commitId: string;
+    path: string;
+    line: number;
+    side?: "LEFT" | "RIGHT";
+    startLine?: number;
+    startSide?: "LEFT" | "RIGHT";
+  },
+): Promise<{ htmlUrl: string }> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) throw new Error("repo not found");
+  const url = await prUrlForNumber(pi, repo, prNumber);
+  const slug = url ? repoSlugFromUrl(url) : null;
+  if (!slug) throw new Error("could not resolve repo slug");
+
+  const prefix = repo === "." ? "" : repo + "/";
+  const apiPath = input.path.startsWith(prefix) ? input.path.slice(prefix.length) : input.path;
+
+  const args = [
+    "api",
+    `repos/${slug}/pulls/${prNumber}/comments`,
+    "-X",
+    "POST",
+    "-f",
+    `body=${input.body}`,
+    "-f",
+    `commit_id=${input.commitId}`,
+    "-f",
+    `path=${apiPath}`,
+    "-F",
+    `line=${input.line}`,
+    "-f",
+    `side=${input.side || "RIGHT"}`,
+  ];
+  if (input.startLine && input.startLine !== input.line) {
+    args.push("-F", `start_line=${input.startLine}`, "-f", `start_side=${input.startSide || input.side || "RIGHT"}`);
+  }
+  const { stdout } = await pi.exec("gh", args, { cwd: dir });
+  const parsed = JSON.parse(stdout) as { html_url?: string };
+  return { htmlUrl: parsed.html_url || "" };
+}
+
+async function replyToComment(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+  commentId: number,
+  body: string,
+): Promise<{ htmlUrl: string }> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) throw new Error("repo not found");
+  const url = await prUrlForNumber(pi, repo, prNumber);
+  const slug = url ? repoSlugFromUrl(url) : null;
+  if (!slug) throw new Error("could not resolve repo slug");
+
+  const { stdout } = await pi.exec(
+    "gh",
+    [
+      "api",
+      `repos/${slug}/pulls/${prNumber}/comments/${commentId}/replies`,
+      "-X",
+      "POST",
+      "-f",
+      `body=${body}`,
+    ],
+    { cwd: dir },
+  );
+  const parsed = JSON.parse(stdout) as { html_url?: string };
+  return { htmlUrl: parsed.html_url || "" };
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -322,6 +705,32 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
     "Cache-Control": "no-store",
   });
   res.end(payload);
+}
+
+function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    req.on("data", (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > 1_000_000) {
+        reject(new Error("body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => {
+      const raw = Buffer.concat(chunks).toString("utf8").trim();
+      if (!raw) return resolve({});
+      try {
+        resolve(JSON.parse(raw) as Record<string, unknown>);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on("error", reject);
+  });
 }
 
 function serveStatic(res: ServerResponse, file: string, contentType: string): void {
@@ -339,7 +748,7 @@ export function startGitReviewServer(
   port: number,
   pi: ExtensionAPI,
   clients: Set<WebSocket>,
-  onMessage: (msg: ReviewComment | PrContext) => void,
+  onMessage: (msg: IncomingMessage_) => void,
 ): Promise<GitReviewServer> {
   const token = randomBytes(16).toString("hex");
 
@@ -406,6 +815,99 @@ export function startGitReviewServer(
         return;
       }
 
+      if (url.pathname === "/api/pr-comments") {
+        if (url.searchParams.get("token") !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        const repo = url.searchParams.get("repo") || ".";
+        const number = Number(url.searchParams.get("number"));
+        if (!Number.isInteger(number) || number <= 0) {
+          sendJson(res, 400, { error: "invalid pr number" });
+          return;
+        }
+        try {
+          const result = await collectPrComments(pi, repo, number);
+          if (!result) {
+            sendJson(res, 404, { error: "repo not found" });
+            return;
+          }
+          sendJson(res, 200, { repo, number, threads: result.threads });
+        } catch (err) {
+          sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/pr-comment" && req.method === "POST") {
+        if ((req.headers["x-token"] as string) !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        try {
+          const body = await readJsonBody(req);
+          const repo = String(body.repo || ".");
+          const number = Number(body.number);
+          const path = String(body.path || "");
+          const line = Number(body.line);
+          const commitId = String(body.commitId || "");
+          const text = String(body.body || "");
+          const startLine =
+            body.startLine === undefined || body.startLine === null
+              ? undefined
+              : Number(body.startLine);
+          if (
+            !Number.isInteger(number) ||
+            number <= 0 ||
+            !path ||
+            !Number.isInteger(line) ||
+            line <= 0 ||
+            !commitId ||
+            !text.trim() ||
+            (startLine !== undefined && (!Number.isInteger(startLine) || startLine <= 0 || startLine > line))
+          ) {
+            sendJson(res, 400, { error: "missing required fields" });
+            return;
+          }
+          const result = await postReviewComment(pi, repo, number, {
+            body: text,
+            commitId,
+            path,
+            line,
+            side: body.side === "LEFT" ? "LEFT" : "RIGHT",
+            startLine,
+            startSide: body.startSide === "LEFT" ? "LEFT" : undefined,
+          });
+          sendJson(res, 200, { ok: true, htmlUrl: result.htmlUrl });
+        } catch (err) {
+          sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/pr-reply" && req.method === "POST") {
+        if ((req.headers["x-token"] as string) !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        try {
+          const body = await readJsonBody(req);
+          const repo = String(body.repo || ".");
+          const number = Number(body.number);
+          const commentId = Number(body.commentId);
+          const text = String(body.body || "");
+          if (!Number.isInteger(number) || number <= 0 || !Number.isInteger(commentId) || !text.trim()) {
+            sendJson(res, 400, { error: "missing required fields" });
+            return;
+          }
+          const result = await replyToComment(pi, repo, number, commentId, text);
+          sendJson(res, 200, { ok: true, htmlUrl: result.htmlUrl });
+        } catch (err) {
+          sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
       res.writeHead(404, { "Content-Type": "text/plain" });
       res.end("Not found");
     });
@@ -429,6 +931,10 @@ export function startGitReviewServer(
             onMessage(msg as ReviewComment);
           } else if (msg.type === "pr_context" && typeof msg.url === "string") {
             onMessage(msg as PrContext);
+          } else if (msg.type === "comment_thread" && msg.thread) {
+            onMessage(msg as CommentThreadMessage);
+          } else if (msg.type === "comment_batch" && Array.isArray(msg.threads)) {
+            onMessage(msg as CommentBatchMessage);
           }
         } catch {}
       });
