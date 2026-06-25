@@ -304,7 +304,7 @@ function formatHelp(): string {
     "  use    <name>     — activate worktree (agent works in worktree paths)",
     "  stop              — deactivate current worktree",
     "  mode   [on|off]   — toggle worktree mode (agent auto-creates worktrees)",
-    "  shell             — open tmux panes or Warp tabs in the worktree (tmux/Warp only)",
+    "  shell             — open Herdr panes, tmux panes, or Warp tabs in the worktree (Herdr/tmux/Warp only)",
     "  list   [--repos repo1,repo2]",
     "  delete <name> [--repos repo1,repo2]",
     "",
@@ -832,26 +832,40 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
             return;
           }
 
+          const inHerdr = !!process.env.HERDR_ENV || !!process.env.HERDR_PANE_ID;
           const inTmux = !!process.env.TMUX;
           const inWarp = process.env.TERM_PROGRAM === "WarpTerminal" || !!process.env.WARP_IS_LOCAL_SHELL_SESSION;
 
-          if (!inTmux && !inWarp) {
-            ctx.ui.notify("shell requires tmux or Warp Terminal.", "error");
+          if (!inHerdr && !inTmux && !inWarp) {
+            ctx.ui.notify("shell requires Herdr, tmux, or Warp Terminal.", "error");
             return;
           }
 
           const paths = [...activeWorktreePaths.values()];
 
-          for (let i = 0; i < paths.length; i++) {
-            if (inTmux) {
-              if (i === 0) {
-                spawn("tmux", ["split-window", "-h", "-c", paths[i]], { stdio: "ignore" });
-              } else {
-                spawn("tmux", ["split-window", "-v", "-c", paths[i]], { stdio: "ignore" });
+          if (inHerdr) {
+            const sourcePane = process.env.HERDR_PANE_ID;
+            for (let i = 0; i < paths.length; i++) {
+              const args = ["pane", "split", "--direction", i === 0 ? "right" : "down", "--cwd", paths[i], "--no-focus"];
+              if (sourcePane) args.splice(2, 0, sourcePane);
+              const result = spawnSync("herdr", args, { encoding: "utf-8" });
+              if (result.status !== 0) {
+                ctx.ui.notify(`herdr pane split failed: ${result.stderr?.trim() || result.error?.message || "unknown error"}`, "error");
+                return;
               }
-            } else {
-              const opener = process.platform === "darwin" ? "open" : "xdg-open";
-              spawn(opener, [`warp://action/new_tab?path=${encodeURIComponent(paths[i])}`], { detached: true, stdio: "ignore" }).unref();
+            }
+          } else {
+            for (let i = 0; i < paths.length; i++) {
+              if (inTmux) {
+                if (i === 0) {
+                  spawn("tmux", ["split-window", "-h", "-c", paths[i]], { stdio: "ignore" });
+                } else {
+                  spawn("tmux", ["split-window", "-v", "-c", paths[i]], { stdio: "ignore" });
+                }
+              } else {
+                const opener = process.platform === "darwin" ? "open" : "xdg-open";
+                spawn(opener, [`warp://action/new_tab?path=${encodeURIComponent(paths[i])}`], { detached: true, stdio: "ignore" }).unref();
+              }
             }
           }
 
