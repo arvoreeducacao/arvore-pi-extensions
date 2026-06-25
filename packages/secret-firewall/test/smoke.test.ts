@@ -1,0 +1,73 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { discoverSecrets } from "../dist/secrets.js";
+import { createRedactor } from "../dist/redact.js";
+
+function withEnvFile(lines: string[], fn: (dir: string) => void): void {
+  const dir = mkdtempSync(join(tmpdir(), "sf-test-"));
+  try {
+    writeFileSync(join(dir, ".env"), lines.join("\n"));
+    fn(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test("captures sensitive .env values and skips trivial ones", () => {
+  withEnvFile(
+    [
+      "DATABASE_URL=postgres://u:supersecretpw@db:5432/app",
+      "OPENAI_API_KEY=sk-abc123def456ghi789jkl012",
+      "PORT=3000",
+      "NODE_ENV=production",
+    ],
+    (dir) => {
+      const names = discoverSecrets(dir).map((e) => e.name);
+      assert.ok(names.includes("DATABASE_URL"));
+      assert.ok(names.includes("OPENAI_API_KEY"));
+      assert.ok(!names.includes("PORT"));
+      assert.ok(!names.includes("NODE_ENV"));
+    },
+  );
+});
+
+test("never treats infra/session env vars as secrets", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sf-test-"));
+  const names = discoverSecrets(dir).map((e) => e.name);
+  rmSync(dir, { recursive: true, force: true });
+  assert.ok(!names.includes("HOME"));
+  assert.ok(!names.includes("PATH"));
+  assert.ok(!names.includes("SSH_AUTH_SOCK"));
+});
+
+test("assigns stable $SECRET_ placeholders", () => {
+  withEnvFile(["STRIPE_SECRET=rk_live_xYz0123456789abcdef"], (dir) => {
+    const entry = discoverSecrets(dir).find((e) => e.name === "STRIPE_SECRET");
+    assert.equal(entry?.placeholder, "$SECRET_STRIPE_SECRET");
+  });
+});
+
+test("redactor replaces real values with placeholders", () => {
+  withEnvFile(["DATABASE_URL=postgres://u:supersecretpw@db:5432/app"], (dir) => {
+    const r = createRedactor(discoverSecrets(dir));
+    const out = r.redactString("connecting to postgres://u:supersecretpw@db:5432/app now");
+    assert.equal(out.text, "connecting to $SECRET_DATABASE_URL now");
+    assert.equal(out.hits, 1);
+  });
+});
+
+test("redactor catches token patterns not present in env", () => {
+  const r = createRedactor([]);
+  const out = r.redactString("leaked AKIAIOSFODNN7EXAMPLE here");
+  assert.ok(out.text.includes("$SECRET_AWS_ACCESS_KEY"));
+});
+
+test("redactor leaves non-secret text untouched", () => {
+  const r = createRedactor([]);
+  const out = r.redactString("server listening on port 3000");
+  assert.equal(out.text, "server listening on port 3000");
+  assert.equal(out.hits, 0);
+});
