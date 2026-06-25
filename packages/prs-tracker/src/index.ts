@@ -12,6 +12,7 @@ interface CiSummary {
   passed: number;
   failed: number;
   pending: number;
+  url: string | null;
 }
 
 interface DeployInfo {
@@ -129,11 +130,12 @@ function runGh(args: string): string | null {
   }
 }
 
-function summarizeChecks(rollup: any[]): CiSummary | null {
+function summarizeChecks(rollup: any[], prUrl: string): CiSummary | null {
   if (!Array.isArray(rollup) || rollup.length === 0) return null;
   let passed = 0;
   let failed = 0;
   let pending = 0;
+  let failedUrl: string | null = null;
   for (const c of rollup) {
     let outcome: string;
     if (c?.__typename === "StatusContext") {
@@ -149,16 +151,19 @@ function summarizeChecks(rollup: any[]): CiSummary | null {
     if (["SUCCESS", "NEUTRAL", "SKIPPED", "EXPECTED"].includes(outcome)) passed++;
     else if (
       ["FAILURE", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "ERROR", "STALE"].includes(outcome)
-    )
+    ) {
       failed++;
-    else pending++;
+      if (!failedUrl) failedUrl = c?.detailsUrl ?? c?.targetUrl ?? null;
+    } else pending++;
   }
   const total = rollup.length;
   let state: CiState = "NONE";
   if (failed > 0) state = "FAIL";
   else if (pending > 0) state = "PENDING";
   else if (passed > 0) state = "PASS";
-  return { state, total, passed, failed, pending };
+  const checksUrl = prUrl ? `${prUrl}/checks` : null;
+  const url = state === "FAIL" ? failedUrl ?? checksUrl : checksUrl;
+  return { state, total, passed, failed, pending, url };
 }
 
 function jobStateToDeploy(status: string, conclusion: string): DeployState {
@@ -264,7 +269,7 @@ function fetchPrDetails(number: number, repo: string): TrackedPr | null {
       isDraft: Boolean(data.isDraft),
       mergedAt: data.mergedAt ? new Date(data.mergedAt).getTime() : null,
       mergeCommit: data.mergeCommit?.oid ?? null,
-      ci: summarizeChecks(data.statusCheckRollup),
+      ci: summarizeChecks(data.statusCheckRollup, data.url),
       deploy: prev?.deploy ?? null,
     };
   } catch {
@@ -353,24 +358,26 @@ const CONTEXT_CUSTOM_TYPE = "prs-tracker-context";
 
 function ciLabel(ci: CiSummary | null): string {
   if (!ci || ci.state === "NONE") return "sem CI";
-  if (ci.state === "PENDING") return `CI rodando (${ci.passed}/${ci.total} ok, ${ci.pending} pendente, ${ci.failed} falha)`;
-  if (ci.state === "FAIL") return `CI FALHOU (${ci.failed}/${ci.total} falharam)`;
-  return `CI passou (${ci.passed}/${ci.total})`;
+  const link = ci.url ? ` (logs: ${ci.url})` : "";
+  if (ci.state === "PENDING") return `CI rodando (${ci.passed}/${ci.total} ok, ${ci.pending} pendente, ${ci.failed} falha)${link}`;
+  if (ci.state === "FAIL") return `CI FALHOU (${ci.failed}/${ci.total} falharam)${link}`;
+  return `CI passou (${ci.passed}/${ci.total})${link}`;
 }
 
 function deployLabel(deploy: DeployInfo | null): string | null {
   if (!deploy || deploy.state === "NONE") return null;
+  const link = deploy.url ? ` (run: ${deploy.url})` : "";
   switch (deploy.state) {
     case "QUEUED":
-      return `deploy na fila (${deploy.workflow})`;
+      return `deploy na fila (${deploy.workflow})${link}`;
     case "IN_PROGRESS":
-      return `deploy em andamento (${deploy.workflow})`;
+      return `deploy em andamento (${deploy.workflow})${link}`;
     case "SUCCESS":
-      return `deploy concluído (${deploy.workflow})`;
+      return `deploy concluído (${deploy.workflow})${link}`;
     case "FAILURE":
-      return `deploy FALHOU (${deploy.workflow})`;
+      return `deploy FALHOU (${deploy.workflow})${link}`;
     case "SKIPPED":
-      return `deploy pulado (${deploy.workflow})`;
+      return `deploy pulado (${deploy.workflow})${link}`;
     default:
       return null;
   }
@@ -436,6 +443,11 @@ function colorFor(pr: TrackedPr): string {
   return "success";
 }
 
+function osc8(url: string | null, label: string): string {
+  if (!url) return label;
+  return `\u001b]8;;${url}\u0007${label}\u001b]8;;\u0007`;
+}
+
 function ciLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | null {
   const ci = pr.ci;
   if (!ci || ci.state === "NONE") return null;
@@ -447,7 +459,7 @@ function ciLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | n
   };
   const [color, label] = map[ci.state];
   const detail = `${label} (${ci.passed}/${ci.total}${ci.failed ? `, ${ci.failed} failed` : ""})`;
-  return fg(color, detail);
+  return osc8(ci.url, fg(color, detail));
 }
 
 function deployLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | null {
@@ -462,7 +474,7 @@ function deployLine(pr: TrackedPr, fg: (c: string, s: string) => string): string
     NONE: ["dim", "Deploy"],
   };
   const [color, label] = map[d.state];
-  return fg(color, label);
+  return osc8(d.url, fg(color, label));
 }
 
 function renderWidget(width: number, theme: any): string[] {
@@ -493,7 +505,7 @@ function renderWidget(width: number, theme: any): string[] {
     const ci = ciLine(pr, fg);
     const deploy = deployLine(pr, fg);
     const status = [ci, deploy].filter(Boolean).join(fg("dim", "  ·  "));
-    if (status) lines.push(`      ${trunc(status)}`);
+    if (status) lines.push(`      ${status}`);
     lines.push(`      ${fg("mdLinkUrl", trunc(pr.url))}`);
   }
   if (prs.length > max) lines.push(fg("dim", `   +${prs.length - max} more`));

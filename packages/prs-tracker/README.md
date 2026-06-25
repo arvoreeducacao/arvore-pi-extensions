@@ -25,6 +25,7 @@ Or in `.pi/settings.json`:
   - State: `[open]` / `[draft]` / `[merged]` / `[closed]`
   - CI: `CI passed` / `CI failed` / `CI running` with check counts
   - Deploy: `deploy queued` / `deploying to main` / `deployed to main` / `deploy failed`
+- The CI and deploy status labels are **clickable links** (OSC 8 terminal hyperlinks). Cmd/Ctrl-click `CI failed` to open the failing check's logs (or the PR `/checks` tab) and `Deploy failed`/`Deployed to main` to open the workflow run. Terminals without OSC 8 support just show the plain label.
 - Background polling (every 60s) refreshes CI and deploy statuses. Merged PRs stay for 24h (and are kept longer if a deploy is still in flight); closed PRs drop off immediately.
 
 ## AI context injection
