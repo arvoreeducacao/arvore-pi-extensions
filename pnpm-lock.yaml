@@ -240,6 +240,27 @@ importers:
         specifier: ^5.3.0
         version: 5.9.3
 
+  packages/secret-firewall:
+    devDependencies:
+      '@earendil-works/pi-ai':
+        specifier: ^0.79.4
+        version: 0.79.10(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-coding-agent':
+        specifier: ^0.79.4
+        version: 0.79.10(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-tui':
+        specifier: 0.79.5
+        version: 0.79.5
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.39
+      typebox:
+        specifier: 1.1.38
+        version: 1.1.38
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/slack-agent:
     dependencies:
       '@slack/bolt':
@@ -3254,7 +3275,7 @@ snapshots:
   '@earendil-works/pi-coding-agent@0.79.0':
     dependencies:
       '@earendil-works/pi-agent-core': 0.79.0
-      '@earendil-works/pi-ai': 0.79.8(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.79.10(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui': 0.79.5
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
@@ -3372,7 +3393,7 @@ snapshots:
   '@earendil-works/pi-coding-agent@0.79.6(ws@8.20.0)(zod@4.4.3)':
     dependencies:
       '@earendil-works/pi-agent-core': 0.79.6(ws@8.20.0)(zod@4.4.3)
-      '@earendil-works/pi-ai': 0.79.6(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.79.10(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui': 0.79.5
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
@@ -3402,7 +3423,7 @@ snapshots:
   '@earendil-works/pi-coding-agent@0.79.8(ws@8.20.0)(zod@4.4.3)':
     dependencies:
       '@earendil-works/pi-agent-core': 0.79.8(ws@8.20.0)(zod@4.4.3)
-      '@earendil-works/pi-ai': 0.79.8(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.79.10(ws@8.20.0)(zod@4.4.3)
       '@earendil-works/pi-tui': 0.79.5
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
