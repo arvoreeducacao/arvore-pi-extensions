@@ -62,22 +62,25 @@ export class LspManager {
   }
 
   private findRoot(filePath: string, config: LanguageServerConfig): string {
-    let dir = dirname(this.absPath(filePath));
-    let lastMatch: string | null = null;
+    const startDir = dirname(this.absPath(filePath));
+    const projectMarkers = config.rootMarkers.filter((m) => m !== ".git");
+    const hasVcsMarker = config.rootMarkers.includes(".git");
+    let dir = startDir;
+    let projectMatch: string | null = null;
+    let vcsMatch: string | null = null;
     const segments = dir.split(sep).length;
     for (let i = 0; i < segments; i++) {
-      for (const marker of config.rootMarkers) {
-        if (existsSync(join(dir, marker))) {
-          lastMatch = dir;
-          if (marker === ".git") return dir;
-          break;
-        }
+      if (projectMatch === null && projectMarkers.some((marker) => existsSync(join(dir, marker)))) {
+        projectMatch = dir;
+      }
+      if (hasVcsMarker && vcsMatch === null && existsSync(join(dir, ".git"))) {
+        vcsMatch = dir;
       }
       const parent = dirname(dir);
       if (parent === dir) break;
       dir = parent;
     }
-    return lastMatch ?? dirname(this.absPath(filePath));
+    return projectMatch ?? vcsMatch ?? startDir;
   }
 
   private instanceKey(config: LanguageServerConfig, rootPath: string): string {
@@ -143,7 +146,11 @@ export class LspManager {
     instance.ready = this.initialize(instance);
     this.servers.set(key, instance);
     await instance.ready;
-    return instance.available ? instance : null;
+    if (!instance.available) {
+      this.servers.delete(key);
+      return null;
+    }
+    return instance;
   }
 
   private async initialize(instance: ServerInstance): Promise<void> {
@@ -173,6 +180,7 @@ export class LspManager {
       client.notify("workspace/didChangeConfiguration", { settings: {} });
     } catch (err) {
       instance.available = false;
+      await client.dispose().catch(() => {});
       this.notify(`LSP: initialize failed for ${instance.config.label}: ${String(err)}`, "error");
     }
   }
