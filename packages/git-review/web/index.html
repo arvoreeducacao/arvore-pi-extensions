@@ -674,11 +674,46 @@
       }
       .cp-comment .body {
         color: var(--fg-dim);
-        white-space: pre-wrap;
         word-break: break-word;
         max-height: 160px;
         overflow-y: auto;
         margin-top: 2px;
+      }
+      .cp-comment .body .md-code {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 8px;
+        margin: 4px 0;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .cp-comment .body .md-code code,
+      .cp-comment .body .md-inline {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11px;
+      }
+      .cp-comment .body .md-inline {
+        background: var(--bg-subtle);
+        border-radius: 4px;
+        padding: 1px 4px;
+      }
+      .cp-comment .body .md-h {
+        font-weight: 600;
+        color: var(--fg);
+        margin: 4px 0 2px;
+      }
+      .cp-comment .body .md-li {
+        padding-left: 4px;
+      }
+      .cp-comment .body blockquote {
+        margin: 2px 0;
+        padding-left: 8px;
+        border-left: 2px solid var(--border);
+        color: var(--fg-dim);
+      }
+      .cp-comment .body a {
+        color: var(--accent, #4493f8);
       }
       .cp-actions {
         display: flex;
@@ -890,6 +925,54 @@
           .replace(/>/g, "&gt;");
       }
 
+      function renderMarkdown(src) {
+        const blocks = [];
+        let s = String(src == null ? "" : src).replace(
+          /```(\w*)\n?([\s\S]*?)```/g,
+          (_, _lang, code) => {
+            blocks.push(
+              `<pre class="md-code"><code>${escapeHtml(
+                code.replace(/\n$/, ""),
+              )}</code></pre>`,
+            );
+            return `\u0000${blocks.length - 1}\u0000`;
+          },
+        );
+
+        s = escapeHtml(s);
+
+        s = s
+          .replace(/`([^`]+)`/g, '<code class="md-inline">$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, "$1<em>$2</em>")
+          .replace(
+            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
+          );
+
+        s = s
+          .split("\n")
+          .map((line) => {
+            if (/^\u0000\d+\u0000$/.test(line)) return line;
+            const h = line.match(/^(#{1,6})\s+(.*)$/);
+            if (h) return `<div class="md-h">${h[2]}</div>`;
+            if (/^&gt;\s?/.test(line))
+              return `<blockquote>${line.replace(/^&gt;\s?/, "")}</blockquote>`;
+            if (/^[-*]\s+/.test(line))
+              return `<div class="md-li">\u2022 ${line.replace(
+                /^[-*]\s+/,
+                "",
+              )}</div>`;
+            return line;
+          })
+          .join("<br>");
+
+        return s.replace(
+          /\u0000(\d+)\u0000(<br>)?/g,
+          (_, i) => blocks[Number(i)],
+        );
+      }
+
       let selection = null;
 
       async function loadDiff() {
@@ -1010,6 +1093,7 @@
           };
           prThreads = [];
           batchSelected.clear();
+          showResolved = false;
           lastGroups = [
             {
               repo: `${pr.repo} · PR #${pr.number}`,
@@ -1090,9 +1174,16 @@
           );
           const data = await res.json();
           if (seq !== prRequestSeq || appMode !== "prs" || !currentPr) return;
-          prThreads = data.threads || [];
-        } catch {
+          if (!res.ok || data.error) {
+            prThreads = [];
+            toast(`PR #${currentPr.number}`, null, null, `Failed to load comments: ${data.error || res.status}`);
+          } else {
+            prThreads = data.threads || [];
+          }
+        } catch (err) {
+          if (seq !== prRequestSeq || appMode !== "prs" || !currentPr) return;
           prThreads = [];
+          toast(`PR #${currentPr.number}`, null, null, `Failed to load comments: ${err}`);
         }
         renderCommentsPanel();
         markCommentedRows();
@@ -1104,12 +1195,13 @@
 
       function rowForThread(t) {
         if (t.kind !== "review" || !t.path || t.line == null) return null;
-        if (t.side === "LEFT") return null;
+        const wantDeletion = t.side === "LEFT";
         const rows = content.querySelectorAll("tr[data-file][data-line]");
         for (const tr of rows) {
           const file = tr.dataset.file || "";
           const matchesPath = file === t.path || file.endsWith("/" + t.path);
-          if (matchesPath && Number(tr.dataset.line) === t.line && !tr.classList.contains("del")) {
+          const isDel = tr.classList.contains("del");
+          if (matchesPath && Number(tr.dataset.line) === t.line && isDel === wantDeletion) {
             return tr;
           }
         }
@@ -1242,7 +1334,7 @@
           cm.className = "cp-comment";
           cm.innerHTML =
             `<span class="author">@${escapeHtml(c.author)}</span>` +
-            `<div class="body">${escapeHtml(c.body)}</div>`;
+            `<div class="body">${renderMarkdown(c.body)}</div>`;
           card.appendChild(cm);
         });
 
@@ -1427,6 +1519,7 @@
         hideAskBtn();
         prThreads = [];
         batchSelected.clear();
+        showResolved = false;
         if (mode === "diff") {
           currentPr = null;
           loadDiff();
@@ -1739,6 +1832,10 @@
         const lastRow = rows[rows.length - 1];
         const side = lastRow && lastRow.classList.contains("del") ? "LEFT" : "RIGHT";
         const firstRow = rows[0];
+        const sameSide = rows.every(
+          (r) => (r.classList.contains("del") ? "LEFT" : "RIGHT") === side,
+        );
+        const allPositiveLines = rows.every((r) => Number(r.dataset.line) > 0);
         return {
           code,
           start: lines.length ? Math.min(...lines) : null,
@@ -1746,6 +1843,7 @@
           side,
           postLine: lastRow ? Number(lastRow.dataset.line) : null,
           postStartLine: firstRow ? Number(firstRow.dataset.line) : null,
+          githubValid: rows.length > 0 && sameSide && allPositiveLines,
         };
       }
 
@@ -1787,6 +1885,10 @@
         if (ghBtn) {
           ghBtn.onclick = async () => {
             const sel = selectedCode();
+            if (!sel.githubValid) {
+              toast(selection.file, null, null, "Select lines on the same side (all added or all removed) before commenting on GitHub");
+              return;
+            }
             ghBtn.disabled = true;
             const ok = await postLineComment(
               selection.file,

@@ -447,10 +447,11 @@ async function fetchReviewComments(
   try {
     const { stdout } = await pi.exec(
       "gh",
-      ["api", "--paginate", `repos/${slug}/pulls/${prNumber}/comments?per_page=100`],
+      ["api", "--paginate", "--slurp", `repos/${slug}/pulls/${prNumber}/comments?per_page=100`],
       { cwd: dir },
     );
-    return JSON.parse(stdout || "[]") as RawReviewComment[];
+    const pages = JSON.parse(stdout || "[]") as RawReviewComment[][];
+    return pages.flat();
   } catch {
     return [];
   }
@@ -465,10 +466,11 @@ async function fetchIssueComments(
   try {
     const { stdout } = await pi.exec(
       "gh",
-      ["api", "--paginate", `repos/${slug}/issues/${prNumber}/comments?per_page=100`],
+      ["api", "--paginate", "--slurp", `repos/${slug}/issues/${prNumber}/comments?per_page=100`],
       { cwd: dir },
     );
-    return JSON.parse(stdout || "[]") as RawIssueComment[];
+    const pages = JSON.parse(stdout || "[]") as RawIssueComment[][];
+    return pages.flat();
   } catch {
     return [];
   }
@@ -483,14 +485,15 @@ async function fetchReviewThreadState(
 ): Promise<Map<number, ThreadState>> {
   const state = new Map<number, ThreadState>();
   try {
-    const query =
-      `query($owner:String!,$name:String!,$number:Int!){` +
-      `repository(owner:$owner,name:$name){pullRequest(number:$number){` +
-      `reviewThreads(first:100){nodes{isResolved isOutdated ` +
-      `comments(first:100){nodes{databaseId}}}}}}}`;
-    const { stdout } = await pi.exec(
-      "gh",
-      [
+    let cursor: string | null = null;
+    let hasNext = true;
+    while (hasNext) {
+      const query =
+        `query($owner:String!,$name:String!,$number:Int!,$cursor:String){` +
+        `repository(owner:$owner,name:$name){pullRequest(number:$number){` +
+        `reviewThreads(first:100,after:$cursor){pageInfo{hasNextPage endCursor} nodes{isResolved isOutdated ` +
+        `comments(first:100){nodes{databaseId}}}}}}}`;
+      const args = [
         "api",
         "graphql",
         "-f",
@@ -501,30 +504,36 @@ async function fetchReviewThreadState(
         `name=${name}`,
         "-F",
         `number=${prNumber}`,
-      ],
-      { cwd: dir },
-    );
-    const parsed = JSON.parse(stdout) as {
-      data?: {
-        repository?: {
-          pullRequest?: {
-            reviewThreads?: {
-              nodes?: Array<{
-                isResolved: boolean;
-                isOutdated: boolean;
-                comments?: { nodes?: Array<{ databaseId: number }> };
-              }>;
+      ];
+      if (cursor) args.push("-F", `cursor=${cursor}`);
+      const { stdout } = await pi.exec("gh", args, { cwd: dir });
+      const parsed = JSON.parse(stdout) as {
+        data?: {
+          repository?: {
+            pullRequest?: {
+              reviewThreads?: {
+                pageInfo?: { hasNextPage: boolean; endCursor: string | null };
+                nodes?: Array<{
+                  isResolved: boolean;
+                  isOutdated: boolean;
+                  comments?: { nodes?: Array<{ databaseId: number }> };
+                }>;
+              };
             };
           };
         };
       };
-    };
-    const nodes = parsed.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
-    for (const node of nodes) {
-      const ts: ThreadState = { isResolved: node.isResolved, isOutdated: node.isOutdated };
-      for (const c of node.comments?.nodes || []) {
-        state.set(c.databaseId, ts);
+      const threads = parsed.data?.repository?.pullRequest?.reviewThreads;
+      const nodes = threads?.nodes || [];
+      for (const node of nodes) {
+        const ts: ThreadState = { isResolved: node.isResolved, isOutdated: node.isOutdated };
+        for (const c of node.comments?.nodes || []) {
+          state.set(c.databaseId, ts);
+        }
       }
+      const pageInfo = threads?.pageInfo;
+      hasNext = Boolean(pageInfo?.hasNextPage && pageInfo?.endCursor);
+      cursor = pageInfo?.endCursor || null;
     }
   } catch {}
   return state;
@@ -843,7 +852,20 @@ export function startGitReviewServer(
           const line = Number(body.line);
           const commitId = String(body.commitId || "");
           const text = String(body.body || "");
-          if (!Number.isInteger(number) || number <= 0 || !path || !Number.isInteger(line) || !commitId || !text.trim()) {
+          const startLine =
+            body.startLine === undefined || body.startLine === null
+              ? undefined
+              : Number(body.startLine);
+          if (
+            !Number.isInteger(number) ||
+            number <= 0 ||
+            !path ||
+            !Number.isInteger(line) ||
+            line <= 0 ||
+            !commitId ||
+            !text.trim() ||
+            (startLine !== undefined && (!Number.isInteger(startLine) || startLine <= 0 || startLine > line))
+          ) {
             sendJson(res, 400, { error: "missing required fields" });
             return;
           }
@@ -853,7 +875,7 @@ export function startGitReviewServer(
             path,
             line,
             side: body.side === "LEFT" ? "LEFT" : "RIGHT",
-            startLine: body.startLine ? Number(body.startLine) : undefined,
+            startLine,
             startSide: body.startSide === "LEFT" ? "LEFT" : undefined,
           });
           sendJson(res, 200, { ok: true, htmlUrl: result.htmlUrl });
