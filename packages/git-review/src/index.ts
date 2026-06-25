@@ -5,6 +5,7 @@ import {
   startGitReviewServer,
   type DiffScope,
   type GitReviewServer,
+  type PrContext,
   type ReviewComment,
 } from "./server.js";
 
@@ -19,16 +20,30 @@ function openBrowser(pi: ExtensionAPI, url: string): void {
 }
 
 const VALID_SCOPES = ["working", "staged", "branch"] as const;
-const USAGE = "Usage: /review [working|staged|branch [base]]";
+const USAGE = "Usage: /review [working|staged|branch [base] | prs]";
 
-function parseScopeArgs(args: string): { scope: DiffScope; base: string; error?: string } {
+function parseScopeArgs(args: string): {
+  mode: "diff" | "prs";
+  scope: DiffScope;
+  base: string;
+  error?: string;
+} {
   const parts = args.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return { scope: "working", base: "main" };
-  const scopeArg = parts[0].toLowerCase() as DiffScope;
-  if (!(VALID_SCOPES as readonly string[]).includes(scopeArg)) {
-    return { scope: "working", base: "main", error: `Unknown scope "${parts[0]}". ${USAGE}` };
+  if (!parts.length) return { mode: "diff", scope: "working", base: "main" };
+  const first = parts[0].toLowerCase();
+  if (first === "prs" || first === "pr") {
+    return { mode: "prs", scope: "working", base: "main" };
   }
-  return { scope: scopeArg, base: parts[1] || "main" };
+  const scopeArg = first as DiffScope;
+  if (!(VALID_SCOPES as readonly string[]).includes(scopeArg)) {
+    return {
+      mode: "diff",
+      scope: "working",
+      base: "main",
+      error: `Unknown scope "${parts[0]}". ${USAGE}`,
+    };
+  }
+  return { mode: "diff", scope: scopeArg, base: parts[1] || "main" };
 }
 
 function formatComment(c: ReviewComment): string {
@@ -52,13 +67,37 @@ function formatComment(c: ReviewComment): string {
   return lines.join("\n");
 }
 
+function formatPrContext(c: PrContext): string {
+  const lines: string[] = [];
+  lines.push(`I'm reviewing a pull request. Here is the context for the questions that follow:`);
+  lines.push("");
+  lines.push(`- Repo: ${c.repo}`);
+  lines.push(`- PR #${c.number}: ${c.title}`);
+  lines.push(`- Author: ${c.author}`);
+  lines.push(`- Branch: ${c.headRefName} → ${c.baseRefName}`);
+  lines.push(`- Link: ${c.url}`);
+  lines.push("");
+  if (c.body.trim()) {
+    lines.push("Description:");
+    lines.push("");
+    lines.push(c.body.trim().replace(/```/g, "ʼʼʼ"));
+  } else {
+    lines.push("(No description provided.)");
+  }
+  lines.push("");
+  lines.push(
+    `I'll ask about specific lines next. Use \`gh pr view ${c.number} -R ${c.repo}\` or \`gh pr diff ${c.number} -R ${c.repo}\` if you need more than the snippets I send.`,
+  );
+  return lines.join("\n");
+}
+
 export default function (pi: ExtensionAPI) {
   let server: GitReviewServer | null = null;
   const clients: Set<WebSocket> = new Set();
   let isIdle: () => boolean = () => true;
 
-  const handleComment = (comment: ReviewComment) => {
-    const message = formatComment(comment);
+  const handleMessage = (msg: ReviewComment | PrContext) => {
+    const message = msg.type === "pr_context" ? formatPrContext(msg) : formatComment(msg);
     if (isIdle()) {
       pi.sendUserMessage(message);
     } else {
@@ -72,7 +111,7 @@ export default function (pi: ExtensionAPI) {
     if (server) return server;
     for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
       try {
-        server = await startGitReviewServer(port, pi, clients, handleComment);
+        server = await startGitReviewServer(port, pi, clients, handleMessage);
         return server;
       } catch {}
     }
@@ -82,7 +121,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("review", {
     description:
-      "Open a browser-based git diff reviewer. Usage: /review [working|staged|branch [base]]",
+      "Open a browser-based git diff & PR reviewer. Usage: /review [working|staged|branch [base] | prs]",
     handler: async (args, ctx) => {
       isIdle = () => ctx.isIdle();
       if (!ctx.hasUI) {
@@ -90,7 +129,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const { scope, base, error } = parseScopeArgs(args);
+      const { mode, scope, base, error } = parseScopeArgs(args);
       if (error) {
         ctx.ui.notify(error, "error");
         return;
@@ -98,7 +137,10 @@ export default function (pi: ExtensionAPI) {
 
       const srv = await ensureServer(ctx);
       if (!srv) return;
-      const url = `${srv.url}&scope=${scope}&base=${encodeURIComponent(base)}`;
+      const url =
+        mode === "prs"
+          ? `${srv.url}&mode=prs`
+          : `${srv.url}&scope=${scope}&base=${encodeURIComponent(base)}`;
       openBrowser(pi, url);
       ctx.ui.notify(
         `git-review open at ${srv.url} — comments arrive in this terminal.`,

@@ -1,6 +1,6 @@
 # @arvoretech/pi-git-review
 
-A PI extension that opens a **browser-based git diff reviewer**. You read the diff in a
+A PI extension that opens a **browser-based git diff & PR reviewer**. You read the diff in a
 tab, select lines or code, type a question, and it lands in your PI session in real time as
 a user message. The agent's answers appear in your terminal (PI TUI).
 
@@ -9,8 +9,11 @@ a user message. The agent's answers appear in your terminal (PI TUI).
 ```
 /review  ──►  extension starts a localhost HTTP+WS server, opens a browser tab
               │
-   browser ──┤  GET /api/diff   → parsed `git diff` (per file + hunks)
-              │  WS /ws          → you send { file, lines, code, question }
+   browser ──┤  GET /api/diff     → parsed `git diff` (per file + hunks)
+              │  GET /api/prs      → open PRs per repo (`gh pr list`)
+              │  GET /api/pr-diff  → parsed PR diff + metadata (`gh pr diff/view`)
+              │  WS /ws            → you send { file, lines, code, question }
+              │                       or a pr_context primer when a PR is opened
               ▼
    extension calls pi.sendUserMessage(...)  → agent answers in the terminal
 ```
@@ -27,9 +30,25 @@ a user message. The agent's answers appear in your terminal (PI TUI).
 /review staged          # staged changes
 /review branch          # current branch vs `main`
 /review branch develop  # current branch vs `develop`
+/review prs             # list open PRs across all repos and review them
 ```
 
-The scope and base can also be changed live from the toolbar in the browser tab.
+The scope and base can also be changed live from the toolbar in the browser tab. The
+**Diff / PRs** tabs at the top switch between reviewing local changes and reviewing open
+pull requests.
+
+### Reviewing PRs
+
+The **PRs** tab runs `gh pr list` in each discovered repo and shows every open PR
+(grouped by repo, newest first). Click a PR to load its full diff via `gh pr diff`
+(base...head, independent of your local checkout). When you open a PR, a one-time
+**context primer** — title, author, branch, link, and the PR description — is sent to the
+agent so it understands what it is reviewing. Every line question you ask afterwards is
+answered with that context in mind. The banner links back to the PR list and out to
+GitHub.
+
+> Requires the [`gh` CLI](https://cli.github.com) installed and authenticated
+> (`gh auth status`).
 
 In the tab:
 
