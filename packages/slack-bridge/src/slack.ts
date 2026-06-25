@@ -71,10 +71,6 @@ export class SlackGateway {
     return typeof res.ts === "string" ? res.ts : undefined;
   }
 
-  async updateMessage(ts: string, text: string): Promise<void> {
-    await this.web.chat.update({ channel: this.config.channel, ts, text });
-  }
-
   async setStatus(threadTs: string, status: string): Promise<void> {
     await this.web.apiCall("assistant.threads.setStatus", {
       channel_id: this.config.channel,

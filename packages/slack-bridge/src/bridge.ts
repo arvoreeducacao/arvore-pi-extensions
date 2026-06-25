@@ -1,4 +1,4 @@
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext, CustomEntry } from "@earendil-works/pi-coding-agent";
 import type { SlackBridgeConfig } from "./config.js";
 import { SlackGateway, type InboundHandler, type InboundMessage } from "./slack.js";
 
@@ -7,7 +7,6 @@ export interface SlackTransport {
   stop(): Promise<void>;
   postRoot(text: string): Promise<string | undefined>;
   postToThread(threadTs: string, text: string): Promise<string | undefined>;
-  updateMessage(ts: string, text: string): Promise<void>;
   setStatus(threadTs: string, status: string): Promise<void>;
   clearStatus(threadTs: string): Promise<void>;
   resolveBotUserId(): Promise<string | undefined>;
@@ -49,28 +48,17 @@ function truncate(value: string, max: number): string {
   return clean.length > max ? `${clean.slice(0, max)}\u2026` : clean;
 }
 
+const TOOL_HINT_FIELDS = ["command", "path", "pattern", "query", "url"] as const;
+
 function summarizeTool(toolName: string, args: unknown): string {
   const a = (args ?? {}) as Record<string, unknown>;
-  switch (toolName) {
-    case "bash":
-      return `bash: ${truncate(String(a.command ?? ""), 80)}`;
-    case "read":
-      return `read: ${truncate(String(a.path ?? ""), 80)}`;
-    case "write":
-      return `write: ${truncate(String(a.path ?? ""), 80)}`;
-    case "edit":
-      return `edit: ${truncate(String(a.path ?? ""), 80)}`;
-    case "grep":
-    case "ffgrep":
-      return `grep: ${truncate(String(a.pattern ?? ""), 60)}`;
-    case "find":
-    case "fffind":
-      return `find: ${truncate(String(a.pattern ?? a.path ?? ""), 60)}`;
-    default: {
-      const hint = a.path ?? a.command ?? a.pattern ?? a.query ?? a.url;
-      return hint ? `${toolName}: ${truncate(String(hint), 60)}` : toolName;
+  for (const field of TOOL_HINT_FIELDS) {
+    const value = a[field];
+    if (typeof value === "string" && value) {
+      return `${toolName}: ${truncate(value, 80)}`;
     }
   }
+  return toolName;
 }
 
 export class SlackBridge {
@@ -81,7 +69,6 @@ export class SlackBridge {
   private threadTs: string | undefined;
   private botUserId: string | undefined;
   private rootPromise: Promise<void> | undefined;
-  private readonly injected = new Set<string>();
   private getContext: (() => ExtensionContext | undefined) | undefined;
   private statusPromise: Promise<void> = Promise.resolve();
   private turnActive = false;
@@ -103,9 +90,9 @@ export class SlackBridge {
   restoreFromEntries(ctx: ExtensionContext): void {
     const entries = ctx.sessionManager.getEntries?.() ?? [];
     for (const entry of entries) {
-      const e = entry as { type?: string; customType?: string; data?: ThreadState };
-      if (e.type === "custom" && e.customType === ENTRY_TYPE && e.data?.threadTs) {
-        this.threadTs = e.data.threadTs;
+      if (entry.type === "custom" && entry.customType === ENTRY_TYPE) {
+        const data = (entry as CustomEntry<ThreadState>).data;
+        if (data?.threadTs) this.threadTs = data.threadTs;
       }
     }
   }
@@ -121,7 +108,7 @@ export class SlackBridge {
     this.gateway = undefined;
   }
 
-  private async ensureThread(seedText: string): Promise<string | undefined> {
+  private async ensureThread(seedText?: string): Promise<string | undefined> {
     if (this.threadTs) return this.threadTs;
     if (!this.gateway) return undefined;
     if (!this.rootPromise) {
@@ -129,10 +116,7 @@ export class SlackBridge {
         ? `:robot_face: Pi session\n> ${seedText.slice(0, 200)}`
         : ":robot_face: Pi session";
       this.rootPromise = this.gateway.postRoot(header).then((ts) => {
-        if (ts) {
-          this.threadTs = ts;
-          this.pi.appendEntry<ThreadState>(ENTRY_TYPE, { threadTs: ts });
-        }
+        if (ts) this.adoptThread(ts);
       });
     }
     await this.rootPromise;
@@ -142,16 +126,14 @@ export class SlackBridge {
   async mirrorUserInput(text: string): Promise<void> {
     const trimmed = text.trim();
     if (!trimmed) return;
-    if (this.consumeInjected(trimmed)) return;
     const existed = this.threadTs !== undefined;
     const thread = await this.ensureThread(trimmed);
-    if (!thread || !this.gateway) return;
-    if (!existed) return;
+    if (!thread || !this.gateway || !existed) return;
     await this.gateway.postToThread(thread, `:bust_in_silhouette: *terminal*\n${trimmed}`);
   }
 
   async beginTurn(): Promise<void> {
-    const thread = await this.ensureThread("");
+    const thread = await this.ensureThread();
     if (!thread) return;
     this.turnActive = true;
     this.pushStatus(":hourglass_flowing_sand: pensando\u2026");
@@ -160,11 +142,6 @@ export class SlackBridge {
   async recordTool(toolName: string, args: unknown): Promise<void> {
     if (!this.threadTs) return;
     this.pushStatus(summarizeTool(toolName, args));
-  }
-
-  async recordToolError(toolName: string): Promise<void> {
-    if (!this.threadTs) return;
-    this.pushStatus(`erro em ${toolName}`);
   }
 
   async finishTurn(message: unknown): Promise<void> {
@@ -192,19 +169,6 @@ export class SlackBridge {
     this.statusPromise = this.statusPromise.then(work).catch(() => {});
   }
 
-  private markInjected(text: string): void {
-    this.injected.add(text.trim());
-  }
-
-  private consumeInjected(text: string): boolean {
-    const key = text.trim();
-    if (this.injected.has(key)) {
-      this.injected.delete(key);
-      return true;
-    }
-    return false;
-  }
-
   private async handleInbound(message: InboundMessage): Promise<void> {
     if (message.channel !== this.config.channel) return;
     if (message.botId) return;
@@ -222,8 +186,6 @@ export class SlackBridge {
     }
 
     const ctx = this.getContext?.();
-    this.markInjected(text);
-
     if (!ctx || ctx.isIdle()) {
       this.pi.sendUserMessage(text);
     } else {

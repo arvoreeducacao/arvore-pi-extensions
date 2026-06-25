@@ -67,12 +67,6 @@ export default function (pi: ExtensionAPI): void {
     await bridge.recordTool(event.toolName, event.args).catch(() => {});
   });
 
-  pi.on("tool_execution_end", async (event, ctx) => {
-    captureContext(ctx);
-    if (!bridge) return;
-    if (event.isError) await bridge.recordToolError(event.toolName).catch(() => {});
-  });
-
   pi.on("turn_end", async (event, ctx) => {
     captureContext(ctx);
     if (!bridge) return;
