@@ -11,9 +11,9 @@ export interface ConfigResult {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ConfigResult {
-  const botToken = env.SLACK_BRIDGE_BOT_TOKEN ?? env.SLACK_BOT_TOKEN ?? "";
-  const appToken = env.SLACK_BRIDGE_APP_TOKEN ?? env.SLACK_APP_TOKEN ?? "";
-  const channel = env.SLACK_BRIDGE_CHANNEL ?? "";
+  const botToken = (env.SLACK_BRIDGE_BOT_TOKEN ?? env.SLACK_BOT_TOKEN ?? "").trim();
+  const appToken = (env.SLACK_BRIDGE_APP_TOKEN ?? env.SLACK_APP_TOKEN ?? "").trim();
+  const channel = (env.SLACK_BRIDGE_CHANNEL ?? "").trim();
 
   const missing: string[] = [];
   if (!botToken) missing.push("SLACK_BRIDGE_BOT_TOKEN");

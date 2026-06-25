@@ -119,7 +119,11 @@ export class SlackBridge {
         if (ts) this.adoptThread(ts);
       });
     }
-    await this.rootPromise;
+    try {
+      await this.rootPromise;
+    } finally {
+      if (!this.threadTs) this.rootPromise = undefined;
+    }
     return this.threadTs;
   }
 
