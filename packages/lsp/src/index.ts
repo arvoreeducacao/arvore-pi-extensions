@@ -21,6 +21,18 @@ export default function (pi: ExtensionAPI) {
     manager = null;
   });
 
+  pi.on("before_agent_start", async (event) => {
+    if (!manager) return;
+    return {
+      systemPrompt:
+        event.systemPrompt +
+        "\n\n## Type checking\n" +
+        "To validate TypeScript/JavaScript types, ALWAYS use the lsp_diagnostics tool. " +
+        "NEVER run `tsc`, `tsc --noEmit`, `vue-tsc`, `pnpm build`, `pnpm typecheck`, or any compiler/build command for the sole purpose of checking types. " +
+        "Run a full build only when the user explicitly asks for a build or when build artifacts are the actual deliverable.",
+    };
+  });
+
   pi.registerCommand("lsp-status", {
     description: "Show configured LSP language servers and their availability.",
     handler: async (_args, ctx) => {
