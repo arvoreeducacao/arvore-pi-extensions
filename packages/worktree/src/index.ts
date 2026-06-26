@@ -296,6 +296,54 @@ function removeWorktree(repoPath: string, name: string): { ok: boolean; message:
   return { ok: true, message: `Removed worktree '${name}' from ${basename(repoPath)}` };
 }
 
+function getProcessCwd(pid: number): string | null {
+  const result = spawnSync("lsof", ["-a", "-d", "cwd", "-p", String(pid), "-Fn"], { encoding: "utf-8" });
+  for (const line of (result.stdout || "").split("\n")) {
+    if (line.startsWith("n")) return line.slice(1);
+  }
+  return null;
+}
+
+function findProcessesUsingDir(dir: string): Array<{ pid: number; command: string }> {
+  const ps = spawnSync("ps", ["-A", "-o", "pid=", "-o", "command="], { encoding: "utf-8", maxBuffer: 16 * 1024 * 1024 });
+  const candidates: Array<{ pid: number; command: string }> = [];
+  for (const line of (ps.stdout || "").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const spaceIdx = trimmed.indexOf(" ");
+    if (spaceIdx < 0) continue;
+    const pid = parseInt(trimmed.slice(0, spaceIdx), 10);
+    const command = trimmed.slice(spaceIdx + 1);
+    if (!Number.isInteger(pid) || pid <= 0 || pid === process.pid) continue;
+    if (command.includes(dir)) candidates.push({ pid, command });
+  }
+
+  const matches: Array<{ pid: number; command: string }> = [];
+  for (const c of candidates) {
+    const cwd = getProcessCwd(c.pid);
+    if (cwd && (cwd === dir || cwd.startsWith(dir + "/"))) {
+      matches.push({ pid: c.pid, command: c.command.slice(0, 80) });
+    }
+  }
+  return matches;
+}
+
+function killProcesses(pids: number[]): void {
+  for (const pid of pids) {
+    try { process.kill(pid, "SIGTERM"); } catch {}
+  }
+  spawnSync("sleep", ["1"]);
+  for (const pid of pids) {
+    try { process.kill(pid, 0); process.kill(pid, "SIGKILL"); } catch {}
+  }
+}
+
+function isWorktreeDirty(worktreePath: string): boolean {
+  const result = spawnSync("git", ["status", "--porcelain"], { cwd: worktreePath, encoding: "utf-8" });
+  if (result.status !== 0) return false;
+  return (result.stdout || "").trim().length > 0;
+}
+
 function isBranchMergedIntoBase(repoPath: string, branch: string): boolean {
   const base = getDefaultBranch(repoPath);
   if (!base) return false;
@@ -315,11 +363,11 @@ function isBranchMergedIntoBase(repoPath: string, branch: string): boolean {
   return ancestor.status === 0;
 }
 
-function findMergedWorktrees(repoPath: string, exclude: Set<string>): Array<{ name: string; branch: string }> {
+function findMergedWorktrees(repoPath: string, exclude: Set<string>): Array<{ name: string; branch: string; path: string }> {
   return getExistingWorktrees(repoPath)
     .filter((wt) => !exclude.has(wt.name))
     .filter((wt) => wt.branch !== "unknown" && isBranchMergedIntoBase(repoPath, wt.branch))
-    .map((wt) => ({ name: wt.name, branch: wt.branch }));
+    .map((wt) => ({ name: wt.name, branch: wt.branch, path: wt.path }));
 }
 
 function bumpPackageVersion(packageJsonPath: string, kind: "patch" | "minor" | "major"): { from: string; to: string } | null {
@@ -354,9 +402,13 @@ function formatHelp(): string {
     "  shell             — open Herdr panes, tmux panes, or Warp tabs in the worktree (Herdr/tmux/Warp only)",
     "  list   [--repos repo1,repo2]",
     "  delete <name> [--repos repo1,repo2]",
-    "  clean  [--repos ...] [--bump patch|minor|major] [--dry-run] [--no-pr]",
+    "  clean  [--repos ...] [--bump patch|minor|major] [--dry-run] [--no-pr] [--yes]",
     "                    — remove worktrees whose branch is merged into the base,",
-    "                      then bump @arvoretech/pi-worktree and open a PR",
+    "                      then bump @arvoretech/pi-worktree and open a PR.",
+    "                      Shows a confirmation with running processes and dirty",
+    "                      worktrees first (kills processes before removing).",
+    "                      --dry-run previews, --yes skips confirmation, --no-pr",
+    "                      bumps locally without committing.",
     "",
     "If --repos is omitted, shows interactive picker.",
     "If --name is omitted on create, picks a random tree name.",
@@ -967,30 +1019,86 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           const dryRun = flags.dry !== undefined || flags["dry-run"] !== undefined;
           const bumpKind = (["major", "minor", "patch"].includes(flags.bump) ? flags.bump : "patch") as "major" | "minor" | "patch";
           const skipPr = flags["no-pr"] !== undefined;
+          const assumeYes = flags.yes !== undefined || flags.y !== undefined;
+          const STATUS_KEY = "worktree-clean";
+          const step = (text: string) => ctx.ui.setStatus(STATUS_KEY, text);
+          const clearStep = () => ctx.ui.setStatus(STATUS_KEY, undefined);
 
           ctx.ui.notify("Scanning for merged worktrees…", "info");
 
-          const removedByRepo: Array<{ repo: string; name: string; branch: string }> = [];
+          step("worktree clean: scanning for merged worktrees…");
+          const removedByRepo: Array<{ repo: string; name: string; branch: string; path: string }> = [];
           for (const repo of targetRepos) {
+            step(`worktree clean: scanning ${basename(repo)}…`);
             const merged = findMergedWorktrees(repo, exclude);
             for (const wt of merged) {
-              removedByRepo.push({ repo, name: wt.name, branch: wt.branch });
+              removedByRepo.push({ repo, name: wt.name, branch: wt.branch, path: wt.path });
             }
           }
 
           if (removedByRepo.length === 0) {
+            clearStep();
             ctx.ui.notify("No merged worktrees to clean.", "info");
             break;
           }
 
+          step("worktree clean: inspecting worktrees…");
+          const plan = removedByRepo.map((r) => {
+            const dirty = isWorktreeDirty(r.path);
+            const procs = findProcessesUsingDir(r.path);
+            return { ...r, dirty, procs };
+          });
+          clearStep();
+
+          const planLines = plan.map((p) => {
+            const flagsTxt: string[] = [];
+            if (p.dirty) flagsTxt.push("⚠ uncommitted changes");
+            if (p.procs.length > 0) flagsTxt.push(`⚠ ${p.procs.length} running process(es)`);
+            const suffix = flagsTxt.length ? `  [${flagsTxt.join(", ")}]` : "";
+            return `  ${basename(p.repo)}/${p.name} (${p.branch})${suffix}`;
+          });
+          const procDetails = plan
+            .filter((p) => p.procs.length > 0)
+            .map((p) => `  ${basename(p.repo)}/${p.name}:\n${p.procs.map((proc) => `    [${proc.pid}] ${proc.command}`).join("\n")}`)
+            .join("\n");
+          const anyDirty = plan.some((p) => p.dirty);
+          const anyProcs = plan.some((p) => p.procs.length > 0);
+
           if (dryRun) {
-            const preview = removedByRepo.map((r) => `  ${basename(r.repo)}/${r.name} (${r.branch})`).join("\n");
+            const preview = planLines.join("\n");
             ctx.ui.notify(`Would remove ${removedByRepo.length} merged worktree(s):\n${preview}`, "info");
             break;
           }
 
+          if (!assumeYes && ctx.hasUI) {
+            let message = `The following ${plan.length} merged worktree(s) will be removed:\n\n${planLines.join("\n")}`;
+            if (anyProcs) {
+              message += `\n\nRunning processes will be killed before removal:\n${procDetails}`;
+            }
+            if (anyDirty) {
+              message += `\n\n⚠ Some worktrees have uncommitted changes that will be DISCARDED (--force).`;
+            }
+            message += `\n\nLocal branches will be deleted and @arvoretech/pi-worktree bumped (${bumpKind}).`;
+            const confirmed = await ctx.ui.confirm("worktree clean", message);
+            if (!confirmed) {
+              ctx.ui.notify("worktree clean: cancelled.", "warning");
+              break;
+            }
+          }
+
           const results: string[] = [];
-          for (const { repo, name, branch } of removedByRepo) {
+          for (const { repo, name, branch, path, procs } of plan) {
+            if (procs.length > 0) {
+              step(`worktree clean: killing ${procs.length} process(es) in ${name}…`);
+              killProcesses(procs.map((proc) => proc.pid));
+              results.push(`• Killed ${procs.length} process(es) holding ${basename(repo)}/${name}`);
+            }
+            const stillUsed = findProcessesUsingDir(path);
+            if (stillUsed.length > 0) {
+              results.push(`✗ ${basename(repo)}/${name}: ${stillUsed.length} process(es) still using the dir — skipped`);
+              continue;
+            }
+            step(`worktree clean: removing ${basename(repo)}/${name}…`);
             const result = removeWorktree(repo, name);
             results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
             if (result.ok) {
@@ -1000,19 +1108,23 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
 
           const piRepo = repos.find((r) => basename(r) === "arvore-pi-extensions");
           if (!piRepo) {
+            clearStep();
             ctx.ui.notify(results.join("\n") + "\n\narvore-pi-extensions repo not found — skipped version bump/PR.", "warning");
             break;
           }
 
+          step("worktree clean: bumping version…");
           const pkgPath = join(piRepo, "packages", "worktree", "package.json");
           const bumped = bumpPackageVersion(pkgPath, bumpKind);
           if (!bumped) {
+            clearStep();
             ctx.ui.notify(results.join("\n") + `\n\nCould not read ${pkgPath} — skipped version bump/PR.`, "warning");
             break;
           }
           results.push(`✓ Bumped @arvoretech/pi-worktree ${bumped.from} → ${bumped.to}`);
 
           if (skipPr) {
+            clearStep();
             ctx.ui.notify(results.join("\n") + "\n\n--no-pr set: version bumped locally, no commit/PR created.", "info");
             break;
           }
@@ -1029,6 +1141,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           const dirty = git(["status", "--porcelain"]).stdout?.trim() || "";
           const onlyPkgDirty = dirty.split("\n").every((l) => l === "" || l.endsWith("packages/worktree/package.json"));
           if (!onlyPkgDirty) {
+            clearStep();
             ctx.ui.notify(
               results.join("\n") +
                 "\n\narvore-pi-extensions has uncommitted changes — version bumped locally, but skipped branch/commit/PR to avoid touching your work. Commit or stash, then re-run.",
@@ -1038,30 +1151,38 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           }
 
           const baseBranch = getDefaultBranch(piRepo) || getCurrentBranch(piRepo);
+          step(`worktree clean: creating branch ${branchName}…`);
           git(["checkout", "-b", branchName]);
           git(["add", pkgPath]);
+          step("worktree clean: committing…");
           const commit = git(["commit", "-m", prTitle]);
           if (commit.status !== 0) {
+            clearStep();
             ctx.ui.notify(results.join("\n") + `\n\nCommit failed: ${commit.stderr?.trim()}`, "error");
             break;
           }
+          step(`worktree clean: pushing ${branchName}…`);
           const push = git(["push", "-u", "origin", branchName]);
           if (push.status !== 0) {
+            clearStep();
             ctx.ui.notify(results.join("\n") + `\n\nPush failed: ${push.stderr?.trim()}`, "error");
             break;
           }
 
+          step("worktree clean: opening PR…");
           const pr = spawnSync(
             "gh",
             ["pr", "create", "--title", prTitle, "--body", prBody, "--base", baseBranch, "--head", branchName],
             { cwd: piRepo, encoding: "utf-8" },
           );
           if (pr.status !== 0) {
+            clearStep();
             ctx.ui.notify(results.join("\n") + `\n\nBranch pushed, but PR creation failed: ${pr.stderr?.trim()}`, "warning");
             break;
           }
           const prUrl = (pr.stdout || "").trim();
           results.push(`✓ Opened PR: ${prUrl}`);
+          clearStep();
           ctx.ui.notify(results.join("\n"), "info");
           break;
         }
