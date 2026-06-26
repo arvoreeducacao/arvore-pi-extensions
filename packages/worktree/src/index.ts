@@ -7,6 +7,7 @@ import { join, resolve, basename } from "node:path";
 let activeWorktree: string | null = null;
 let activeWorktreePaths: Map<string, string> = new Map();
 let worktreeMode = true;
+let widgetHidden = false;
 
 const TREE_NAMES = [
   "africanosa", "alfabetonio", "arqueoptera", "arterieira", "artilheira",
@@ -295,6 +296,51 @@ function removeWorktree(repoPath: string, name: string): { ok: boolean; message:
   return { ok: true, message: `Removed worktree '${name}' from ${basename(repoPath)}` };
 }
 
+function isBranchMergedIntoBase(repoPath: string, branch: string): boolean {
+  const base = getDefaultBranch(repoPath);
+  if (!base) return false;
+  fetchBase(repoPath, base);
+  const merged = spawnSync("git", ["branch", "--merged", `origin/${base}`, "--format=%(refname:short)"], {
+    cwd: repoPath,
+    encoding: "utf-8",
+  });
+  if (merged.status === 0) {
+    const names = (merged.stdout || "").split("\n").map((s) => s.trim()).filter(Boolean);
+    if (names.includes(branch)) return true;
+  }
+  const ancestor = spawnSync("git", ["merge-base", "--is-ancestor", branch, `origin/${base}`], {
+    cwd: repoPath,
+    encoding: "utf-8",
+  });
+  return ancestor.status === 0;
+}
+
+function findMergedWorktrees(repoPath: string, exclude: Set<string>): Array<{ name: string; branch: string }> {
+  return getExistingWorktrees(repoPath)
+    .filter((wt) => !exclude.has(wt.name))
+    .filter((wt) => wt.branch !== "unknown" && isBranchMergedIntoBase(repoPath, wt.branch))
+    .map((wt) => ({ name: wt.name, branch: wt.branch }));
+}
+
+function bumpPackageVersion(packageJsonPath: string, kind: "patch" | "minor" | "major"): { from: string; to: string } | null {
+  if (!existsSync(packageJsonPath)) return null;
+  let pkg: any;
+  try {
+    pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+  } catch {
+    return null;
+  }
+  const current = String(pkg.version || "0.0.0");
+  const [major, minor, patch] = current.split(".").map((n) => parseInt(n, 10) || 0);
+  let next: string;
+  if (kind === "major") next = `${major + 1}.0.0`;
+  else if (kind === "minor") next = `${major}.${minor + 1}.0`;
+  else next = `${major}.${minor}.${patch + 1}`;
+  pkg.version = next;
+  writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n");
+  return { from: current, to: next };
+}
+
 function formatHelp(): string {
   return [
     "Usage: /worktree <command> [options]",
@@ -304,9 +350,13 @@ function formatHelp(): string {
     "  use    <name>     — activate worktree (agent works in worktree paths)",
     "  stop              — deactivate current worktree",
     "  mode   [on|off]   — toggle worktree mode (agent auto-creates worktrees)",
+    "  widget [on|off]   — show/hide the worktree status widget",
     "  shell             — open Herdr panes, tmux panes, or Warp tabs in the worktree (Herdr/tmux/Warp only)",
     "  list   [--repos repo1,repo2]",
     "  delete <name> [--repos repo1,repo2]",
+    "  clean  [--repos ...] [--bump patch|minor|major] [--dry-run] [--no-pr]",
+    "                    — remove worktrees whose branch is merged into the base,",
+    "                      then bump @arvoretech/pi-worktree and open a PR",
     "",
     "If --repos is omitted, shows interactive picker.",
     "If --name is omitted on create, picks a random tree name.",
@@ -340,6 +390,7 @@ interface WorktreeState {
   mode: boolean;
   active: string | null;
   paths: Record<string, string>;
+  widgetHidden?: boolean;
 }
 
 function getStatePath(cwd: string, sessionId: string): string | null {
@@ -350,7 +401,7 @@ function getStatePath(cwd: string, sessionId: string): string | null {
 function saveState(cwd: string, sessionId: string): void {
   const path = getStatePath(cwd, sessionId);
   if (!path) return;
-  const state: WorktreeState = { mode: worktreeMode, active: activeWorktree, paths: Object.fromEntries(activeWorktreePaths) };
+  const state: WorktreeState = { mode: worktreeMode, active: activeWorktree, paths: Object.fromEntries(activeWorktreePaths), widgetHidden };
   mkdirSync(join(path, ".."), { recursive: true });
   writeFileSync(path, JSON.stringify(state, null, 2));
 }
@@ -363,6 +414,7 @@ function loadState(cwd: string, sessionId: string): void {
     worktreeMode = state.mode;
     activeWorktree = state.active;
     activeWorktreePaths = new Map(Object.entries(state.paths || {}));
+    widgetHidden = state.widgetHidden ?? false;
   } catch {}
 }
 
@@ -393,7 +445,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
 
   function updateWidget(ctx: any): void {
     uiCtx = ctx;
-    if (!activeWorktree) {
+    if (!activeWorktree || widgetHidden) {
       if (widgetRegistered) {
         ctx.ui.setWidget("pi-worktree", undefined);
         widgetRegistered = false;
@@ -826,6 +878,17 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           break;
         }
 
+        case "widget": {
+          const value = flags._positional?.toLowerCase();
+          if (value === "on" || value === "show") widgetHidden = false;
+          else if (value === "off" || value === "hide") widgetHidden = true;
+          else widgetHidden = !widgetHidden;
+          updateWidget(ctx);
+          saveState(ctx.cwd, sessionId);
+          ctx.ui.notify(`Worktree widget: ${widgetHidden ? "hidden" : "visible"}`, "info");
+          break;
+        }
+
         case "shell": {
           if (!activeWorktree || activeWorktreePaths.size === 0) {
             ctx.ui.notify("No active worktree. Use /worktree use <name> first.", "warning");
@@ -895,6 +958,111 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           } else {
             ctx.ui.notify(results.join("\n"), "info");
           }
+          break;
+        }
+
+        case "clean": {
+          const targetRepos = filterRepos(repos);
+          const exclude = new Set<string>(activeWorktree ? [activeWorktree] : []);
+          const dryRun = flags.dry !== undefined || flags["dry-run"] !== undefined;
+          const bumpKind = (["major", "minor", "patch"].includes(flags.bump) ? flags.bump : "patch") as "major" | "minor" | "patch";
+          const skipPr = flags["no-pr"] !== undefined;
+
+          ctx.ui.notify("Scanning for merged worktrees…", "info");
+
+          const removedByRepo: Array<{ repo: string; name: string; branch: string }> = [];
+          for (const repo of targetRepos) {
+            const merged = findMergedWorktrees(repo, exclude);
+            for (const wt of merged) {
+              removedByRepo.push({ repo, name: wt.name, branch: wt.branch });
+            }
+          }
+
+          if (removedByRepo.length === 0) {
+            ctx.ui.notify("No merged worktrees to clean.", "info");
+            break;
+          }
+
+          if (dryRun) {
+            const preview = removedByRepo.map((r) => `  ${basename(r.repo)}/${r.name} (${r.branch})`).join("\n");
+            ctx.ui.notify(`Would remove ${removedByRepo.length} merged worktree(s):\n${preview}`, "info");
+            break;
+          }
+
+          const results: string[] = [];
+          for (const { repo, name, branch } of removedByRepo) {
+            const result = removeWorktree(repo, name);
+            results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
+            if (result.ok) {
+              spawnSync("git", ["branch", "-D", branch], { cwd: repo, encoding: "utf-8" });
+            }
+          }
+
+          const piRepo = repos.find((r) => basename(r) === "arvore-pi-extensions");
+          if (!piRepo) {
+            ctx.ui.notify(results.join("\n") + "\n\narvore-pi-extensions repo not found — skipped version bump/PR.", "warning");
+            break;
+          }
+
+          const pkgPath = join(piRepo, "packages", "worktree", "package.json");
+          const bumped = bumpPackageVersion(pkgPath, bumpKind);
+          if (!bumped) {
+            ctx.ui.notify(results.join("\n") + `\n\nCould not read ${pkgPath} — skipped version bump/PR.`, "warning");
+            break;
+          }
+          results.push(`✓ Bumped @arvoretech/pi-worktree ${bumped.from} → ${bumped.to}`);
+
+          if (skipPr) {
+            ctx.ui.notify(results.join("\n") + "\n\n--no-pr set: version bumped locally, no commit/PR created.", "info");
+            break;
+          }
+
+          const branchName = `worktree-clean/bump-${bumped.to}`;
+          const removedList = removedByRepo
+            .map((r) => `- ${basename(r.repo)}/${r.name} (${r.branch})`)
+            .join("\n");
+          const prTitle = `chore(worktree): clean merged worktrees, bump to ${bumped.to}`;
+          const prBody = `## Summary\n\nRemoved merged worktrees and bumped \`@arvoretech/pi-worktree\` to \`${bumped.to}\`.\n\n### Removed worktrees\n${removedList}\n\n_Automated by \`/worktree clean\`._`;
+
+          const git = (args: string[]) => spawnSync("git", args, { cwd: piRepo, encoding: "utf-8" });
+
+          const dirty = git(["status", "--porcelain"]).stdout?.trim() || "";
+          const onlyPkgDirty = dirty.split("\n").every((l) => l === "" || l.endsWith("packages/worktree/package.json"));
+          if (!onlyPkgDirty) {
+            ctx.ui.notify(
+              results.join("\n") +
+                "\n\narvore-pi-extensions has uncommitted changes — version bumped locally, but skipped branch/commit/PR to avoid touching your work. Commit or stash, then re-run.",
+              "warning",
+            );
+            break;
+          }
+
+          const baseBranch = getDefaultBranch(piRepo) || getCurrentBranch(piRepo);
+          git(["checkout", "-b", branchName]);
+          git(["add", pkgPath]);
+          const commit = git(["commit", "-m", prTitle]);
+          if (commit.status !== 0) {
+            ctx.ui.notify(results.join("\n") + `\n\nCommit failed: ${commit.stderr?.trim()}`, "error");
+            break;
+          }
+          const push = git(["push", "-u", "origin", branchName]);
+          if (push.status !== 0) {
+            ctx.ui.notify(results.join("\n") + `\n\nPush failed: ${push.stderr?.trim()}`, "error");
+            break;
+          }
+
+          const pr = spawnSync(
+            "gh",
+            ["pr", "create", "--title", prTitle, "--body", prBody, "--base", baseBranch, "--head", branchName],
+            { cwd: piRepo, encoding: "utf-8" },
+          );
+          if (pr.status !== 0) {
+            ctx.ui.notify(results.join("\n") + `\n\nBranch pushed, but PR creation failed: ${pr.stderr?.trim()}`, "warning");
+            break;
+          }
+          const prUrl = (pr.stdout || "").trim();
+          results.push(`✓ Opened PR: ${prUrl}`);
+          ctx.ui.notify(results.join("\n"), "info");
           break;
         }
 
