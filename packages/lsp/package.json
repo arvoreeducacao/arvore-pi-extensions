@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-lsp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "PI extension that bridges Language Server Protocol servers to give the agent real compiler diagnostics, go-to-definition, references, hover and rename",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

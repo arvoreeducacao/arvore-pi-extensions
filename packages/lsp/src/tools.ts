@@ -83,7 +83,8 @@ export function registerLspTools(pi: ExtensionAPI, getManager: () => LspManager)
     promptSnippet: "Get compiler diagnostics (type errors/warnings) for a file via LSP",
     promptGuidelines: [
       "Call lsp_diagnostics after editing a TypeScript/JavaScript file to confirm there are no type errors before moving on.",
-      "Prefer lsp_diagnostics over running a full build when you only need to validate a single file.",
+      "To type-check TypeScript/JavaScript, ALWAYS use lsp_diagnostics. NEVER run `tsc`, `tsc --noEmit`, `pnpm build`, `pnpm typecheck`, `vue-tsc`, or any compiler/build command just to check types — lsp_diagnostics is faster and is the only sanctioned way to validate types.",
+      "Only run a full build (tsc/pnpm build) when the user explicitly asks for a build or when producing build artifacts is the actual goal — not for type validation.",
     ],
     parameters: Type.Object({
       file: Type.String({ description: "Path to the source file (relative to cwd or absolute)." }),
