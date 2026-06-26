@@ -28,7 +28,7 @@ Memory is a single org-wide pool (cross-user). Two tiers: `raw` (episodic chat, 
 
 ## Status widget
 
-A persistent widget above the editor shows what the memory extension is doing in real time: `buscando memórias` (searching), `injetando contexto` (injecting retrieved context), `salvando memória` (saving), `capturando sessão` (background flush), `não logado`, `incognito`, or `falha` with the error message. Run `/hide-memory` to toggle it off (and again to bring it back).
+A persistent widget above the editor shows what the memory extension is doing in real time: `buscando memórias` (searching), `injetando contexto` (injecting retrieved context), `salvando memória` (saving), `capturando sessão` (background flush), `não logado`, `incognito`, or `falha` with the error message. During active states an animated braille spinner plays in place of the icon. Run `/hide-memory` to toggle it off (and again to bring it back).
 
 ## Resilience
 

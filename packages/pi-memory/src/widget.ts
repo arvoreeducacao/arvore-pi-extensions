@@ -1,4 +1,11 @@
-import { getMemorySnapshot, subscribe, type MemoryActivity } from "./state.js";
+import {
+  getMemorySnapshot,
+  getSpinnerFrame,
+  isActiveActivity,
+  stopSpinnerTimer,
+  subscribe,
+  type MemoryActivity,
+} from "./state.js";
 
 const WIDGET_KEY = "pi-memory";
 
@@ -82,8 +89,9 @@ export function updateMemoryWidget(ctx: any): void {
       render(width: number): string[] {
         const snap = getMemorySnapshot();
         const style = styleFor(snap.activity);
+        const icon = isActiveActivity(snap.activity) ? getSpinnerFrame() : style.icon;
         const user = snap.username ? ` (${snap.username})` : "";
-        const head = `${style.icon} memory${user}: ${style.label}`;
+        const head = `${icon} memory${user}: ${style.label}`;
         const lines = [theme.fg(style.color, truncate(head, width))];
         if (snap.activity === "error" && snap.lastError) {
           lines.push(theme.fg("error", truncate(`   ${snap.lastError}`, width)));
@@ -102,6 +110,7 @@ export function updateMemoryWidget(ctx: any): void {
 }
 
 export function disposeMemoryWidget(ctx: any): void {
+  stopSpinnerTimer();
   if (unsubscribe) {
     unsubscribe();
     unsubscribe = null;
