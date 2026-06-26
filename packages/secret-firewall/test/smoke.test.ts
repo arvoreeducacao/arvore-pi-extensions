@@ -71,3 +71,38 @@ test("redactor leaves non-secret text untouched", () => {
   assert.equal(out.text, "server listening on port 3000");
   assert.equal(out.hits, 0);
 });
+
+test("captures pattern-matched secrets for shell export", () => {
+  const r = createRedactor([]);
+  const jwt =
+    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjEyMyJ9.abcDEFghiJKLmnoPQRstuVWXyz0123456789";
+  const out = r.redactString(`Authorization: Bearer ${jwt}`);
+  assert.equal(out.text, "Authorization: Bearer $SECRET_JWT");
+  const captured = r.drainCaptured();
+  assert.equal(captured.length, 1);
+  assert.equal(captured[0].name, "SECRET_JWT");
+  assert.equal(captured[0].placeholder, "$SECRET_JWT");
+  assert.equal(captured[0].value, jwt);
+});
+
+test("drainCaptured returns each captured secret only once", () => {
+  const r = createRedactor([]);
+  const jwt =
+    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjEyMyJ9.abcDEFghiJKLmnoPQRstuVWXyz0123456789";
+  r.redactString(jwt);
+  assert.equal(r.drainCaptured().length, 1);
+  r.redactString(jwt);
+  assert.equal(r.drainCaptured().length, 0);
+});
+
+test("distinct pattern matches get distinct placeholders", () => {
+  const r = createRedactor([]);
+  const a =
+    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjFhYWEifQ.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const b =
+    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjJiYmIifQ.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  const out = r.redactString(`${a} and ${b}`);
+  assert.equal(out.text, "$SECRET_JWT and $SECRET_JWT_2");
+  const captured = r.drainCaptured();
+  assert.equal(captured.length, 2);
+});

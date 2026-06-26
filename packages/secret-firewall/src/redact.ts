@@ -1,8 +1,16 @@
 import type { SecretEntry } from "./secrets.js";
 
+export interface DynamicSecret {
+  name: string;
+  placeholder: string;
+  value: string;
+}
+
 export interface Redactor {
   redactString(text: string): { text: string; hits: number };
   refresh(entries: SecretEntry[]): void;
+  drainCaptured(): DynamicSecret[];
+  knownPlaceholders(): string[];
 }
 
 interface PatternRule {
@@ -30,10 +38,39 @@ function escapeRe(s: string): string {
 export function createRedactor(initial: SecretEntry[]): Redactor {
   let valueRules: { re: RegExp; placeholder: string }[] = [];
 
+  const captured = new Map<string, DynamicSecret>();
+  const takenPlaceholders = new Set<string>();
+  let pending: DynamicSecret[] = [];
+
   function refresh(entries: SecretEntry[]): void {
     valueRules = entries
       .filter((e) => e.value.length > 0)
       .map((e) => ({ re: new RegExp(escapeRe(e.value), "g"), placeholder: e.placeholder }));
+    for (const e of entries) takenPlaceholders.add(e.placeholder);
+  }
+
+  function allocatePlaceholder(patternName: string): string {
+    const base = `$SECRET_${patternName}`;
+    if (!takenPlaceholders.has(base)) return base;
+    let i = 2;
+    while (takenPlaceholders.has(`${base}_${i}`)) i++;
+    return `${base}_${i}`;
+  }
+
+  function capture(patternName: string, value: string): string {
+    const existing = captured.get(value);
+    if (existing) return existing.placeholder;
+    const placeholder = allocatePlaceholder(patternName);
+    takenPlaceholders.add(placeholder);
+    const entry: DynamicSecret = {
+      name: placeholder.replace(/^\$/, ""),
+      placeholder,
+      value,
+    };
+    captured.set(value, entry);
+    pending.push(entry);
+    valueRules.push({ re: new RegExp(escapeRe(value), "g"), placeholder });
+    return placeholder;
   }
 
   function redactString(text: string): { text: string; hits: number } {
@@ -47,14 +84,25 @@ export function createRedactor(initial: SecretEntry[]): Redactor {
       });
     }
     for (const { name, re } of PATTERN_RULES) {
-      out = out.replace(re, () => {
+      out = out.replace(re, (match) => {
         hits++;
-        return `$SECRET_${name}`;
+        return capture(name, match);
       });
     }
     return { text: out, hits };
   }
 
+  function drainCaptured(): DynamicSecret[] {
+    if (pending.length === 0) return [];
+    const out = pending;
+    pending = [];
+    return out;
+  }
+
+  function knownPlaceholders(): string[] {
+    return Array.from(captured.values()).map((e) => e.placeholder);
+  }
+
   refresh(initial);
-  return { redactString, refresh };
+  return { redactString, refresh, drainCaptured, knownPlaceholders };
 }

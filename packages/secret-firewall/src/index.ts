@@ -14,7 +14,7 @@ export default function (pi: ExtensionAPI) {
   let entries: SecretEntry[] = [];
   const redactor = createRedactor([]);
   let exportedNames: string[] = [];
-  const stats = { redactedHits: 0, lastScan: 0 };
+  const stats = { redactedHits: 0, lastScan: 0, capturedCount: 0 };
 
   function exportToShell(list: SecretEntry[]): void {
     for (const name of exportedNames) {
@@ -35,6 +35,14 @@ export default function (pi: ExtensionAPI) {
     redactor.refresh(entries);
     exportToShell(entries);
     stats.lastScan = entries.length;
+  }
+
+  function exportCaptured(): void {
+    for (const secret of redactor.drainCaptured()) {
+      process.env[secret.name] = secret.value;
+      if (!exportedNames.includes(secret.name)) exportedNames.push(secret.name);
+      stats.capturedCount++;
+    }
   }
 
   function redactBlocks(content: ContentBlock[]): ContentBlock[] | undefined {
@@ -107,7 +115,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("context", async (event, _ctx) => {
-    if (!enabled || entries.length === 0) return;
+    if (!enabled) return;
     let changed = false;
     const messages = (event.messages as unknown[]).map((msg) => {
       const m = msg as Record<string, unknown>;
@@ -120,12 +128,14 @@ export default function (pi: ExtensionAPI) {
       }
       return msg;
     });
+    exportCaptured();
     if (changed) return { messages } as never;
   });
 
   pi.on("tool_result", async (event) => {
-    if (!enabled || entries.length === 0) return;
+    if (!enabled) return;
     const redacted = redactBlocks(event.content as ContentBlock[]);
+    exportCaptured();
     if (redacted) return { content: redacted } as never;
   });
 
@@ -134,9 +144,10 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       rescan(ctx.cwd);
       const names = entries.map((e) => e.placeholder).join(", ") || "(none)";
+      const captured = redactor.knownPlaceholders().join(", ") || "(none)";
       ctx.ui.notify(
         `secret-firewall [${enabled ? "on" : "off"}] | protecting ${entries.length} secret(s) | ` +
-          `redacted ${stats.redactedHits} value(s) so far\nReferenceable as shell env: ${names}`,
+          `redacted ${stats.redactedHits} value(s) so far\nReferenceable as shell env: ${names}\nCaptured from context (auto-exported): ${captured}`,
         "info",
       );
     },

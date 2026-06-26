@@ -26,7 +26,13 @@ Redaction happens on two channels:
 
 A pattern fallback also catches well-known token shapes (AWS keys, JWTs,
 `sk-...`, GitHub/Slack tokens, PEM private keys) that leak into output even when
-they were never in an env var.
+they were never in an env var. When such a token is caught, it is **captured and
+auto-exported** to the shell: the matched value is assigned a stable placeholder
+(`$SECRET_JWT`, `$SECRET_JWT_2`, ...), written to `process.env`, and replaced in
+the context. So if you paste a JWT into the chat, it is redacted to
+`$SECRET_JWT` for the model *and* becomes a real shell variable you can use:
+`curl -H "Authorization: Bearer $SECRET_JWT"`. Captured names show up under
+`/secret-firewall` status.
 
 ## Security model — the model never sees the value
 
@@ -42,6 +48,15 @@ The extension never re-hydrates placeholders itself. If the model writes the
 literal *value* instead of the placeholder, that value is redacted on the way
 back, but the model must use the `$SECRET_*` reference for a command to actually
 use the secret.
+
+### Pasted/leaked tokens are captured and exported
+
+When a value is caught by a **pattern rule** (JWT, AWS key, `sk-...`, etc.) it is
+not only masked — its real value is captured and exported as a `$SECRET_*` shell
+variable on the fly. This means a token pasted into the chat becomes usable in
+bash (`$SECRET_JWT`) without the model ever seeing the value, and without
+needing it in `.env` beforehand. Distinct values caught by the same pattern get
+suffixed placeholders (`$SECRET_JWT_2`).
 
 ### Limits / non-goals
 
