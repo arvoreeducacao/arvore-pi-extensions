@@ -1,0 +1,49 @@
+{
+  "name": "@arvoretech/pi-codebase-index",
+  "version": "0.1.0",
+  "description": "PI extension for semantic codebase search (vendor-neutral backend contract)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "PROTOCOL.md",
+    "openapi.yaml"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-tui": "latest",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "codebase",
+    "search",
+    "rag",
+    "embeddings"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/pi-codebase-index"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
