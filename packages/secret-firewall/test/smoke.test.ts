@@ -6,6 +6,14 @@ import { join } from "node:path";
 import { discoverSecrets } from "../dist/secrets.js";
 import { createRedactor } from "../dist/redact.js";
 
+function fakeJwt(seed: string): string {
+  const b64 = (obj: unknown) =>
+    Buffer.from(JSON.stringify(obj)).toString("base64url");
+  const sig = Buffer.from(`sig-${seed}`.repeat(4)).toString("base64url");
+  return `${b64({ alg: "none", typ: "JWT" })}.${b64({ sub: seed })}.${sig}`;
+}
+
+
 function withEnvFile(lines: string[], fn: (dir: string) => void): void {
   const dir = mkdtempSync(join(tmpdir(), "sf-test-"));
   try {
@@ -74,8 +82,7 @@ test("redactor leaves non-secret text untouched", () => {
 
 test("captures pattern-matched secrets for shell export", () => {
   const r = createRedactor([]);
-  const jwt =
-    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjEyMyJ9.abcDEFghiJKLmnoPQRstuVWXyz0123456789";
+  const jwt = fakeJwt("user-123");
   const out = r.redactString(`Authorization: Bearer ${jwt}`);
   assert.equal(out.text, "Authorization: Bearer $SECRET_JWT");
   const captured = r.drainCaptured();
@@ -87,8 +94,7 @@ test("captures pattern-matched secrets for shell export", () => {
 
 test("drainCaptured returns each captured secret only once", () => {
   const r = createRedactor([]);
-  const jwt =
-    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjEyMyJ9.abcDEFghiJKLmnoPQRstuVWXyz0123456789";
+  const jwt = fakeJwt("user-123");
   r.redactString(jwt);
   assert.equal(r.drainCaptured().length, 1);
   r.redactString(jwt);
@@ -97,10 +103,8 @@ test("drainCaptured returns each captured secret only once", () => {
 
 test("distinct pattern matches get distinct placeholders", () => {
   const r = createRedactor([]);
-  const a =
-    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjFhYWEifQ.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  const b =
-    "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJVc2VyOjJiYmIifQ.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  const a = fakeJwt("aaa");
+  const b = fakeJwt("bbb");
   const out = r.redactString(`${a} and ${b}`);
   assert.equal(out.text, "$SECRET_JWT and $SECRET_JWT_2");
   const captured = r.drainCaptured();
