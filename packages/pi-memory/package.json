@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-memory",
-  "version": "0.5.2",
+  "version": "0.6.1",
   "description": "PI extension for cloud-based memory with RAG (Qdrant + GitHub OAuth)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -23,6 +23,18 @@ Memory is a single org-wide pool (cross-user). Two tiers: `raw` (episodic chat, 
 | `/memory-promote <id>` | Promote a raw memory to curated |
 | `/memory-curate <category>\|<title>\|<content>` | Create a curated memory directly |
 | `/memory-forget` | Delete the current session from memory (retroactive incognito) |
+| `/memory-feedback <on\|off>` | Toggle relevance feedback prompts |
+| `/hide-memory` | Hide/show the memory status widget |
+
+## Status widget
+
+A persistent widget above the editor shows what the memory extension is doing in real time: `buscando memórias` (searching), `injetando contexto` (injecting retrieved context), `salvando memória` (saving), `capturando sessão` (background flush), `não logado`, `incognito`, or `falha` with the error message. During active states an animated braille spinner plays in place of the icon. Run `/hide-memory` to toggle it off (and again to bring it back).
+
+## Resilience
+
+- Requests retry with exponential backoff on `429`/`5xx`/network errors (Cloudflare in front of `api-arvore` occasionally returns transient `403`/`504`).
+- Expired/invalid sessions (`401`/`403`) surface as a visible `não logado` state prompting `/memory-login`, instead of failing silently.
+| `/memory-forget` | Delete the current session from memory (retroactive incognito) |
 
 ## Config
 

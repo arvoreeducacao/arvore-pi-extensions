@@ -31,25 +31,75 @@ export interface Candidate {
   session_id: string | null;
 }
 
+const MAX_RETRIES = 3;
+const BASE_BACKOFF_MS = 500;
+
+export class MemoryAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MemoryAuthError";
+  }
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || (status >= 500 && status <= 599);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function request<T>(path: string, method: string, body?: unknown): Promise<T> {
   const creds = await getCredentials();
-  if (!creds) throw new Error("Not authenticated. Run /memory-login first.");
-
-  const config = getConfig();
-  const response = await fetch(`${config.apiUrl}/pi-memory${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${creds.token}`,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`);
+  if (!creds) {
+    throw new MemoryAuthError("Not authenticated. Run /memory-login first.");
   }
 
-  return response.json() as Promise<T>;
+  const config = getConfig();
+  let lastError: Error = new Error(`${method} ${path} failed`);
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(`${config.apiUrl}/pi-memory${path}`, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${creds.token}`,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (networkError) {
+      lastError = networkError instanceof Error ? networkError : new Error(String(networkError));
+      if (attempt < MAX_RETRIES) {
+        await sleep(BASE_BACKOFF_MS * 2 ** attempt);
+        continue;
+      }
+      throw lastError;
+    }
+
+    if (response.ok) {
+      return response.json() as Promise<T>;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new MemoryAuthError(
+        `Sessão de memória expirada ou sem acesso (${response.status}). Rode /memory-login.`,
+      );
+    }
+
+    const text = await response.text();
+    lastError = new Error(`${method} ${path} failed: ${response.status} ${text}`);
+
+    if (isRetryableStatus(response.status) && attempt < MAX_RETRIES) {
+      await sleep(BASE_BACKOFF_MS * 2 ** attempt);
+      continue;
+    }
+
+    throw lastError;
+  }
+
+  throw lastError;
 }
 
 export function ingest(sessionId: string, messages: IngestMessage[], final: boolean): Promise<IngestResult> {
