@@ -32,13 +32,11 @@ Pinecone, ...) and embedding model lives entirely in the backend.
 pnpm add @arvoretech/pi-codebase-index
 ```
 
-Point it at your backend and authenticate:
+Set your backend URL and authenticate inside Pi:
 
 ```bash
 export PI_CODEBASE_API_URL="https://your-backend.example.com/api"
 ```
-
-Inside Pi:
 
 ```
 /codebase-login
@@ -61,12 +59,12 @@ That's it — sync runs automatically from then on.
 
 | Env var | Required | Default | Purpose |
 |---|---|---|---|
-| `PI_CODEBASE_API_URL` | yes | — | Base URL of a backend implementing the protocol |
+| `PI_CODEBASE_API_URL` | no | — | Base URL of a backend implementing the protocol |
 | `PI_CODEBASE_AUTH_PROVIDER` | no | `github` | Auth provider segment in the `/auth/<provider>/...` routes |
 
-There is **no built-in backend URL** — the extension fails loudly until you set
-`PI_CODEBASE_API_URL`. This keeps the package free of any single company's
-infrastructure.
+When unset, `PI_CODEBASE_API_URL` falls back to a built-in default so the extension
+works out of the box for its primary deployment. Override it to run against your own
+infrastructure — the package itself is free of any single company's backend.
 
 ## Running your own backend
 
