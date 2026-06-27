@@ -1,0 +1,175 @@
+openapi: 3.1.0
+info:
+  title: Codebase Index Protocol
+  version: 1.0.0
+  description: >
+    Vendor-neutral contract between the pi-codebase-index client and any backend
+    that powers semantic code search. The client speaks only these endpoints; the
+    vector store, embedding model and reranker are backend implementation details.
+  license:
+    name: MIT
+servers:
+  - url: https://your-backend.example.com/codebase-index
+    description: Backend base path (implementation-defined)
+security:
+  - bearerAuth: []
+paths:
+  /sync:
+    post:
+      summary: Diff repo Merkle roots, return files to (re)index
+      operationId: sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+      responses:
+        "200":
+          description: Files that changed since the last index
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /index:
+    post:
+      summary: Embed and store chunks (backend embeds, client does not)
+      operationId: index
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IndexRequest"
+      responses:
+        "200":
+          description: Number of chunks indexed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [indexed]
+                properties:
+                  indexed: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /search:
+    post:
+      summary: Semantic (optionally hybrid + reranked) code search
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Ranked matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    Unauthorized:
+      description: Missing or expired token
+    Forbidden:
+      description: User not allowed
+  schemas:
+    FileHash:
+      type: object
+      required: [path, hash]
+      properties:
+        path: { type: string }
+        hash: { type: string, description: content hash (sha256) }
+    RepoSync:
+      type: object
+      required: [name, rootHash]
+      properties:
+        name: { type: string }
+        rootHash: { type: string, description: Merkle root over all tracked files }
+        files:
+          type: array
+          items: { $ref: "#/components/schemas/FileHash" }
+    SyncRequest:
+      type: object
+      required: [repos]
+      properties:
+        repos:
+          type: array
+          items: { $ref: "#/components/schemas/RepoSync" }
+    RepoPath:
+      type: object
+      required: [repo, path]
+      properties:
+        repo: { type: string }
+        path: { type: string }
+    SyncResponse:
+      type: object
+      required: [changed]
+      properties:
+        changed:
+          type: array
+          items: { $ref: "#/components/schemas/RepoPath" }
+        removed:
+          type: array
+          items: { $ref: "#/components/schemas/RepoPath" }
+    Chunk:
+      type: object
+      required: [repo, path, symbol, lang, content]
+      properties:
+        repo: { type: string }
+        path: { type: string }
+        symbol: { type: string, description: symbol id, e.g. Class.method or file-level }
+        lang: { type: string }
+        gitSha: { type: string }
+        lineStart: { type: integer }
+        lineEnd: { type: integer }
+        content: { type: string, description: code, optionally context-enriched }
+    IndexRequest:
+      type: object
+      required: [chunks]
+      properties:
+        chunks:
+          type: array
+          items: { $ref: "#/components/schemas/Chunk" }
+        remove:
+          type: array
+          items: { $ref: "#/components/schemas/RepoPath" }
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string }
+        repo: { type: string }
+        lang: { type: string }
+        limit: { type: integer, default: 10 }
+    SearchResult:
+      type: object
+      required: [repo, path, symbol, snippet, score]
+      properties:
+        repo: { type: string }
+        path: { type: string }
+        symbol: { type: string }
+        lang: { type: string }
+        snippet: { type: string }
+        score: { type: number }
+        lineStart: { type: integer }
+        lineEnd: { type: integer }
+    SearchResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/SearchResult" }

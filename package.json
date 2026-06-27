@@ -17,7 +17,22 @@
   "pnpm": {
     "overrides": {
       "@earendil-works/pi-tui": "0.79.5"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "tree-sitter-typescript",
+      "tree-sitter-javascript",
+      "tree-sitter-python",
+      "tree-sitter-go",
+      "tree-sitter-ruby",
+      "tree-sitter-rust",
+      "tree-sitter-java",
+      "tree-sitter-php",
+      "tree-sitter-c",
+      "tree-sitter-cpp",
+      "tree-sitter-c-sharp",
+      "tree-sitter-elixir",
+      "@tree-sitter-grammars/tree-sitter-kotlin"
+    ]
   },
   "packageManager": "pnpm@10.28.0",
   "engines": {
