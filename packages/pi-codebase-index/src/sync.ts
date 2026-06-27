@@ -16,7 +16,6 @@ async function discoverRepos(workspaceDir: string): Promise<{ name: string; dir:
 
   if (existsSync(join(workspaceDir, ".git"))) {
     repos.push({ name: basename(workspaceDir), dir: workspaceDir });
-    return repos;
   }
 
   let entries: string[] = [];
