@@ -32,20 +32,17 @@ Pinecone, ...) and embedding model lives entirely in the backend.
 pnpm add @arvoretech/pi-codebase-index
 ```
 
-Inside Pi:
+Set your backend URL and authenticate inside Pi:
+
+```bash
+export PI_CODEBASE_API_URL="https://your-backend.example.com/api"
+```
 
 ```
 /codebase-login
 ```
 
 That's it — sync runs automatically from then on.
-
-The extension ships with a default Árvore backend URL. To point it at a different
-backend, set `PI_CODEBASE_API_URL`:
-
-```bash
-export PI_CODEBASE_API_URL="https://your-backend.example.com/api"
-```
 
 ## Commands
 
@@ -62,11 +59,12 @@ export PI_CODEBASE_API_URL="https://your-backend.example.com/api"
 
 | Env var | Required | Default | Purpose |
 |---|---|---|---|
-| `PI_CODEBASE_API_URL` | no | `https://livros.arvore.com.br/api-arvore` | Base URL of a backend implementing the protocol |
+| `PI_CODEBASE_API_URL` | no | — | Base URL of a backend implementing the protocol |
 | `PI_CODEBASE_AUTH_PROVIDER` | no | `github` | Auth provider segment in the `/auth/<provider>/...` routes |
 
-The default points at Árvore's backend. Override `PI_CODEBASE_API_URL` to run against
-your own infrastructure — the package stays free of any single company's backend.
+When unset, `PI_CODEBASE_API_URL` falls back to a built-in default so the extension
+works out of the box for its primary deployment. Override it to run against your own
+infrastructure — the package itself is free of any single company's backend.
 
 ## Running your own backend
 
