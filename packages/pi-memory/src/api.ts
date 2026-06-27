@@ -45,6 +45,30 @@ function isRetryableStatus(status: number): boolean {
   return status === 429 || (status >= 500 && status <= 599);
 }
 
+async function formatErrorBody(response: Response): Promise<string> {
+  const status = response.status;
+  const contentType = response.headers.get("content-type") ?? "";
+  const raw = await response.text().catch(() => "");
+
+  if (contentType.includes("application/json")) {
+    try {
+      const parsed = JSON.parse(raw) as { message?: unknown };
+      if (typeof parsed.message === "string") {
+        return `${status} ${parsed.message}`;
+      }
+    } catch {
+      // falls through to generic handling
+    }
+  }
+
+  if (contentType.includes("text/html") || raw.trimStart().startsWith("<")) {
+    return `${status} gateway error (HTML response, likely timeout)`;
+  }
+
+  const snippet = raw.replace(/\s+/g, " ").trim().slice(0, 200);
+  return snippet ? `${status} ${snippet}` : `${status}`;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -88,8 +112,7 @@ async function request<T>(path: string, method: string, body?: unknown): Promise
       );
     }
 
-    const text = await response.text();
-    lastError = new Error(`${method} ${path} failed: ${response.status} ${text}`);
+    lastError = new Error(`${method} ${path} failed: ${await formatErrorBody(response)}`);
 
     if (isRetryableStatus(response.status) && attempt < MAX_RETRIES) {
       await sleep(BASE_BACKOFF_MS * 2 ** attempt);
