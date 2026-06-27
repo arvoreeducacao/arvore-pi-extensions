@@ -96,7 +96,15 @@ async function indexChanged(
     if (pending.length === 0) return;
     const batch = pending;
     pending = [];
-    await index(batch);
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        await index(batch);
+        return;
+      } catch {
+        if (attempt === 3) break;
+        await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+      }
+    }
   };
 
   for (const item of changed) {
