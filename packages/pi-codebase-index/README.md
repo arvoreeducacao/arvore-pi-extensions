@@ -19,7 +19,10 @@ Pinecone, ...) and embedding model lives entirely in the backend.
    changed since the last index. A newly added repo returns all its files, so new repos
    index automatically.
 3. Changed files are chunked and sent to `/index` in the background — the backend embeds
-   and stores them. A status widget shows progress.
+   and stores them. A status widget shows progress. Chunking is **AST-aware**
+   (via tree-sitter) for the languages it recognizes, so each chunk maps to a real
+   function/class/method and carries its actual symbol name; files in unsupported
+   languages fall back to fixed-size line windows.
 4. The agent calls the `search_codebase` tool, which hits `/search` and returns ranked
    snippets with file paths and line numbers.
 
