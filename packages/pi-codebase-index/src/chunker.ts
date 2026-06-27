@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { lstat, readFile, realpath } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
 import type { Chunk } from "./api.js";
 import { astLangOf, extractDefs } from "./ast.js";
 import type { DefNode } from "./ast.js";
@@ -203,22 +203,36 @@ async function astChunks(
 
   const chunks: Chunk[] = [];
 
-  const firstStart = topLevel[0].lineStart;
-  if (firstStart - 1 >= MIN_PREAMBLE_LINES) {
+  const emitGap = (start: number, end: number): void => {
+    if (end - start + 1 < MIN_PREAMBLE_LINES) {
+      return;
+    }
+    const slice = lines.slice(start - 1, end);
+    if (slice.every((line) => line.trim() === "")) {
+      return;
+    }
     chunks.push({
       repo,
       path: relPath,
-      symbol: `${relPath}#preamble`,
+      symbol: `${relPath}#L${start}-${end}`,
       lang: outputLang,
-      lineStart: 1,
-      lineEnd: firstStart - 1,
-      content: lines.slice(0, firstStart - 1).join("\n"),
+      lineStart: start,
+      lineEnd: end,
+      content: slice.join("\n"),
       fileHash,
     });
-  }
+  };
 
+  let cursor = 1;
   for (const def of topLevel) {
+    if (def.lineStart > cursor) {
+      emitGap(cursor, def.lineStart - 1);
+    }
     chunks.push(...splitDef(repo, relPath, outputLang, lines, fileHash, def));
+    cursor = Math.max(cursor, def.lineEnd + 1);
+  }
+  if (cursor <= lines.length) {
+    emitGap(cursor, lines.length);
   }
 
   return chunks;
@@ -232,7 +246,18 @@ export async function chunkFile(
 ): Promise<Chunk[]> {
   let content: string;
   try {
-    content = await readFile(join(repoDir, relPath), "utf-8");
+    const repoRoot = await realpath(repoDir);
+    const absPath = resolve(repoDir, relPath);
+    const stat = await lstat(absPath);
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      return [];
+    }
+    const realFilePath = await realpath(absPath);
+    const relToRoot = relative(repoRoot, realFilePath);
+    if (relToRoot.startsWith("..") || isAbsolute(relToRoot)) {
+      return [];
+    }
+    content = await readFile(realFilePath, "utf-8");
   } catch {
     return [];
   }
