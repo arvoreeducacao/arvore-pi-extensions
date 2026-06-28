@@ -10,13 +10,10 @@ import {
 } from "./config.js";
 import { Sync, type SyncResult } from "./sync.js";
 
-const STATUS_KEY = "cloud-sessions";
-
 let activeSync: Promise<SyncResult | null> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-type Notify = (key: string, text: string | undefined) => void;
 type NotifyUser = (text: string, level: "info" | "warning" | "error") => void;
 
 let lastSyncFailed = false;
@@ -40,32 +37,20 @@ function shortReason(error: unknown): string {
   return firstLine.length > 60 ? `${firstLine.slice(0, 57)}...` : firstLine;
 }
 
-function summarize(result: SyncResult): string {
-  const parts: string[] = [];
-  if (result.pushed.length) parts.push(`↑${result.pushed.length}`);
-  if (result.pulled.length) parts.push(`↓${result.pulled.length}`);
-  if (parts.length === 0) return "up to date";
-  return parts.join(" ");
-}
-
-async function runSync(setStatus: Notify, notifyUser?: NotifyUser): Promise<SyncResult | null> {
+async function runSync(notifyUser?: NotifyUser): Promise<SyncResult | null> {
   if (activeSync) return activeSync;
   activeSync = (async () => {
     try {
       const config = await loadConfig();
       if (!isProviderConfigured(config)) {
-        setStatus(STATUS_KEY, "sessions: not configured");
         return null;
       }
-      setStatus(STATUS_KEY, `sessions: syncing (${config.provider})`);
       const sync = new Sync(config);
       const result = await sync.run();
-      setStatus(STATUS_KEY, `sessions: ${config.provider} ${summarize(result)}`);
       lastSyncFailed = false;
       return result;
     } catch (error) {
       const reason = shortReason(error);
-      setStatus(STATUS_KEY, `sessions: sync error (${reason})`);
       if (!lastSyncFailed) {
         notifyUser?.(`cloud-sessions sync failed: ${reason}`, "warning");
       }
@@ -78,19 +63,19 @@ async function runSync(setStatus: Notify, notifyUser?: NotifyUser): Promise<Sync
   return activeSync;
 }
 
-function scheduleSync(config: CloudSessionsConfig, setStatus: Notify, notifyUser?: NotifyUser): void {
+function scheduleSync(config: CloudSessionsConfig, notifyUser?: NotifyUser): void {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
-    void runSync(setStatus, notifyUser).catch(() => {});
+    void runSync(notifyUser).catch(() => {});
   }, config.pushDebounceMs);
 }
 
-function startPolling(config: CloudSessionsConfig, setStatus: Notify, notifyUser?: NotifyUser): void {
+function startPolling(config: CloudSessionsConfig, notifyUser?: NotifyUser): void {
   if (pollTimer) clearInterval(pollTimer);
   if (config.pollIntervalMs <= 0) return;
   pollTimer = setInterval(() => {
-    void runSync(setStatus, notifyUser).catch(() => {});
+    void runSync(notifyUser).catch(() => {});
   }, config.pollIntervalMs);
   if (typeof pollTimer.unref === "function") pollTimer.unref();
 }
@@ -122,27 +107,23 @@ async function writeConfig(partial: Record<string, unknown>): Promise<void> {
 export default function cloudSessions(pi: ExtensionAPI): void {
   pi.on("session_start", async (event, ctx) => {
     const config = await loadConfig();
-    const setStatus: Notify = (k, t) => ctx.ui.setStatus(k, t);
     const notifyUser: NotifyUser = (text, level) => ctx.ui.notify(text, level);
 
     if (!isProviderConfigured(config)) {
-      setStatus(STATUS_KEY, "sessions: not configured");
       return;
     }
-    setStatus(STATUS_KEY, `sessions: ${config.provider}`);
 
     if (config.pullOnStart && event.reason === "startup") {
-      await runSync(setStatus, notifyUser).catch(() => {});
+      await runSync(notifyUser).catch(() => {});
     }
 
-    startPolling(config, setStatus, notifyUser);
+    startPolling(config, notifyUser);
   });
 
   pi.on("session_before_switch", async (_event, ctx) => {
     const config = await loadConfig();
     if (!isProviderConfigured(config)) return;
     await runSync(
-      (k, t) => ctx.ui.setStatus(k, t),
       (text, level) => ctx.ui.notify(text, level),
     ).catch(() => {});
   });
@@ -152,7 +133,6 @@ export default function cloudSessions(pi: ExtensionAPI): void {
     if (!config.autoPush || !isProviderConfigured(config)) return;
     scheduleSync(
       config,
-      (k, t) => ctx.ui.setStatus(k, t),
       (text, level) => ctx.ui.notify(text, level),
     );
   });
@@ -162,7 +142,6 @@ export default function cloudSessions(pi: ExtensionAPI): void {
     const config = await loadConfig();
     if (!config.autoPush || !isProviderConfigured(config)) return;
     await runSync(
-      (k, t) => ctx.ui.setStatus(k, t),
       (text, level) => ctx.ui.notify(text, level),
     ).catch(() => {});
   });
@@ -171,7 +150,7 @@ export default function cloudSessions(pi: ExtensionAPI): void {
     description: "Sync pi sessions with the cloud backend now (pull + push)",
     handler: async (_args, ctx) => {
       try {
-        const result = await runSync((k, t) => ctx.ui.setStatus(k, t));
+        const result = await runSync((text, level) => ctx.ui.notify(text, level));
         if (!result) {
           ctx.ui.notify(
             "cloud-sessions is not configured. Run /cloud-sessions-setup.",
@@ -247,8 +226,6 @@ export default function cloudSessions(pi: ExtensionAPI): void {
           "info",
         );
       }
-
-      ctx.ui.setStatus(STATUS_KEY, `sessions: ${provider}`);
     },
   });
 }

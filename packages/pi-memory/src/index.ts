@@ -18,13 +18,10 @@ import {
 import type { IngestMessage, SearchResult } from "./api.js";
 import {
   clearError,
-  getMemorySnapshot,
   setActivity,
   setError,
-  setHidden,
   setUsername,
 } from "./state.js";
-import { disposeMemoryWidget, updateMemoryWidget } from "./widget.js";
 import {
   feedbackEnabled,
   incrementTurn,
@@ -166,7 +163,7 @@ async function startLoginFlow(): Promise<{
 
 export default function piMemoryExtension(pi: ExtensionAPI): void {
   registerMemoryTools(pi);
-  async function flush(entries: unknown[], final: boolean, setStatus: (key: string, text: string) => void): Promise<void> {
+  async function flush(entries: unknown[], final: boolean): Promise<void> {
     if (incognito) {
       return;
     }
@@ -189,7 +186,6 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       const result = await ingest(sessionId, fresh, final);
       lastFlushedTurn = fresh.reduce((max, m) => Math.max(max, m.turn_index), lastFlushedTurn);
       setActivity("idle", `+${result.decisions.add}`);
-      setStatus("memory", `memory: ${creds.username} (+${result.decisions.add})`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (error instanceof MemoryAuthError) {
@@ -198,7 +194,6 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       } else {
         setError(message);
       }
-      setStatus("memory", `memory: falha ao capturar`);
     }
   }
 
@@ -216,18 +211,14 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       setUsername(null);
       setActivity("logged-out");
     }
-    ctx.ui.setStatus("memory", creds ? `memory: ${creds.username}` : "memory: not logged in");
-    updateMemoryWidget(ctx);
   });
 
   pi.on("before_agent_start", async (event, ctx) => {
-    updateMemoryWidget(ctx);
     if (incognito) {
       setActivity("incognito");
       return;
     }
     const creds = await getCredentials();
-    ctx.ui.setStatus("memory", creds ? `memory: ${creds.username}` : "memory: not logged in");
     if (!creds) {
       setUsername(null);
       setActivity("logged-out");
@@ -318,7 +309,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       clearTimeout(flushTimer);
     }
     flushTimer = setTimeout(() => {
-      void flush(ctx.sessionManager.getEntries(), false, (k, t) => ctx.ui.setStatus(k, t));
+      void flush(ctx.sessionManager.getEntries(), false);
     }, FLUSH_DEBOUNCE_MS);
   });
 
@@ -326,8 +317,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
     if (flushTimer) {
       clearTimeout(flushTimer);
     }
-    await flush(ctx.sessionManager.getEntries(), true, (k, t) => ctx.ui.setStatus(k, t));
-    disposeMemoryWidget(ctx);
+    await flush(ctx.sessionManager.getEntries(), true);
   });
 
   pi.registerCommand("memory-login", {
@@ -342,11 +332,10 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
           username: result.username,
           expiresAt: Date.now() + result.expiresIn,
         });
-        ctx.ui.setStatus("memory", `memory: ${result.username}`);
+        ctx.ui.notify(`Logged in as ${result.username}`, "info");
         setUsername(result.username);
         clearError();
         setActivity(incognito ? "incognito" : "idle");
-        updateMemoryWidget(ctx);
         ctx.ui.notify(`Logged in as ${result.username}`, "info");
       } catch (error) {
         ctx.ui.notify(`Login failed: ${error instanceof Error ? error.message : String(error)}`, "error");
@@ -358,10 +347,9 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
     description: "Logout from Pi Memory",
     handler: async (_args, ctx) => {
       await clearCredentials();
-      ctx.ui.setStatus("memory", "memory: logged out");
+      ctx.ui.notify("Logged out from Pi Memory", "info");
       setUsername(null);
       setActivity("logged-out");
-      updateMemoryWidget(ctx);
       ctx.ui.notify("Logged out from Pi Memory", "info");
     },
   });
@@ -372,24 +360,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       incognito = !incognito;
       const status = incognito ? "ON" : "OFF";
       setActivity(incognito ? "incognito" : "idle");
-      ctx.ui.setStatus("memory", `memory: incognito ${status}`);
       ctx.ui.notify(`Incognito mode: ${status}`, "info");
-      updateMemoryWidget(ctx);
-      return Promise.resolve();
-    },
-  });
-
-  pi.registerCommand("hide-memory", {
-    description: "Toggle the Pi Memory status widget (hide/show)",
-    handler: (_args, ctx) => {
-      const snapshot = getMemorySnapshot();
-      const nextHidden = !snapshot.hidden;
-      setHidden(nextHidden);
-      updateMemoryWidget(ctx);
-      ctx.ui.notify(
-        nextHidden ? "Pi Memory widget hidden (/hide-memory to show)." : "Pi Memory widget visible.",
-        "info",
-      );
       return Promise.resolve();
     },
   });
@@ -403,7 +374,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       } else {
         setFeedbackEnabled(!feedbackEnabled());
       }
-      ctx.ui.setStatus("memory", `memory: feedback ${feedbackEnabled() ? "ON" : "OFF"}`);
+      ctx.ui.notify(`Memory feedback ${feedbackEnabled() ? "ON" : "OFF"}`, "info");
       ctx.ui.notify(`Memory feedback ${feedbackEnabled() ? "enabled" : "disabled"}.`, "info");
       return Promise.resolve();
     },

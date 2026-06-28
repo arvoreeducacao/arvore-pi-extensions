@@ -76,10 +76,6 @@ export default function (pi: ExtensionAPI): void {
 
   pi.on("session_start", async (_event, ctx) => {
     state = await fetchFacts(ctx.signal);
-    ctx.ui.setStatus(
-      "bee",
-      state.error ? "bee: facts unavailable" : `bee: ${state.facts.length} facts`,
-    );
   });
 
   pi.on("before_agent_start", async (event) => {
@@ -92,14 +88,11 @@ export default function (pi: ExtensionAPI): void {
   pi.registerCommand("bee-refresh", {
     description: "Re-fetch personal facts from Bee and update the injected context",
     handler: async (_args, ctx) => {
-      ctx.ui.setStatus("bee", "bee: refreshing...");
       state = await fetchFacts(ctx.signal);
       if (state.error) {
-        ctx.ui.setStatus("bee", "bee: facts unavailable");
         ctx.ui.notify(`Bee facts refresh failed: ${state.error}`, "error");
         return;
       }
-      ctx.ui.setStatus("bee", `bee: ${state.facts.length} facts`);
       ctx.ui.notify(`Bee facts refreshed (${state.facts.length} confirmed).`, "info");
     },
   });
