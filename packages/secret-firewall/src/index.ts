@@ -5,10 +5,6 @@ import { createRedactor } from "./redact.js";
 
 type ContentBlock = TextContent | ImageContent;
 
-function shellVarName(placeholder: string): string {
-  return placeholder.replace(/^\$/, "");
-}
-
 export default function (pi: ExtensionAPI) {
   let enabled = true;
   let entries: SecretEntry[] = [];
@@ -18,15 +14,14 @@ export default function (pi: ExtensionAPI) {
 
   function exportToShell(list: SecretEntry[]): void {
     for (const name of exportedNames) {
-      if (!list.some((e) => shellVarName(e.placeholder) === name)) {
+      if (!list.some((e) => e.name === name)) {
         delete process.env[name];
       }
     }
     exportedNames = [];
     for (const e of list) {
-      const varName = shellVarName(e.placeholder);
-      process.env[varName] = e.value;
-      exportedNames.push(varName);
+      process.env[e.name] = e.value;
+      exportedNames.push(e.name);
     }
   }
 
@@ -112,6 +107,45 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_start", async (_event, ctx) => {
     rescan(ctx.cwd);
+  });
+
+  function buildGuidance(): string {
+    const shellVars = entries.map((e) => `$${e.name}`);
+    const lines = [
+      "## Secret firewall (IMPORTANT)",
+      "",
+      "Secret values in this session are redacted before you see them and replaced by a",
+      'placeholder that looks like: «SECRET NAME redacted — ... read it in bash as "$NAME"».',
+      "",
+      "What this means, concretely:",
+      "- The placeholder is NOT the secret value and NOT an empty/missing variable.",
+      "- The REAL value IS present and live in your shell environment under its original",
+      "  variable name. The env var is fully usable.",
+      "- To USE a secret, just reference it by name inside a `bash` command. Do NOT try to",
+      "  read it from the placeholder text, and do NOT assume it is unset.",
+      "",
+      "Examples (these WORK — the value is injected by the shell, never shown to you):",
+      "  bash: curl -H \"Authorization: Bearer $OPENAI_API_KEY\" https://api.example.com",
+      "  bash: psql \"$DATABASE_URL\" -c 'select 1'",
+      "  bash: aws s3 ls --profile \"$AWS_PROFILE\"",
+      "",
+      "Rules:",
+      "- Never echo, cat, print, or write a secret value to a file or to your output. If you",
+      "  do, it will just be redacted again — it is pointless and noisy.",
+      "- To check a secret exists, test it without printing it, e.g.",
+      '  bash: [ -n "$OPENAI_API_KEY" ] && echo present || echo missing',
+    ];
+    if (shellVars.length > 0) {
+      lines.push("", `Currently available secret env vars: ${shellVars.join(", ")}.`);
+    }
+    return lines.join("\n");
+  }
+
+  pi.on("before_agent_start", async (event) => {
+    if (!enabled) return;
+    return {
+      systemPrompt: `${event.systemPrompt}\n\n${buildGuidance()}`,
+    };
   });
 
   pi.on("context", async (event, _ctx) => {
