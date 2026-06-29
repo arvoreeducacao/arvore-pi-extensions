@@ -174,9 +174,9 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
   });
 
   pi.registerFlag("widget-wrangler-key", {
-    description: "Keybinding that opens the Widget Wrangler panel (e.g. ctrl+shift+w, alt+w). Empty disables the shortcut.",
+    description: "Keybinding that opens the Widget Wrangler panel (e.g. ctrl+shift+g, alt+w). Empty disables the shortcut.",
     type: "string",
-    default: "ctrl+shift+w",
+    default: "ctrl+shift+g",
   });
 
   const shortcutKey = String(pi.getFlag("widget-wrangler-key") ?? "").trim();
