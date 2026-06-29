@@ -44,7 +44,7 @@ pi --widget-wrangler-key=
 
 > Note on `Alt`/`Option`: `alt+*` shortcuts are reliable on Linux but depend on
 > terminal configuration on macOS (e.g. iTerm2 needs "Use ⌥ as Meta"). The
-> default `ctrl+shift+w` is the most portable choice across macOS, Linux, and
+> default `ctrl+shift+g` is the most portable choice across macOS, Linux, and
 > Windows.
 
 ## Install
