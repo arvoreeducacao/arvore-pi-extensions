@@ -42,11 +42,14 @@ function isSensitiveValue(name: string, value: string): boolean {
 }
 
 function toPlaceholder(name: string, taken: Set<string>): string {
-  const base = `$SECRET_${name.replace(/[^A-Za-z0-9_]/g, "_").toUpperCase()}`;
+  const shellVar = name.replace(/[^A-Za-z0-9_]/g, "_");
+  const make = (tag: string) =>
+    `«SECRET ${name}${tag} redacted — the real value is live in your shell env; read it in bash as "$${shellVar}"»`;
+  const base = make("");
   if (!taken.has(base)) return base;
   let i = 2;
-  while (taken.has(`${base}_${i}`)) i++;
-  return `${base}_${i}`;
+  while (taken.has(make(`#${i}`))) i++;
+  return make(`#${i}`);
 }
 
 function parseDotenv(path: string): Map<string, string> {

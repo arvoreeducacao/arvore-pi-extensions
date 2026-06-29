@@ -39,31 +39,32 @@ export function createRedactor(initial: SecretEntry[]): Redactor {
   let valueRules: { re: RegExp; placeholder: string }[] = [];
 
   const captured = new Map<string, DynamicSecret>();
-  const takenPlaceholders = new Set<string>();
+  const takenNames = new Set<string>();
   let pending: DynamicSecret[] = [];
 
   function refresh(entries: SecretEntry[]): void {
     valueRules = entries
       .filter((e) => e.value.length > 0)
       .map((e) => ({ re: new RegExp(escapeRe(e.value), "g"), placeholder: e.placeholder }));
-    for (const e of entries) takenPlaceholders.add(e.placeholder);
+    for (const e of entries) takenNames.add(e.name);
   }
 
-  function allocatePlaceholder(patternName: string): string {
-    const base = `$SECRET_${patternName}`;
-    if (!takenPlaceholders.has(base)) return base;
+  function allocateName(patternName: string): string {
+    const base = `SECRET_${patternName}`;
+    if (!takenNames.has(base)) return base;
     let i = 2;
-    while (takenPlaceholders.has(`${base}_${i}`)) i++;
+    while (takenNames.has(`${base}_${i}`)) i++;
     return `${base}_${i}`;
   }
 
   function capture(patternName: string, value: string): string {
     const existing = captured.get(value);
     if (existing) return existing.placeholder;
-    const placeholder = allocatePlaceholder(patternName);
-    takenPlaceholders.add(placeholder);
+    const name = allocateName(patternName);
+    takenNames.add(name);
+    const placeholder = `«SECRET ${patternName} redacted — the real value is live in your shell env; read it in bash as "$${name}"»`;
     const entry: DynamicSecret = {
-      name: placeholder.replace(/^\$/, ""),
+      name,
       placeholder,
       value,
     };
