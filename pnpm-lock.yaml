@@ -455,6 +455,21 @@ importers:
         specifier: ^5.3.0
         version: 5.9.3
 
+  packages/widget-wrangler:
+    devDependencies:
+      '@earendil-works/pi-coding-agent':
+        specifier: latest
+        version: 0.80.2(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-tui':
+        specifier: 0.79.5
+        version: 0.79.5
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.39
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/worktree:
     devDependencies:
       '@earendil-works/pi-ai':
