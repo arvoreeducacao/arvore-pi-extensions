@@ -198,6 +198,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
 
   pi.on("session_tree", (_event, ctx) => {
     if (!ctx.hasUI) return;
+    patchSetWidget(ctx.ui);
     restoreFromBranch(ctx);
     for (const key of registry.keys()) applyWidget(key);
   });

@@ -12,7 +12,7 @@ that calls `setWidget` shows up in the corral automatically.
 
 - Intercepts `ctx.ui.setWidget` (the shared UI surface all extensions write to)
   and keeps a live registry of every widget, keyed by its id.
-- A panel (`/wrangle` or `Ctrl+W`) lists every widget it has seen, with a
+- A panel (`/wrangle` or `Ctrl+Shift+W`) lists every widget it has seen, with a
   `shown` / `hidden` toggle each — same feel as Pi's `/mcp` panel.
 - Hidden widgets are suppressed before they ever reach the screen. Your choices
   persist per session branch (saved via session entries), so they survive
