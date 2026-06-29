@@ -23,9 +23,29 @@ that calls `setWidget` shows up in the corral automatically.
 ## Usage
 
 - `/wrangle` — open the corral.
-- `Alt+W` — open the corral (configurable keybinding).
+- `Ctrl+Shift+W` — open the corral (default keybinding, configurable).
 - In the panel: arrow keys to move, `space`/`enter` to toggle, type to search,
   `esc` to close. Changes apply instantly.
+
+### Changing the keybinding
+
+The shortcut is a CLI flag, `widget-wrangler-key`. Override it when launching pi:
+
+```bash
+pi --widget-wrangler-key=alt+w
+```
+
+Pass an empty value to disable the shortcut entirely and rely only on
+`/wrangle`:
+
+```bash
+pi --widget-wrangler-key=
+```
+
+> Note on `Alt`/`Option`: `alt+*` shortcuts are reliable on Linux but depend on
+> terminal configuration on macOS (e.g. iTerm2 needs "Use ⌥ as Meta"). The
+> default `ctrl+shift+w` is the most portable choice across macOS, Linux, and
+> Windows.
 
 ## Install
 

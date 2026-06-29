@@ -173,12 +173,21 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     },
   });
 
-  pi.registerShortcut("alt+w", {
-    description: "🤠 Open the Widget Wrangler",
-    handler: async (ctx) => {
-      await openPanel(ctx);
-    },
+  pi.registerFlag("widget-wrangler-key", {
+    description: "Keybinding that opens the Widget Wrangler panel (e.g. ctrl+shift+w, alt+w). Empty disables the shortcut.",
+    type: "string",
+    default: "ctrl+shift+w",
   });
+
+  const shortcutKey = String(pi.getFlag("widget-wrangler-key") ?? "").trim();
+  if (shortcutKey) {
+    pi.registerShortcut(shortcutKey as Parameters<ExtensionAPI["registerShortcut"]>[0], {
+      description: "🤠 Open the Widget Wrangler",
+      handler: async (ctx) => {
+        await openPanel(ctx);
+      },
+    });
+  }
 
   pi.on("session_start", (_event, ctx) => {
     if (!ctx.hasUI) return;
