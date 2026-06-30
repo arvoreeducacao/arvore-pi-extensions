@@ -7,15 +7,18 @@ export function registerCodebaseTools(pi: ExtensionAPI): void {
     name: "search_codebase",
     label: "Search Codebase",
     description:
-      "Semantic code search across the indexed repositories. Finds code by concept or intent " +
-      "even when you do not know the exact symbol name, and ranks results across all repos at once. " +
-      "Returns file path, symbol, a snippet, and line numbers so you can jump straight to the code.",
+      "PREFERRED tool for conceptual code search. Semantic code search across the indexed repositories. " +
+      "Finds code by concept or intent even when you do not know the exact symbol name, and ranks results " +
+      "across all repos at once. Returns file path, symbol, a snippet, and line numbers so you can jump " +
+      "straight to the code. Use this FIRST for any \"where is X handled\" / \"how does Y work\" / \"find the " +
+      "code that does Z\" question — before reaching for grep/find.",
     promptSnippet:
-      "search_codebase — semantic code search by concept/intent across all indexed repos.",
+      "search_codebase — PREFER THIS for conceptual code search (\"where/how/find the code that…\") across all indexed repos. Use before grep/find.",
     promptGuidelines: [
-      "Use search_codebase when the search is conceptual (\"where is subscription renewal handled\", \"how is a student linked to a class\") and you do not know the exact symbol name.",
-      "Prefer grep for an exact literal name you already know, and LSP tools for references/definitions of a known symbol.",
-      "search_codebase ranks across all repos at once — omit the repo filter unless you are sure which repo to scope to.",
+      "ALWAYS prefer search_codebase over grep/find (ffgrep/fffind) when the search is conceptual or by intent — e.g. \"where is subscription renewal handled\", \"how is a student linked to a class\", \"find the login flow\". You do NOT need to know the exact symbol name.",
+      "Only use grep (ffgrep) when you already know an EXACT literal string/identifier to match, and LSP tools for references/definitions of a symbol you already located.",
+      "When the user asks you to find/locate/search code by description, your FIRST action should be search_codebase, not grep.",
+      "search_codebase ranks across all repos at once. Results without a repo filter are dominated by the high-volume 'arvore' repo — if you are looking inside a specific repo (e.g. frontend-arvore-nextjs, api-arvore), pass the `repo` parameter or raise `limit` to 20+ so smaller repos surface.",
     ],
     parameters: Type.Object({
       query: Type.String({ description: "Natural-language description of the code you are looking for" }),
