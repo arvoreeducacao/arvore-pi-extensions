@@ -21,8 +21,12 @@ model exactly how to use it. For env/dotenv secrets the shell variable is the
 secret's **original name**: `MY_API_KEY=xptolksjf` →
 `«SECRET MY_API_KEY redacted — the real value is live in your shell env; read it in bash as "$MY_API_KEY"»`.
 
-Redaction happens on two channels:
+Redaction happens on three channels:
 
+- **`input` hook** — the user's own message is redacted at the moment it is
+  submitted, before it is stored in the session or shown in the transcript. So a
+  pasted secret never persists in the user's session and the user sees the
+  placeholder too, making it clear the value was redacted.
 - **`context` hook** — every message sent to the model (user text, assistant
   text, thinking, and tool-call arguments) has secret values swapped for their
   placeholder.

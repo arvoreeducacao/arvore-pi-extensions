@@ -148,6 +148,14 @@ export default function (pi: ExtensionAPI) {
     };
   });
 
+  pi.on("input", async (event) => {
+    if (!enabled) return { action: "continue" };
+    const { text, hits } = redactor.redactString(event.text);
+    exportCaptured();
+    if (hits === 0) return { action: "continue" };
+    return { action: "transform", text, images: event.images };
+  });
+
   pi.on("context", async (event, _ctx) => {
     if (!enabled) return;
     let changed = false;
