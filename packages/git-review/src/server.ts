@@ -173,7 +173,7 @@ async function findRepoDirs(pi: ExtensionAPI): Promise<RepoDir[]> {
   const deduped = found.length > 0 ? [...new Set(found)] : ["."];
   const repos = excludeNestedRepos(deduped);
   const result = repos.map((dir) => {
-    const clean = dir.replace(/^\.\//, "").replace(/\/\.worktrees\/[^/]+$/, "");
+    const clean = dir.replace(/^\.\//, "").replace(/(?:^|\/)\.worktrees\/[^/]+$/, "");
     return {
       dir,
       prefix: dir === "." ? "" : dir.replace(/^\.\//, "") + "/",
