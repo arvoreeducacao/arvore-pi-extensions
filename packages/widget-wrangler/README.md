@@ -15,8 +15,9 @@ that calls `setWidget` shows up in the corral automatically.
 - A panel (`/wrangle` or `Ctrl+Shift+W`) lists every widget it has seen, with a
   `shown` / `hidden` toggle each — same feel as Pi's `/mcp` panel.
 - Hidden widgets are suppressed before they ever reach the screen. Your choices
-  persist per session branch (saved via session entries), so they survive
-  reloads and branch navigation.
+  persist **globally** for your user (saved to `~/.pi/agent/widget-wrangler.json`),
+  so the same widgets stay hidden across every chat, reload, and branch. A
+  choice made in one session takes effect in all others.
 - It never touches `ctx.ui.notify`, so error/info notifications from your
   extensions still pop up and fade on their own — even for a hidden widget.
 
