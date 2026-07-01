@@ -7,6 +7,7 @@ import type { DefNode } from "./ast.js";
 const MAX_LINES_PER_CHUNK = 200;
 const OVERLAP_LINES = 20;
 const MIN_PREAMBLE_LINES = 3;
+const MAX_CHUNK_CHARS = 24_000;
 
 const LANG_BY_EXT: Record<string, string> = {
   ".ts": "typescript",
@@ -270,12 +271,68 @@ export async function chunkFile(
     try {
       const ast = await astChunks(repo, relPath, astLang, lang, lines, fileHash);
       if (ast && ast.length > 0) {
-        return ast;
+        return capChunkSizes(ast);
       }
     } catch {
       // falls through to window chunking
     }
   }
 
-  return windowChunks(repo, relPath, lang, lines, fileHash);
+  return capChunkSizes(windowChunks(repo, relPath, lang, lines, fileHash));
+}
+
+function capChunkSizes(chunks: Chunk[]): Chunk[] {
+  const result: Chunk[] = [];
+  for (const chunk of chunks) {
+    if (chunk.content.length <= MAX_CHUNK_CHARS) {
+      result.push(chunk);
+      continue;
+    }
+    result.push(...splitChunkByChars(chunk));
+  }
+  return result;
+}
+
+function splitChunkByChars(chunk: Chunk): Chunk[] {
+  const parts: Chunk[] = [];
+  const content = chunk.content;
+  const baseLine = chunk.lineStart ?? 1;
+  let offset = 0;
+  let part = 1;
+  while (offset < content.length) {
+    let end = Math.min(offset + MAX_CHUNK_CHARS, content.length);
+    if (end < content.length) {
+      const lastBreak = content.lastIndexOf("\n", end);
+      if (lastBreak > offset) {
+        end = lastBreak + 1;
+      }
+    }
+    const slice = content.slice(offset, end);
+    const linesBefore = countLines(content.slice(0, offset));
+    const sliceLines = countLines(slice);
+    const lineStart = baseLine + linesBefore;
+    parts.push({
+      ...chunk,
+      symbol: `${chunk.symbol}#chars${part}`,
+      content: slice,
+      lineStart,
+      lineEnd: lineStart + Math.max(sliceLines - 1, 0),
+    });
+    offset = end;
+    part += 1;
+  }
+  return parts;
+}
+
+function countLines(text: string): number {
+  if (text.length === 0) {
+    return 0;
+  }
+  let count = 1;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === "\n") {
+      count += 1;
+    }
+  }
+  return count;
 }
