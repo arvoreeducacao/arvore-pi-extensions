@@ -37,69 +37,69 @@ const ANIMS: Record<FoxState, Anim> = {
     label: "esperando você…",
     intervalMs: 700,
     grids: [
-      [".O.......O..G.", ".OO.....OO.G..", ".OPO...OPO....", ".OOOOOOOOO....", ".ONONONONO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      [".O.......O....", ".OO.....OO..G.", ".OPO...OPO.G..", ".OOOOOOOOO....", ".ONONONONO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
+      ["..OO.....OO.G.", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      ["..OO.....OOG..", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
     ],
   },
   sniff: {
     label: "farejando o código",
-    intervalMs: 300,
+    intervalMs: 280,
     grids: [
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW.G..", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW.GG.", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW.GGG", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONWG..", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONWGG.", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONWGGG", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
     ],
   },
   dig: {
     label: "cavando na base",
-    intervalMs: 240,
+    intervalMs: 220,
     grids: [
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..BWWWO.OOW.D.", "..OOOOB..WWD.."],
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DOD..", "..OWWWB.OOW...", "..BOOOO..WW.D."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWODOO...", "...BOOOBDBB..."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOOD..", "...BOOOB..D..."],
     ],
   },
   run: {
     label: "correndo atrás",
-    intervalMs: 140,
+    intervalMs: 130,
     grids: [
-      ["...O.......O..", "...OO.....OO..", "...OPO...OPO..", "...OOOOOOOOO..", "...OONOOONOO..", "...WWOWBWOWW..", "G..OWWWWWWWO..", "GG..OWWWO..DO.", "....OWWWO.OOW.", "....BOOOB..WW."],
-      ["..O.......O...", "..OO.....OO...", "..OPO...OPO...", "..OOOOOOOOO...", "..OONOOONOO...", "..WWOWBWOWW...", "GGOWWWWWWWO...", "...OWWWO..DO..", "G..OWWWO.OOW..", "...BOOOB..WW.."],
+      ["G..OO.....OO..", "G..OOOOOOOOO..", "...WWONWWONW..", "...OWWWWWWWO..", "....OWWWOBOO..", "....BOOOB....."],
+      ["GG.OO.....OO..", "G..OOOOOOOOO..", "...WWONWWONW..", "...OWWWWWWWO..", "....OWWWOBOO..", "....BOOOB....."],
     ],
   },
   jump: {
     label: "pulando de alegria!",
-    intervalMs: 170,
+    intervalMs: 160,
     grids: [
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      [".OO.....OO....", ".OPO...OPO....", "YOOOOOOOOO....", ".OONOOONOO..Y.", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW...", ".............."],
-      ["YOPO...OPO.Y..", ".OOOOOOOOO..Y.", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW...", "..............", ".............."],
-      [".OO.....OO....", ".OPO...OPO....", "YOOOOOOOOO....", ".OONOOONOO..Y.", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW...", ".............."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      ["Y.OO.....OO..Y", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".YOO.....OO...", "Y.OOOOOOOOO..Y", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      ["Y.OO.....OO..Y", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
     ],
   },
   caught: {
     label: "pegou!",
-    intervalMs: 180,
+    intervalMs: 170,
     once: { durationMs: 1600, then: "sleep" },
     grids: [
-      ["YO.......O..Y.", ".OO.....OO....", ".OPO...OPO..Y.", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "Y.OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      [".O.......O.Y..", "YOO.....OO....", "YOPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW..Y", "..BOOOB..WW..."],
+      ["Y.OO.....OO..Y", ".YOOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO..Y", "...OWWWOBOO...", "...BOOOB....."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "Y.WWONWWONW...", "..OWWWWWWWO...", "Y..OWWWOBOO..Y", "...BOOOB....."],
     ],
   },
   error: {
     label: "ai! deu erro",
-    intervalMs: 200,
+    intervalMs: 190,
     once: { durationMs: 1200, then: "sleep" },
     grids: [
-      [".O.......O..R.", ".OO.....OO..R.", ".OPO...OPO....", ".OOOOOOOOO..R.", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
+      ["..OO.....OO..R", "..OOOOOOOOO..R", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
     ],
   },
   sad: {
     label: "tá difícil hoje…",
-    intervalMs: 600,
+    intervalMs: 580,
     grids: [
-      ["..............", "..............", "OOO.....OOO...", ".OOOOOOOOO....", ".OONOOONOO....", ".WCOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-      ["..............", "..............", "OOO.....OOO...", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOCW....", ".OCWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
+      [".OO.....OO....", "..OOOOOOOOO...", "..WCONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".OO.....OO....", "..OOOOOOOOO...", "..WWONWWOCW...", "..OCWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
     ],
   },
 };
@@ -173,7 +173,7 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
     const frames = RENDERED[state];
     const frame = frames[frameIdx % frames.length];
     try {
-      ui.setWidget(WIDGET_ID, [...frame, ` 🦊 ${ANIMS[state].label}`]);
+      ui.setWidget(WIDGET_ID, [` ${ANIMS[state].label}`, "", ...frame]);
     } catch {}
   }
 
@@ -250,13 +250,13 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
         hidden = true;
         clearTimers();
         render();
-        ctx.ui.notify("🦊 raposa escondida (/fox show pra voltar)", "info");
+        ctx.ui.notify("raposa escondida (/fox show pra voltar)", "info");
         return;
       }
       if (s === "show") {
         hidden = false;
         setState(state);
-        ctx.ui.notify("🦊 raposa on!", "info");
+        ctx.ui.notify("raposa on!", "info");
         return;
       }
       if (s && s in ANIMS) {
