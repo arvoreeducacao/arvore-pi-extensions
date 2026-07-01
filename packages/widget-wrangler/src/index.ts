@@ -5,11 +5,35 @@ import type {
   ExtensionWidgetOptions,
   WidgetPlacement,
 } from "@earendil-works/pi-coding-agent";
-import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import { Container, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const CUSTOM_TYPE = "widget-wrangler-config";
 const OWN_WIDGET_KEY = "widget-wrangler";
+
+function configPath(): string {
+  return join(getAgentDir(), "widget-wrangler.json");
+}
+
+function loadGlobalConfig(): string[] {
+  try {
+    const raw = readFileSync(configPath(), "utf8");
+    const data = JSON.parse(raw) as WranglerState | undefined;
+    return Array.isArray(data?.disabled) ? data.disabled : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveGlobalConfig(state: WranglerState): void {
+  try {
+    const path = configPath();
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  } catch {}
+}
 
 type WidgetContent = Parameters<ExtensionUIContext["setWidget"]>[1];
 
@@ -30,10 +54,23 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
   let patchedUi: ExtensionUIContext | null = null;
 
   function persist() {
-    pi.appendEntry<WranglerState>(CUSTOM_TYPE, { disabled: Array.from(disabled) });
+    saveGlobalConfig({ disabled: Array.from(disabled) });
   }
 
-  function restoreFromBranch(ctx: ExtensionContext) {
+  function restoreConfig(ctx: ExtensionContext) {
+    let saved = loadGlobalConfig();
+    if (saved.length === 0) {
+      const legacy = readLegacyBranchConfig(ctx);
+      if (legacy.length > 0) {
+        saved = legacy;
+        saveGlobalConfig({ disabled: saved });
+      }
+    }
+    disabled.clear();
+    for (const key of saved) disabled.add(key);
+  }
+
+  function readLegacyBranchConfig(ctx: ExtensionContext): string[] {
     const entries = ctx.sessionManager.getBranch();
     let saved: string[] | undefined;
     for (const entry of entries) {
@@ -42,8 +79,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
         if (data?.disabled) saved = data.disabled;
       }
     }
-    disabled.clear();
-    for (const key of saved ?? []) disabled.add(key);
+    return saved ?? [];
   }
 
   function isEnabled(key: string): boolean {
@@ -192,14 +228,14 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
     if (!ctx.hasUI) return;
     patchSetWidget(ctx.ui);
-    restoreFromBranch(ctx);
+    restoreConfig(ctx);
     for (const key of registry.keys()) applyWidget(key);
   });
 
   pi.on("session_tree", (_event, ctx) => {
     if (!ctx.hasUI) return;
     patchSetWidget(ctx.ui);
-    restoreFromBranch(ctx);
+    restoreConfig(ctx);
     for (const key of registry.keys()) applyWidget(key);
   });
 }
