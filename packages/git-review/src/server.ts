@@ -128,7 +128,26 @@ async function detectBranch(pi: ExtensionAPI, dir: string): Promise<string> {
   }
 }
 
+function excludeNestedRepos(dirs: string[]): string[] {
+  const sorted = [...dirs].sort((a, b) => a.length - b.length);
+  const kept: string[] = [];
+  for (const dir of sorted) {
+    const isWorktree = /\/\.worktrees\/[^/]+$/.test(dir);
+    const isNested =
+      !isWorktree &&
+      kept.some((parent) => parent !== "." && parent !== dir && dir.startsWith(`${parent}/`));
+    if (!isNested) kept.push(dir);
+  }
+  return kept;
+}
+
+let repoDirsCache: { dirs: RepoDir[]; expiresAt: number } | null = null;
+const REPO_DIRS_TTL_MS = 60_000;
+
 async function findRepoDirs(pi: ExtensionAPI): Promise<RepoDir[]> {
+  if (repoDirsCache && repoDirsCache.expiresAt > Date.now()) {
+    return repoDirsCache.dirs;
+  }
   let stdout = "";
   try {
     ({ stdout } = await pi.exec("find", [
@@ -151,15 +170,37 @@ async function findRepoDirs(pi: ExtensionAPI): Promise<RepoDir[]> {
     .map((l) => l.trim())
     .filter(Boolean)
     .map((p) => p.replace(/\/\.git$/, ""));
-  const repos = found.length > 0 ? [...new Set(found)] : ["."];
-  return repos.map((dir) => {
-    const clean = dir.replace(/^\.\//, "").replace(/\/\.worktrees\/[^/]+$/, "");
+  const deduped = found.length > 0 ? [...new Set(found)] : ["."];
+  const repos = excludeNestedRepos(deduped);
+  const result = repos.map((dir) => {
+    const clean = dir.replace(/^\.\//, "").replace(/(?:^|\/)\.worktrees\/[^/]+$/, "");
     return {
       dir,
       prefix: dir === "." ? "" : dir.replace(/^\.\//, "") + "/",
       label: clean || ".",
     };
   });
+  repoDirsCache = { dirs: result, expiresAt: Date.now() + REPO_DIRS_TTL_MS };
+  return result;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker(): Promise<void> {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i]);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
 }
 
 function worktreeName(dir: string): string | null {
@@ -214,15 +255,17 @@ async function untrackedDiff(pi: ExtensionAPI, dir: string): Promise<string> {
   return diffs.join("\n");
 }
 
+const PR_LIST_CONCURRENCY = 8;
+const DIFF_CONCURRENCY = 8;
+
 async function collectRepoGroups(
   pi: ExtensionAPI,
   scope: DiffScope,
   base: string,
 ): Promise<RepoGroup[]> {
   const repos = await findRepoDirs(pi);
-  const groups: RepoGroup[] = [];
 
-  for (const { dir, prefix, label } of repos) {
+  const results = await mapWithConcurrency(repos, DIFF_CONCURRENCY, async ({ dir, prefix, label }) => {
     try {
       const { stdout } = await pi.exec("git", ["-C", dir, ...diffArgsForScope(scope, base)]);
       let raw = stdout;
@@ -230,21 +273,20 @@ async function collectRepoGroups(
         const extra = await untrackedDiff(pi, dir);
         if (extra.trim()) raw = raw.trim() ? `${raw}\n${extra}` : extra;
       }
-      if (!raw.trim()) continue;
+      if (!raw.trim()) return null;
       const prefixed = raw
         .replace(/^diff --git a\//gm, `diff --git a/${prefix}`)
         .replace(/^(\+\+\+|---) ([ab])\//gm, `$1 $2/${prefix}`);
       const files = parseDiff(prefixed);
-      if (!files.length) continue;
-      groups.push({
-        repo: label,
-        branch: await detectBranch(pi, dir),
-        worktree: worktreeName(dir),
-        files,
-      });
-    } catch {}
-  }
+      if (!files.length) return null;
+      const branch = await detectBranch(pi, dir);
+      return { repo: label, branch, worktree: worktreeName(dir), files } satisfies RepoGroup;
+    } catch {
+      return null;
+    }
+  });
 
+  const groups = results.filter((g): g is RepoGroup => g !== null);
   groups.sort((a, b) => a.repo.localeCompare(b.repo));
   return groups;
 }
@@ -252,11 +294,13 @@ async function collectRepoGroups(
 async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]> {
   const repos = await findRepoDirs(pi);
   const seen = new Set<string>();
-  const groups: PullRequestGroup[] = [];
-
-  for (const { dir, label } of repos) {
-    if (seen.has(label)) continue;
+  const uniqueRepos = repos.filter(({ label }) => {
+    if (seen.has(label)) return false;
     seen.add(label);
+    return true;
+  });
+
+  const results = await mapWithConcurrency(uniqueRepos, PR_LIST_CONCURRENCY, async ({ dir, label }) => {
     try {
       const { stdout } = await pi.exec("gh", [
         "pr",
@@ -280,7 +324,7 @@ async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]
         additions?: number;
         deletions?: number;
       }>;
-      if (!parsed.length) continue;
+      if (!parsed.length) return null;
       const prs: PullRequest[] = parsed.map((p) => ({
         repo: label,
         number: p.number,
@@ -295,10 +339,13 @@ async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]
         deletions: p.deletions || 0,
       }));
       prs.sort((a, b) => b.number - a.number);
-      groups.push({ repo: label, prs });
-    } catch {}
-  }
+      return { repo: label, prs } satisfies PullRequestGroup;
+    } catch {
+      return null;
+    }
+  });
 
+  const groups = results.filter((g): g is PullRequestGroup => g !== null);
   groups.sort((a, b) => a.repo.localeCompare(b.repo));
   return groups;
 }
