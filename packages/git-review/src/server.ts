@@ -960,6 +960,7 @@ export function startGitReviewServer(
     });
 
     const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+    wss.on("error", () => {});
 
     wss.on("connection", (ws, req) => {
       const url = new URL(req.url || "/", `http://127.0.0.1:${port}`);
