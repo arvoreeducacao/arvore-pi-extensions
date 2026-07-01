@@ -7,6 +7,7 @@ import type { DefNode } from "./ast.js";
 const MAX_LINES_PER_CHUNK = 200;
 const OVERLAP_LINES = 20;
 const MIN_PREAMBLE_LINES = 3;
+const MAX_CHUNK_CHARS = 24_000;
 
 const LANG_BY_EXT: Record<string, string> = {
   ".ts": "typescript",
@@ -270,12 +271,48 @@ export async function chunkFile(
     try {
       const ast = await astChunks(repo, relPath, astLang, lang, lines, fileHash);
       if (ast && ast.length > 0) {
-        return ast;
+        return capChunkSizes(ast);
       }
     } catch {
       // falls through to window chunking
     }
   }
 
-  return windowChunks(repo, relPath, lang, lines, fileHash);
+  return capChunkSizes(windowChunks(repo, relPath, lang, lines, fileHash));
+}
+
+function capChunkSizes(chunks: Chunk[]): Chunk[] {
+  const result: Chunk[] = [];
+  for (const chunk of chunks) {
+    if (chunk.content.length <= MAX_CHUNK_CHARS) {
+      result.push(chunk);
+      continue;
+    }
+    result.push(...splitChunkByChars(chunk));
+  }
+  return result;
+}
+
+function splitChunkByChars(chunk: Chunk): Chunk[] {
+  const parts: Chunk[] = [];
+  const content = chunk.content;
+  let offset = 0;
+  let part = 1;
+  while (offset < content.length) {
+    let end = Math.min(offset + MAX_CHUNK_CHARS, content.length);
+    if (end < content.length) {
+      const lastBreak = content.lastIndexOf("\n", end);
+      if (lastBreak > offset) {
+        end = lastBreak + 1;
+      }
+    }
+    parts.push({
+      ...chunk,
+      symbol: `${chunk.symbol}#chars${part}`,
+      content: content.slice(offset, end),
+    });
+    offset = end;
+    part += 1;
+  }
+  return parts;
 }
