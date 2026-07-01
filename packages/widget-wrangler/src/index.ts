@@ -7,7 +7,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { getAgentDir, getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import { Container, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const CUSTOM_TYPE = "widget-wrangler-config";
@@ -17,22 +17,27 @@ function configPath(): string {
   return join(getAgentDir(), "widget-wrangler.json");
 }
 
-function loadGlobalConfig(): string[] {
+function loadGlobalConfig(): string[] | null {
   try {
     const raw = readFileSync(configPath(), "utf8");
     const data = JSON.parse(raw) as WranglerState | undefined;
-    return Array.isArray(data?.disabled) ? data.disabled : [];
+    return Array.isArray(data?.disabled) ? data.disabled : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
-function saveGlobalConfig(state: WranglerState): void {
+function saveGlobalConfig(state: WranglerState): boolean {
   try {
     const path = configPath();
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
-  } catch {}
+    const tmp = `${path}.${process.pid}.tmp`;
+    writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+    renameSync(tmp, path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 type WidgetContent = Parameters<ExtensionUIContext["setWidget"]>[1];
@@ -53,18 +58,16 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
   let originalSetWidget: ExtensionUIContext["setWidget"] | null = null;
   let patchedUi: ExtensionUIContext | null = null;
 
-  function persist() {
-    saveGlobalConfig({ disabled: Array.from(disabled) });
+  function persist(): boolean {
+    return saveGlobalConfig({ disabled: Array.from(disabled) });
   }
 
   function restoreConfig(ctx: ExtensionContext) {
     let saved = loadGlobalConfig();
-    if (saved.length === 0) {
+    if (saved === null) {
       const legacy = readLegacyBranchConfig(ctx);
-      if (legacy.length > 0) {
-        saved = legacy;
-        saveGlobalConfig({ disabled: saved });
-      }
+      saved = legacy;
+      saveGlobalConfig({ disabled: saved });
     }
     disabled.clear();
     for (const key of saved) disabled.add(key);
@@ -149,11 +152,13 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     });
   }
 
-  function setHidden(key: string, hidden: boolean) {
+  function setHidden(key: string, hidden: boolean, ui?: ExtensionUIContext) {
     if (hidden) disabled.add(key);
     else disabled.delete(key);
     applyWidget(key);
-    persist();
+    if (!persist()) {
+      ui?.notify(`Failed to save widget-wrangler config to ${configPath()} 🤠`, "error");
+    }
   }
 
   async function openPanel(ctx: ExtensionContext) {
@@ -183,7 +188,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
         Math.min(items.length + 2, 15),
         getSettingsListTheme(),
         (id, newValue) => {
-          setHidden(id, newValue === "hidden");
+          setHidden(id, newValue === "hidden", ctx.ui);
           tui.requestRender();
         },
         () => done(undefined),
