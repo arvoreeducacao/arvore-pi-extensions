@@ -6,78 +6,82 @@ const PALETTE = {
 const ESC = "\x1b[", RESET = ESC + "0m";
 const fg = ([r, g, b]) => `${ESC}38;2;${r};${g};${b}m`;
 const bg = ([r, g, b]) => `${ESC}48;2;${r};${g};${b}m`;
-
-function gridToAnsi(grid) {
-  const lines = [];
+function g2a(grid) {
+  const L = [];
   for (let r = 0; r < grid.length; r += 2) {
-    const top = grid[r], bot = grid[r + 1] ?? ".".repeat(top.length);
-    let line = "";
-    for (let c = 0; c < top.length; c++) {
-      const t = top[c] === "." ? null : PALETTE[top[c]];
-      const b = bot[c] === "." ? null : PALETTE[bot[c]];
-      if (!t && !b) line += RESET + " ";
-      else if (t && b) line += fg(t) + bg(b) + "▀";
-      else if (t) line += RESET + fg(t) + "▀";
-      else line += RESET + fg(b) + "▄";
+    const t = grid[r], b = grid[r + 1] ?? ".".repeat(t.length);
+    let l = "";
+    for (let c = 0; c < t.length; c++) {
+      const T = t[c] === "." ? null : PALETTE[t[c]];
+      const B = b[c] === "." ? null : PALETTE[b[c]];
+      if (!T && !B) l += RESET + " ";
+      else if (T && B) l += fg(T) + bg(B) + "▀";
+      else if (T) l += RESET + fg(T) + "▀";
+      else l += RESET + fg(B) + "▄";
     }
-    lines.push(line + RESET);
+    L.push(l + RESET);
   }
-  return lines;
+  return L;
 }
-
-const ANIMS = {
-  sleep: { label: "esperando você… (zzz)", ms: 700, grids: [
-    [".O.......O..G.", ".OO.....OO.G..", ".OPO...OPO....", ".OOOOOOOOO....", ".ONONONONO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-    [".O.......O....", ".OO.....OO..G.", ".OPO...OPO.G..", ".OOOOOOOOO....", ".ONONONONO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."]] },
-  sniff: { label: "farejando o código", ms: 300, grids: [
-    [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW.G..", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-    [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW.GGG", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."]] },
-  dig: { label: "cavando na base", ms: 240, grids: [
-    [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..BWWWO.OOW.D.", "..OOOOB..WWD.."],
-    [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DOD..", "..OWWWB.OOW...", "..BOOOO..WW.D."]] },
-  run: { label: "correndo atrás", ms: 140, grids: [
-    ["...O.......O..", "...OO.....OO..", "...OPO...OPO..", "...OOOOOOOOO..", "...OONOOONOO..", "...WWOWBWOWW..", "G..OWWWWWWWO..", "GG..OWWWO..DO.", "....OWWWO.OOW.", "....BOOOB..WW."],
-    ["..O.......O...", "..OO.....OO...", "..OPO...OPO...", "..OOOOOOOOO...", "..OONOOONOO...", "..WWOWBWOWW...", "GGOWWWWWWWO...", "...OWWWO..DO..", "G..OWWWO.OOW..", "...BOOOB..WW.."]] },
-  jump: { label: "pulando de alegria!", ms: 170, grids: [
-    [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-    ["YOPO...OPO.Y..", ".OOOOOOOOO..Y.", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW...", "..............", ".............."]] },
-  caught: { label: "pegou! turno concluído", ms: 180, grids: [
-    ["YO.......O..Y.", ".OO.....OO....", ".OPO...OPO..Y.", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "Y.OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-    [".O.......O.Y..", "YOO.....OO....", "YOPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW..Y", "..BOOOB..WW..."]] },
-  error: { label: "ai! deu erro", ms: 200, grids: [
-    [".O.......O..R.", ".OO.....OO..R.", ".OPO...OPO....", ".OOOOOOOOO..R.", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-    [".O.......O....", ".OO.....OO....", ".OPO...OPO....", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."]] },
-  sad: { label: "tá difícil hoje… (orelhas caídas)", ms: 600, grids: [
-    ["..............", "..............", "OOO.....OOO...", ".OOOOOOOOO....", ".OONOOONOO....", ".WCOWBWOWW....", ".OWWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."],
-    ["..............", "..............", "OOO.....OOO...", ".OOOOOOOOO....", ".OONOOONOO....", ".WWOWBWOCW....", ".OCWWWWWWO....", "..OWWWO..DO...", "..OWWWO.OOW...", "..BOOOB..WW..."]] },
+const A = {
+  sleep: { label: "esperando você…", ms: 700, grids: [
+    [".O.......O.G.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".O.......OG..", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."]] },
+  sniff: { label: "farejando o código", ms: 280, grids: [
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWG..", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWGG.", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWGGG", ".OWWWWWWWO...", "..BOOOOOB...."]] },
+  dig: { label: "cavando na base", ms: 220, grids: [
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO.D.", "..BOOOOOBD..."],
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", "D.OWWWWWWWO..", ".DBOOOOOB...."]] },
+  run: { label: "correndo atrás", ms: 130, grids: [
+    ["...O.......O.", "...OO.....OO.", "...OPO...OPO.", "...OOOOOOOOO.", "...OONOOONOO.", "G..WWOWBWOWW.", "GG.OWWWWWWWO.", "...BOOOOOB..."],
+    ["..O.......O..", "..OO.....OO..", "..OPO...OPO..", "..OOOOOOOOO..", "..OONOOONOO..", "GG.WWOWBWOWW.", "G..OWWWWWWWO.", "...BOOOOOB..."]] },
+  jump: { label: "pulando de alegria!", ms: 160, grids: [
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    ["YO.......O.Y.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".O..Y..Y.O...", "YOO.....OO.Y.", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    ["YO.......O.Y.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."]] },
+  caught: { label: "pegou!", ms: 170, grids: [
+    ["YO.......O.Y.", ".OO.....OO...", "Y.PO...OPO.Y.", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".O..Y.Y..O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", "Y.ONOOONOO.Y.", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."]] },
+  error: { label: "ai! deu erro", ms: 190, grids: [
+    [".O.......O.R.", ".OO.....OO.R.", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."]] },
+  sad: { label: "tá difícil hoje…", ms: 580, grids: [
+    [".............", "OO.......OO..", ".OO.....OO...", ".OOOOOOOOO...", ".OOCOOOCOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+    [".............", "OO.......OO..", ".OO.....OO...", ".OOOOOOOOO...", ".OOCOOOCOO...", ".WWOCBCOWW...", ".OWWWWWWWO...", "..BOOOOOB...."]] },
 };
-
-const RENDERED = Object.fromEntries(
-  Object.entries(ANIMS).map(([k, a]) => [k, a.grids.map(gridToAnsi)]),
-);
-
-const order = ["sleep", "sniff", "dig", "run", "jump", "caught", "error", "sad"];
+const seq = [
+  ["sniff", "pi lendo/buscando arquivos"],
+  ["dig", "pi editando código"],
+  ["run", "pi rodando bash / web"],
+  ["error", "uma tool falhou"],
+  ["jump", "turno concluído"],
+  ["caught", "comemorando"],
+  ["sad", "3 erros seguidos"],
+  ["sleep", "ocioso, esperando você"],
+];
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
-
-async function run() {
+(async () => {
   process.stdout.write(ESC + "?25l");
-  for (const state of order) {
-    const a = ANIMS[state];
-    const frames = RENDERED[state];
-    const cycles = 20;
+  for (const [state, note] of seq) {
+    const a = A[state];
+    const cycles = Math.max(a.grids.length * 3, 8);
     for (let i = 0; i < cycles; i++) {
-      const frame = frames[i % frames.length];
+      const lines = g2a(a.grids[i % a.grids.length]);
       let out = ESC + "H" + ESC + "J";
-      out += `\n  🦊 catch-the-fox — estado: ${state}\n`;
-      out += `  ${"─".repeat(38)}\n\n`;
-      for (const l of frame) out += "     " + l + "\n";
-      out += `\n  ${fg(PALETTE.O)}🦊 ${a.label}${RESET}\n\n`;
-      out += `  (${order.indexOf(state) + 1}/${order.length}) próximo em instantes…\n`;
+      out += `  ╭─ pi widget ──────────────────────╮\n`;
+      out += `  │  ${state.padEnd(7)} — ${note}\n`;
+      out += `  ├───────────────────────────────────┤\n`;
+      out += `  │   ${a.label}\n`;
+      out += `  │\n`;
+      for (const l of lines) out += "  │   " + l + "\n";
+      out += `  ╰───────────────────────────────────╯\n`;
       process.stdout.write(out);
       await sleepMs(a.ms);
     }
   }
   process.stdout.write(ESC + "?25h");
-  process.stdout.write("\n  fim! 🦊\n");
-}
-run();
+  console.log("\n(fim — a raposa passou por todos os estados)");
+})();

@@ -37,43 +37,43 @@ const ANIMS: Record<FoxState, Anim> = {
     label: "esperando você…",
     intervalMs: 700,
     grids: [
-      ["..OO.....OO.G.", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      ["..OO.....OOG..", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".O.......O.G.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".O.......OG..", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
     ],
   },
   sniff: {
     label: "farejando o código",
     intervalMs: 280,
     grids: [
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONWG..", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONWGG.", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONWGGG", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWG..", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWGG.", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWGGG", ".OWWWWWWWO...", "..BOOOOOB...."],
     ],
   },
   dig: {
     label: "cavando na base",
     intervalMs: 220,
     grids: [
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWODOO...", "...BOOOBDBB..."],
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOOD..", "...BOOOB..D..."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO.D.", "..BOOOOOBD..."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", "D.OWWWWWWWO..", ".DBOOOOOB...."],
     ],
   },
   run: {
     label: "correndo atrás",
     intervalMs: 130,
     grids: [
-      ["G..OO.....OO..", "G..OOOOOOOOO..", "...WWONWWONW..", "...OWWWWWWWO..", "....OWWWOBOO..", "....BOOOB....."],
-      ["GG.OO.....OO..", "G..OOOOOOOOO..", "...WWONWWONW..", "...OWWWWWWWO..", "....OWWWOBOO..", "....BOOOB....."],
+      ["...O.......O.", "...OO.....OO.", "...OPO...OPO.", "...OOOOOOOOO.", "...OONOOONOO.", "G..WWOWBWOWW.", "GG.OWWWWWWWO.", "...BOOOOOB..."],
+      ["..O.......O..", "..OO.....OO..", "..OPO...OPO..", "..OOOOOOOOO..", "..OONOOONOO..", "GG.WWOWBWOWW.", "G..OWWWWWWWO.", "...BOOOOOB..."],
     ],
   },
   jump: {
     label: "pulando de alegria!",
     intervalMs: 160,
     grids: [
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      ["Y.OO.....OO..Y", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      [".YOO.....OO...", "Y.OOOOOOOOO..Y", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      ["Y.OO.....OO..Y", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["YO.......O.Y.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".O..Y..Y.O...", "YOO.....OO.Y.", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["YO.......O.Y.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
     ],
   },
   caught: {
@@ -81,8 +81,8 @@ const ANIMS: Record<FoxState, Anim> = {
     intervalMs: 170,
     once: { durationMs: 1600, then: "sleep" },
     grids: [
-      ["Y.OO.....OO..Y", ".YOOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO..Y", "...OWWWOBOO...", "...BOOOB....."],
-      ["..OO.....OO...", "..OOOOOOOOO...", "Y.WWONWWONW...", "..OWWWWWWWO...", "Y..OWWWOBOO..Y", "...BOOOB....."],
+      ["YO.......O.Y.", ".OO.....OO...", "Y.PO...OPO.Y.", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".O..Y.Y..O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", "Y.ONOOONOO.Y.", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
     ],
   },
   error: {
@@ -90,16 +90,16 @@ const ANIMS: Record<FoxState, Anim> = {
     intervalMs: 190,
     once: { durationMs: 1200, then: "sleep" },
     grids: [
-      ["..OO.....OO..R", "..OOOOOOOOO..R", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      ["..OO.....OO...", "..OOOOOOOOO...", "..WWONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".O.......O.R.", ".OO.....OO.R.", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
     ],
   },
   sad: {
     label: "tá difícil hoje…",
     intervalMs: 580,
     grids: [
-      [".OO.....OO....", "..OOOOOOOOO...", "..WCONWWONW...", "..OWWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
-      [".OO.....OO....", "..OOOOOOOOO...", "..WWONWWOCW...", "..OCWWWWWWO...", "...OWWWOBOO...", "...BOOOB....."],
+      [".............", "OO.......OO..", ".OO.....OO...", ".OOOOOOOOO...", ".OOCOOOCOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".............", "OO.......OO..", ".OO.....OO...", ".OOOOOOOOO...", ".OOCOOOCOO...", ".WWOCBCOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
     ],
   },
 };
