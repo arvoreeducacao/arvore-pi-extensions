@@ -31,9 +31,7 @@
 	"scripts": {
 		"build": "tsc",
 		"check": "tsc --noEmit",
-		"lint": "biome check .",
-		"lint:fix": "biome check --write .",
-		"format": "biome format --write .",
+		"lint": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"prepare": "pnpm build",
@@ -53,7 +51,6 @@
 		"js-tiktoken": "^1.0.21"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.2",
 		"@earendil-works/pi-ai": "^0.75.5",
 		"@earendil-works/pi-coding-agent": "^0.75.5",
 		"@earendil-works/pi-tui": "^0.75.5",
