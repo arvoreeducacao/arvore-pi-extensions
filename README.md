@@ -11,6 +11,7 @@ Monorepo for custom PI extensions used across Arvore projects.
 | `@arvoretech/pi-ci-watch` | Monitors CI status, auto-fixes failures, and notifies on completion |
 | `@arvoretech/pi-element-inspector` | Receives inspected browser elements and pastes them into the editor |
 | `@arvoretech/pi-elevenlabs-stt` | Push-to-talk speech-to-text using ElevenLabs Scribe API |
+| `@arvoretech/pi-kiro-provider` | Provider for the Kiro API (AWS CodeWhisperer/Q) with multi-provider OAuth (Builder ID, Google, GitHub) |
 | `@arvoretech/pi-kokoro-tts` | Speaks assistant responses using Kokoro-FastAPI TTS |
 | `@arvoretech/pi-open-editor` | Opens files in the user's $EDITOR (tmux pane, GUI, or new terminal) |
 | `@arvoretech/pi-plan-mode` | Cursor-style plan mode with read-only exploration and manual /build approval |
