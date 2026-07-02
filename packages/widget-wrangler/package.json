@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-widget-wrangler",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "PI extension that corrals widgets from every extension into one panel where you show or hide each one 🤠",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
