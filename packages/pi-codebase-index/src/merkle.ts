@@ -7,6 +7,8 @@ import { promisify } from "node:util";
 const exec = promisify(execFile);
 
 const MAX_FILE_BYTES = 256 * 1024;
+const MAX_LINE_CHARS = 5_000;
+const MAX_AVG_LINE_CHARS = 400;
 
 const INDEXABLE_EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
@@ -55,10 +57,31 @@ async function hashFile(absPath: string): Promise<string | null> {
   try {
     const content = await readFile(absPath);
     if (content.byteLength > MAX_FILE_BYTES) return null;
+    if (isDataHeavy(content)) return null;
     return createHash("sha256").update(content).digest("hex");
   } catch {
     return null;
   }
+}
+
+function isDataHeavy(content: Buffer): boolean {
+  const text = content.toString("utf-8");
+  let longest = 0;
+  let lineLen = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === "\n") {
+      if (lineLen > longest) longest = lineLen;
+      lineLen = 0;
+    } else {
+      lineLen += 1;
+    }
+  }
+  if (lineLen > longest) longest = lineLen;
+  if (longest > MAX_LINE_CHARS) return true;
+
+  const lineCount = (text.match(/\n/g)?.length ?? 0) + 1;
+  const avg = text.length / lineCount;
+  return avg > MAX_AVG_LINE_CHARS;
 }
 
 export async function snapshotRepo(repoDir: string, name: string): Promise<RepoSnapshot | null> {
