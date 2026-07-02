@@ -32,8 +32,8 @@ function orcaBinary(): string {
 }
 
 function hasBinary(bin: string): boolean {
-  const result = spawnSync(process.platform === "win32" ? "where" : "command", process.platform === "win32" ? [bin] : ["-v", bin], { encoding: "utf-8", shell: process.platform !== "win32" });
-  return result.status === 0 && !!result.stdout?.trim();
+  const result = spawnSync(bin, ["--version"], { encoding: "utf-8", stdio: ["ignore", "ignore", "ignore"] });
+  return !result.error;
 }
 
 function isOrcaSession(): boolean {
