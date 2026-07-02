@@ -4,14 +4,14 @@
 import type { AssistantMessage, Message } from "@earendil-works/pi-ai";
 
 export const TRUNCATION_NOTICE =
-  "[NOTE: Your previous response was cut off due to length limits. Please continue from where you left off.]";
+	"[NOTE: Your previous response was cut off due to length limits. Please continue from where you left off.]";
 
 export function wasPreviousResponseTruncated(messages: Message[]): boolean {
-  // Find the most recent assistant message
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === "assistant") {
-      return (messages[i] as AssistantMessage).stopReason === "length";
-    }
-  }
-  return false;
+	// Find the most recent assistant message
+	for (let i = messages.length - 1; i >= 0; i--) {
+		if (messages[i].role === "assistant") {
+			return (messages[i] as AssistantMessage).stopReason === "length";
+		}
+	}
+	return false;
 }

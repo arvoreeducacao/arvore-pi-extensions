@@ -1,53 +1,64 @@
 {
-  "name": "pi-provider-kiro",
-  "version": "0.8.1",
-  "description": "pi extension for the Kiro API (AWS CodeWhisperer/Q) — 12 kiro-cli-verified models with OAuth authentication",
-  "type": "module",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mikeyobrien/pi-provider-kiro.git"
-  },
-  "keywords": [
-    "pi-package",
-    "pi",
-    "kiro",
-    "aws",
-    "codewhisperer",
-    "ai",
-    "provider"
-  ],
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:@earendil-works/pi-ai --external:@earendil-works/pi-coding-agent --external:@earendil-works/pi-tui",
-    "check": "tsc --noEmit",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "format": "biome format --write .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run check && npm run build"
-  },
-  "pi": {
-    "extensions": [
-      "./dist/index.js"
-    ]
-  },
-  "dependencies": {
-    "@smithy/core": "^3.24.5",
-    "esbuild": "^0.25.0",
-    "js-tiktoken": "^1.0.21"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.4.2",
-    "@earendil-works/pi-ai": "^0.75.5",
-    "@earendil-works/pi-coding-agent": "^0.75.5",
-    "@earendil-works/pi-tui": "^0.75.5",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
-  }
+	"name": "@arvoretech/pi-kiro-provider",
+	"version": "0.8.1",
+	"description": "Pi extension for the Kiro API, maintained by Arvore",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"type": "module",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+		"directory": "packages/kiro-provider"
+	},
+	"homepage": "https://github.com/arvoreeducacao/arvore-pi-extensions/tree/main/packages/kiro-provider",
+	"bugs": {
+		"url": "https://github.com/arvoreeducacao/arvore-pi-extensions/issues"
+	},
+	"keywords": [
+		"pi-package",
+		"pi",
+		"kiro",
+		"aws",
+		"codewhisperer",
+		"ai",
+		"provider"
+	],
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "tsc",
+		"check": "tsc --noEmit",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepare": "pnpm build",
+		"prepublishOnly": "pnpm check && pnpm build"
+	},
+	"pi": {
+		"extensions": [
+			"./dist/index.js"
+		]
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": ">=0.75.5"
+	},
+	"dependencies": {
+		"@smithy/core": "^3.24.5",
+		"@smithy/types": "^4.15.1",
+		"js-tiktoken": "^1.0.21"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.2",
+		"@earendil-works/pi-ai": "^0.75.5",
+		"@earendil-works/pi-coding-agent": "^0.75.5",
+		"@earendil-works/pi-tui": "^0.75.5",
+		"@types/node": "^22.5.0",
+		"typescript": "^5.7.0",
+		"vitest": "^3.0.0"
+	}
 }

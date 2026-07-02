@@ -17,64 +17,69 @@ const SSO_CACHE_DIR = join(homedir(), ".aws", "sso", "cache");
 const KIRO_IDE_TOKEN_PATH = join(SSO_CACHE_DIR, "kiro-auth-token.json");
 
 interface KiroIdeTokenFile {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  region?: string;
-  clientIdHash?: string;
-  authMethod?: string;
-  provider?: string;
+	accessToken: string;
+	refreshToken: string;
+	expiresAt: string;
+	region?: string;
+	clientIdHash?: string;
+	authMethod?: string;
+	provider?: string;
 }
 
 interface KiroIdeClientFile {
-  clientId: string;
-  clientSecret: string;
-  expiresAt?: string;
+	clientId: string;
+	clientSecret: string;
+	expiresAt?: string;
 }
 
 function readKiroIdeToken(allowExpired: boolean): KiroCredentials | undefined {
-  try {
-    if (!existsSync(KIRO_IDE_TOKEN_PATH)) return undefined;
+	try {
+		if (!existsSync(KIRO_IDE_TOKEN_PATH)) return undefined;
 
-    const tokenData = JSON.parse(readFileSync(KIRO_IDE_TOKEN_PATH, "utf-8")) as KiroIdeTokenFile;
-    if (!tokenData.accessToken || !tokenData.refreshToken) return undefined;
+		const tokenData = JSON.parse(
+			readFileSync(KIRO_IDE_TOKEN_PATH, "utf-8"),
+		) as KiroIdeTokenFile;
+		if (!tokenData.accessToken || !tokenData.refreshToken) return undefined;
 
-    const expiresAt = new Date(tokenData.expiresAt).getTime();
-    if (!allowExpired && Date.now() >= expiresAt - 2 * 60 * 1000) return undefined;
+		const expiresAt = new Date(tokenData.expiresAt).getTime();
+		if (!allowExpired && Date.now() >= expiresAt - 2 * 60 * 1000)
+			return undefined;
 
-    const region = tokenData.region ?? "us-east-1";
+		const region = tokenData.region ?? "us-east-1";
 
-    // Load the OIDC client registration so refreshKiroTokenDirect can call the
-    // AWS OIDC /token endpoint with a refresh_token grant without prompting the user.
-    let clientId = "";
-    let clientSecret = "";
-    if (tokenData.clientIdHash) {
-      const regPath = join(SSO_CACHE_DIR, `${tokenData.clientIdHash}.json`);
-      if (existsSync(regPath)) {
-        try {
-          const reg = JSON.parse(readFileSync(regPath, "utf-8")) as KiroIdeClientFile;
-          clientId = reg.clientId ?? "";
-          clientSecret = reg.clientSecret ?? "";
-        } catch {
-          // Ignore — we can still use the token without a refresh client
-        }
-      }
-    }
+		// Load the OIDC client registration so refreshKiroTokenDirect can call the
+		// AWS OIDC /token endpoint with a refresh_token grant without prompting the user.
+		let clientId = "";
+		let clientSecret = "";
+		if (tokenData.clientIdHash) {
+			const regPath = join(SSO_CACHE_DIR, `${tokenData.clientIdHash}.json`);
+			if (existsSync(regPath)) {
+				try {
+					const reg = JSON.parse(
+						readFileSync(regPath, "utf-8"),
+					) as KiroIdeClientFile;
+					clientId = reg.clientId ?? "";
+					clientSecret = reg.clientSecret ?? "";
+				} catch {
+					// Ignore — we can still use the token without a refresh client
+				}
+			}
+		}
 
-    return {
-      // Pack into the same pipe-delimited format used by the rest of the refresh chain
-      refresh: `${tokenData.refreshToken}|${clientId}|${clientSecret}|idc`,
-      access: tokenData.accessToken,
-      // Subtract 2-min buffer so we refresh before the actual AWS expiry
-      expires: expiresAt - 2 * 60 * 1000,
-      clientId,
-      clientSecret,
-      region,
-      authMethod: "idc",
-    };
-  } catch {
-    return undefined;
-  }
+		return {
+			// Pack into the same pipe-delimited format used by the rest of the refresh chain
+			refresh: `${tokenData.refreshToken}|${clientId}|${clientSecret}|idc`,
+			access: tokenData.accessToken,
+			// Subtract 2-min buffer so we refresh before the actual AWS expiry
+			expires: expiresAt - 2 * 60 * 1000,
+			clientId,
+			clientSecret,
+			region,
+			authMethod: "idc",
+		};
+	} catch {
+		return undefined;
+	}
 }
 
 /**
@@ -83,13 +88,15 @@ function readKiroIdeToken(allowExpired: boolean): KiroCredentials | undefined {
  * logged in or the token has already expired.
  */
 export function getKiroIdeCredentials(): KiroCredentials | undefined {
-  return readKiroIdeToken(false);
+	return readKiroIdeToken(false);
 }
 
 /**
  * Like getKiroIdeCredentials but also returns expired tokens so the caller can
  * attempt a silent OIDC refresh before falling back to the full login flow.
  */
-export function getKiroIdeCredentialsAllowExpired(): KiroCredentials | undefined {
-  return readKiroIdeToken(true);
+export function getKiroIdeCredentialsAllowExpired():
+	| KiroCredentials
+	| undefined {
+	return readKiroIdeToken(true);
 }

@@ -1,10 +1,10 @@
-# pi-provider-kiro
+# @arvoretech/pi-kiro-provider
 
-A [pi](https://shittycodingagent.ai/) provider extension that connects pi to the **Kiro API** (AWS CodeWhisperer/Q), exposing **12 kiro-cli-verified models** through one provider surface.
+A [pi](https://github.com/earendil-works/pi-coding-agent) provider extension that connects pi to the **Kiro API** (AWS CodeWhisperer/Q), exposing kiro-cli-verified models through one provider surface.
 
 ## Why this exists
 
-Kiro gives you a strong free model menu, but pi needs a provider that speaks Kiro's auth, model catalog, and streaming protocol cleanly. `pi-provider-kiro` handles that bridge, including:
+Kiro gives you a strong free model menu, but pi needs a provider that speaks Kiro's auth, model catalog, and streaming protocol cleanly. `@arvoretech/pi-kiro-provider` handles that bridge, including:
 
 - AWS Builder ID, IAM Identity Center, Google, and GitHub login flows
 - shared credentials from an existing `kiro-cli` session when available
@@ -13,16 +13,20 @@ Kiro gives you a strong free model menu, but pi needs a provider that speaks Kir
 
 ## Quick start
 
-Install the provider:
+Add to `.pi/settings.json`:
 
-```bash
-pi install npm:pi-provider-kiro
+```json
+{
+  "packages": ["npm:@arvoretech/pi-kiro-provider"]
+}
 ```
 
-Or install it globally with npm:
+Or reference the local dist path for project-local development:
 
-```bash
-npm install -g pi-provider-kiro
+```json
+{
+  "extensions": ["./arvore-pi-extensions/packages/kiro-provider/dist/index.js"]
+}
 ```
 
 Then log in from pi:
@@ -44,10 +48,12 @@ If you already use [kiro-cli](https://kiro.dev), the provider can reuse those cr
 | Family | Models | Context | Reasoning |
 |--------|--------|---------|-----------|
 | Claude Opus | `claude-opus-4-7`, `claude-opus-4-6` | 1M | ✓ |
+| Claude Sonnet 5 | `claude-sonnet-5` | 1M | ✓ |
 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | 1M | ✓ |
 | Claude Sonnet 4.5 | `claude-sonnet-4-5` | 200K | ✓ |
 | Claude Sonnet 4 | `claude-sonnet-4` | 200K | ✓ |
 | Claude Haiku 4.5 | `claude-haiku-4-5` | 200K | ✗ |
+| Claude Fable 5 | `claude-fable-5` | 1M | ✓ |
 | DeepSeek 3.2 | `deepseek-3-2` | 164K | ✓ |
 | MiniMax | `minimax-m2-1`, `minimax-m2-5` | 196K | ✗ |
 | GLM 5 | `glm-5` | 200K | ✓ |
@@ -85,10 +91,10 @@ This provider only keeps local recovery for Kiro-specific cases:
 ## Development
 
 ```bash
-npm run build       # Compile TypeScript
-npm run check       # Type check (no emit)
-npm test            # Run the Vitest suite
-npm run test:watch  # Watch mode
+pnpm build       # Compile TypeScript
+pnpm check       # Type check (no emit)
+pnpm test        # Run the Vitest suite
+pnpm test:watch  # Watch mode
 ```
 
 ## Architecture
@@ -108,7 +114,7 @@ src/
 └── stream.ts           # Main streaming orchestrator
 ```
 
-See [AGENTS.md](AGENTS.md) for detailed development guidance and [.agents/summary/](/.agents/summary/index.md) for full architecture documentation.
+See [src/](src/) — each file owns one feature (extension registration, model catalog, OAuth, kiro-cli credential sharing, message transform, history management, thinking-tag parsing, event parsing, and the streaming orchestrator).
 
 ## License
 

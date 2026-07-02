@@ -6,13 +6,13 @@ import { encodingForModel } from "js-tiktoken";
 let encoder: ReturnType<typeof encodingForModel> | null = null;
 
 function getEncoder() {
-  if (!encoder) {
-    encoder = encodingForModel("gpt-4");
-  }
-  return encoder;
+	if (!encoder) {
+		encoder = encodingForModel("gpt-4");
+	}
+	return encoder;
 }
 
 export function countTokens(text: string): number {
-  if (text.length === 0) return 0;
-  return getEncoder().encode(text).length;
+	if (text.length === 0) return 0;
+	return getEncoder().encode(text).length;
 }
