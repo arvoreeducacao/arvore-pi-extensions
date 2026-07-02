@@ -7,7 +7,9 @@ import type { DefNode } from "./ast.js";
 const MAX_LINES_PER_CHUNK = 200;
 const OVERLAP_LINES = 20;
 const MIN_PREAMBLE_LINES = 3;
-const MAX_CHUNK_CHARS = 24_000;
+const MAX_CHUNK_CHARS = 12_000;
+const MAX_LINE_CHARS = 5_000;
+const MAX_AVG_LINE_CHARS = 400;
 
 const LANG_BY_EXT: Record<string, string> = {
   ".ts": "typescript",
@@ -265,6 +267,13 @@ export async function chunkFile(
 
   const lang = langOf(relPath);
   const lines = content.split("\n");
+
+  const longestLine = lines.reduce((max, l) => (l.length > max ? l.length : max), 0);
+  const avgLine = content.length / Math.max(lines.length, 1);
+  if (longestLine > MAX_LINE_CHARS || avgLine > MAX_AVG_LINE_CHARS) {
+    return [];
+  }
+
   const astLang = astLangOf(relPath);
 
   if (astLang) {

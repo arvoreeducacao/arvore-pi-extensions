@@ -90,6 +90,8 @@ async function indexChanged(
 
   const total = changed.length;
   let done = 0;
+  let indexed = 0;
+  let failed = 0;
   let pending: Awaited<ReturnType<typeof chunkFile>> = [];
 
   const flush = async () => {
@@ -99,9 +101,17 @@ async function indexChanged(
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         await index(batch);
+        indexed += batch.length;
         return;
-      } catch {
-        if (attempt === 3) break;
+      } catch (error) {
+        if (attempt === 3) {
+          failed += batch.length;
+          throw new Error(
+            `codebase: index flush failed after 4 attempts (${batch.length} chunks): ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
         await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
       }
     }
@@ -122,6 +132,14 @@ async function indexChanged(
     }
   }
 
-  await flush();
+  try {
+    await flush();
+  } catch (error) {
+    setStatus(
+      `codebase: ⚠ indexed ${indexed} chunks, ${failed} failed — will retry next sync`
+    );
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+
   setStatus(`codebase: ✓ indexed ${total} files`);
 }
