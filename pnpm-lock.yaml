@@ -247,6 +247,21 @@ importers:
         specifier: ^5.3.0
         version: 5.9.3
 
+  packages/orca-bridge:
+    devDependencies:
+      '@earendil-works/pi-ai':
+        specifier: latest
+        version: 0.80.3(ws@8.20.0)(zod@4.4.3)
+      '@earendil-works/pi-coding-agent':
+        specifier: latest
+        version: 0.80.3(ws@8.20.0)(zod@4.4.3)
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.39
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/pi-codebase-index:
     dependencies:
       '@tree-sitter-grammars/tree-sitter-kotlin':
@@ -3566,13 +3581,13 @@ snapshots:
 
   '@slack/logger@4.0.1':
     dependencies:
-      '@types/node': 20.19.39
+      '@types/node': 22.20.0
 
   '@slack/socket-mode@2.0.7':
     dependencies:
       '@slack/logger': 4.0.1
       '@slack/web-api': 7.17.0
-      '@types/node': 20.19.39
+      '@types/node': 22.20.0
       '@types/ws': 8.18.1
       eventemitter3: 5.0.4
       ws: 8.20.0
@@ -3588,7 +3603,7 @@ snapshots:
     dependencies:
       '@slack/logger': 4.0.1
       '@slack/types': 2.21.1
-      '@types/node': 20.19.39
+      '@types/node': 22.20.0
       '@types/retry': 0.12.0
       axios: 1.18.1
       eventemitter3: 5.0.4
@@ -3680,7 +3695,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 20.19.39
+      '@types/node': 22.20.0
 
   '@typescript-eslint/eslint-plugin@8.59.3(@typescript-eslint/parser@8.59.3(eslint@10.4.0(jiti@2.7.0))(typescript@5.9.3))(eslint@10.4.0(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
@@ -4406,7 +4421,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.1
-      '@types/node': 20.19.39
+      '@types/node': 22.20.0
       long: 5.3.2
 
   proxy-from-env@2.1.0: {}
