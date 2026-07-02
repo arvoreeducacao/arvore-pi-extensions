@@ -25,6 +25,114 @@ const TREE_NAMES = [
 const WORKTREES_DIR = ".worktrees";
 const SETUP_DIR = ".pi/worktree-setup";
 
+let orcaAvailability: boolean | null = null;
+
+function orcaBinary(): string {
+  return process.env.ORCA_CLI_BIN || (process.platform === "linux" ? "orca-ide" : "orca");
+}
+
+function hasBinary(bin: string): boolean {
+  const result = spawnSync(bin, ["--version"], { encoding: "utf-8", stdio: ["ignore", "ignore", "ignore"] });
+  return !result.error;
+}
+
+function isOrcaSession(): boolean {
+  if (!process.env.ORCA_WORKTREE_ID) return false;
+  if (orcaAvailability === null) orcaAvailability = hasBinary(orcaBinary());
+  return orcaAvailability;
+}
+
+interface OrcaResult<T = any> {
+  ok: boolean;
+  result?: T;
+  error?: string;
+}
+
+function runOrca<T = any>(args: string[]): OrcaResult<T> {
+  const result = spawnSync(orcaBinary(), [...args, "--json"], { encoding: "utf-8" });
+  if (result.error) return { ok: false, error: result.error.message };
+  const raw = (result.stdout || "").trim();
+  if (!raw) {
+    return { ok: result.status === 0, error: result.stderr?.trim() || `orca ${args[0]} produced no output` };
+  }
+  try {
+    const parsed = JSON.parse(raw) as { ok?: boolean; result?: T; error?: any };
+    if (parsed.ok === false) {
+      const err = typeof parsed.error === "string" ? parsed.error : JSON.stringify(parsed.error);
+      return { ok: false, error: err || "orca reported failure" };
+    }
+    return { ok: true, result: parsed.result as T };
+  } catch {
+    return { ok: result.status === 0, error: result.status === 0 ? undefined : raw };
+  }
+}
+
+function orcaResolveRepoSelector(repoPath: string): string | null {
+  const listed = runOrca<{ repos?: Array<{ id: string; path: string }> }>(["repo", "list"]);
+  const match = listed.result?.repos?.find((r) => resolve(r.path) === resolve(repoPath));
+  if (match) return `id:${match.id}`;
+
+  const added = runOrca<{ repo?: { id: string } }>(["repo", "add", "--path", repoPath]);
+  if (added.ok && added.result?.repo?.id) return `id:${added.result.repo.id}`;
+
+  return null;
+}
+
+interface OrcaWorktree {
+  id: string;
+  path: string;
+  displayName?: string;
+  branch?: string;
+  isMainWorktree?: boolean;
+}
+
+function orcaCreateWorktree(repoPath: string, name: string, branch?: string): { ok: boolean; message: string; path?: string } {
+  const selector = orcaResolveRepoSelector(repoPath);
+  if (!selector) return { ok: false, message: `Orca could not resolve/register repo ${basename(repoPath)}` };
+
+  const args = ["worktree", "create", "--repo", selector, "--name", name, "--no-parent", "--setup", "inherit"];
+  if (branch) args.push("--base-branch", branch);
+
+  const created = runOrca<{ worktree?: OrcaWorktree }>(args);
+  if (!created.ok) return { ok: false, message: `Orca create failed: ${created.error || "unknown error"}` };
+
+  const wt = created.result?.worktree;
+  if (!wt?.path) return { ok: false, message: `Orca created worktree but returned no path for ${basename(repoPath)}` };
+
+  const branchNote = wt.branch ? ` → branch ${wt.branch.replace(/^refs\/heads\//, "")}` : "";
+  return { ok: true, message: `Created Orca worktree '${name}' in ${basename(repoPath)}${branchNote}`, path: wt.path };
+}
+
+function orcaRemoveWorktree(repoPath: string, name: string): { ok: boolean; message: string } {
+  const selector = orcaResolveRepoSelector(repoPath);
+  const wt = orcaFindWorktree(repoPath, name);
+  const target = wt ? `id:${wt.id}` : `name:${name}`;
+  const removed = runOrca(["worktree", "rm", "--worktree", target, "--force"]);
+  if (!removed.ok) return { ok: false, message: `Orca rm failed for ${basename(repoPath)}: ${removed.error || "unknown error"}` };
+  void selector;
+  return { ok: true, message: `Removed Orca worktree '${name}' from ${basename(repoPath)}` };
+}
+
+function orcaListWorktrees(repoPath: string): Array<{ name: string; branch: string; path: string }> {
+  const selector = orcaResolveRepoSelector(repoPath);
+  if (!selector) return [];
+  const listed = runOrca<{ worktrees?: OrcaWorktree[] }>(["worktree", "list", "--repo", selector]);
+  return (listed.result?.worktrees || [])
+    .filter((w) => !w.isMainWorktree)
+    .map((w) => ({
+      name: w.displayName || basename(w.path),
+      branch: (w.branch || "unknown").replace(/^refs\/heads\//, ""),
+      path: w.path,
+    }));
+}
+
+function orcaFindWorktree(repoPath: string, name: string): OrcaWorktree | null {
+  const selector = orcaResolveRepoSelector(repoPath);
+  if (!selector) return null;
+  const listed = runOrca<{ worktrees?: OrcaWorktree[] }>(["worktree", "list", "--repo", selector]);
+  return listed.result?.worktrees?.find((w) => (w.displayName || basename(w.path)) === name) || null;
+}
+
 interface SetupConfig {
   defaultSymlink?: string[];
   background?: boolean;
@@ -48,11 +156,15 @@ function loadSetupConfig(repoPath: string): SetupConfig | null {
 }
 
 function pickAvailableName(repoPath: string): string | null {
-  const dir = join(repoPath, WORKTREES_DIR);
   const existing = new Set<string>();
-  if (existsSync(dir)) {
-    for (const entry of readdirSync(dir)) {
-      if (statSync(join(dir, entry)).isDirectory()) existing.add(entry);
+  if (isOrcaSession()) {
+    for (const wt of orcaListWorktrees(repoPath)) existing.add(wt.name);
+  } else {
+    const dir = join(repoPath, WORKTREES_DIR);
+    if (existsSync(dir)) {
+      for (const entry of readdirSync(dir)) {
+        if (statSync(join(dir, entry)).isDirectory()) existing.add(entry);
+      }
     }
   }
   const available = TREE_NAMES.filter((n) => !existing.has(n));
@@ -126,6 +238,8 @@ function fetchBase(repoPath: string, base: string): boolean {
 }
 
 function getExistingWorktrees(repoPath: string): Array<{ name: string; branch: string; path: string }> {
+  if (isOrcaSession()) return orcaListWorktrees(repoPath);
+
   const dir = join(repoPath, WORKTREES_DIR);
   if (!existsSync(dir)) return [];
 
@@ -243,7 +357,13 @@ function runRepoSetup(repoPath: string, targetDir: string): string {
   return `setup: default${linkedNote}`;
 }
 
-function createWorktree(repoPath: string, name: string, branch?: string): { ok: boolean; message: string } {
+function createWorktree(repoPath: string, name: string, branch?: string): { ok: boolean; message: string; path?: string } {
+  if (isOrcaSession()) {
+    const orca = orcaCreateWorktree(repoPath, name, branch);
+    if (orca.ok) return orca;
+    process.stderr.write(`[pi-worktree] Orca create failed, falling back to git: ${orca.message}\n`);
+  }
+
   const targetDir = join(repoPath, WORKTREES_DIR, name);
   if (existsSync(targetDir)) return { ok: false, message: `Worktree '${name}' already exists in ${basename(repoPath)}` };
 
@@ -273,17 +393,23 @@ function createWorktree(repoPath: string, name: string, branch?: string): { ok: 
       });
       if (result2.status !== 0) return { ok: false, message: `Failed: ${result2.stderr?.trim()}` };
       const setup2 = runRepoSetup(repoPath, targetDir);
-      return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} (existing branch)\n  ${setup2}` };
+      return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} (existing branch)\n  ${setup2}`, path: targetDir };
     }
     return { ok: false, message: `Failed: ${err}` };
   }
 
   const setup = runRepoSetup(repoPath, targetDir);
   const baseNote = startPoint ? ` (from ${startPoint})` : "";
-  return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} → branch ${newBranch}${baseNote}\n  ${setup}` };
+  return { ok: true, message: `Created worktree '${name}' in ${basename(repoPath)} → branch ${newBranch}${baseNote}\n  ${setup}`, path: targetDir };
 }
 
 function removeWorktree(repoPath: string, name: string): { ok: boolean; message: string } {
+  if (isOrcaSession()) {
+    const orca = orcaRemoveWorktree(repoPath, name);
+    if (orca.ok) return orca;
+    process.stderr.write(`[pi-worktree] Orca rm failed, falling back to git: ${orca.message}\n`);
+  }
+
   const targetDir = join(repoPath, WORKTREES_DIR, name);
   if (!existsSync(targetDir)) return { ok: false, message: `Worktree '${name}' not found in ${basename(repoPath)}` };
 
@@ -542,7 +668,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
         const result = createWorktree(repo, name, params.branch);
         results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
         if (result.ok) {
-          activeWorktreePaths.set(basename(repo), join(repo, WORKTREES_DIR, name));
+          activeWorktreePaths.set(basename(repo), result.path || join(repo, WORKTREES_DIR, name));
         }
       }
 
@@ -600,7 +726,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
       for (const repo of targetRepos) {
         const result = createWorktree(repo, activeWorktree);
         if (result.ok) {
-          activeWorktreePaths.set(basename(repo), join(repo, WORKTREES_DIR, activeWorktree));
+          activeWorktreePaths.set(basename(repo), result.path || join(repo, WORKTREES_DIR, activeWorktree));
           results.push(`✓ ${result.message}`);
         } else {
           results.push(`✗ ${result.message}`);
@@ -656,8 +782,15 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const allRepos = discoverRepos(ctx.cwd);
       const results: string[] = [];
+      const orca = isOrcaSession();
 
       for (const repo of allRepos) {
+        if (orca) {
+          if (!orcaFindWorktree(repo, params.name)) continue;
+          const result = removeWorktree(repo, params.name);
+          results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
+          continue;
+        }
         const wtPath = join(repo, WORKTREES_DIR, params.name);
         if (!existsSync(wtPath)) continue;
         const result = removeWorktree(repo, params.name);
@@ -784,7 +917,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
             const result = createWorktree(repo, name, flags.branch);
             results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
             if (result.ok) {
-              activeWorktreePaths.set(basename(repo), join(repo, WORKTREES_DIR, name));
+              activeWorktreePaths.set(basename(repo), result.path || join(repo, WORKTREES_DIR, name));
             }
           }
 
@@ -830,6 +963,11 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           activeWorktreePaths.clear();
 
           for (const repo of targetRepos) {
+            if (isOrcaSession()) {
+              const wt = orcaFindWorktree(repo, name);
+              if (wt?.path) activeWorktreePaths.set(basename(repo), wt.path);
+              continue;
+            }
             const wtPath = join(repo, WORKTREES_DIR, name);
             if (existsSync(wtPath) && existsSync(join(wtPath, ".git"))) {
               activeWorktreePaths.set(basename(repo), wtPath);
@@ -946,9 +1084,14 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
 
           const targetRepos = filterRepos(repos);
           const results: string[] = [];
+          const orcaMode = isOrcaSession();
 
           for (const repo of targetRepos) {
-            if (!existsSync(join(repo, WORKTREES_DIR, name))) continue;
+            if (orcaMode) {
+              if (!orcaFindWorktree(repo, name)) continue;
+            } else if (!existsSync(join(repo, WORKTREES_DIR, name))) {
+              continue;
+            }
             const result = removeWorktree(repo, name);
             results.push(result.ok ? `✓ ${result.message}` : `✗ ${result.message}`);
           }
