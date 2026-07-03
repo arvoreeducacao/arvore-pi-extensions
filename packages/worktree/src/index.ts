@@ -3,6 +3,12 @@ import { Type } from "@earendil-works/pi-ai";
 import { execSync, spawnSync, spawn } from "node:child_process";
 import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync, openSync, closeSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
+import {
+  isOrcaSession,
+  runOrca,
+  orcaResolveRepoSelector,
+  type OrcaWorktreeInfo as OrcaWorktree,
+} from "@arvoretech/pi-orca-bridge/core";
 
 let activeWorktree: string | null = null;
 let activeWorktreePaths: Map<string, string> = new Map();
@@ -24,67 +30,6 @@ const TREE_NAMES = [
 
 const WORKTREES_DIR = ".worktrees";
 const SETUP_DIR = ".pi/worktree-setup";
-
-let orcaAvailability: boolean | null = null;
-
-function orcaBinary(): string {
-  return process.env.ORCA_CLI_BIN || (process.platform === "linux" ? "orca-ide" : "orca");
-}
-
-function hasBinary(bin: string): boolean {
-  const result = spawnSync(bin, ["--version"], { encoding: "utf-8", stdio: ["ignore", "ignore", "ignore"] });
-  return !result.error;
-}
-
-function isOrcaSession(): boolean {
-  if (!process.env.ORCA_WORKTREE_ID) return false;
-  if (orcaAvailability === null) orcaAvailability = hasBinary(orcaBinary());
-  return orcaAvailability;
-}
-
-interface OrcaResult<T = any> {
-  ok: boolean;
-  result?: T;
-  error?: string;
-}
-
-function runOrca<T = any>(args: string[]): OrcaResult<T> {
-  const result = spawnSync(orcaBinary(), [...args, "--json"], { encoding: "utf-8" });
-  if (result.error) return { ok: false, error: result.error.message };
-  const raw = (result.stdout || "").trim();
-  if (!raw) {
-    return { ok: result.status === 0, error: result.stderr?.trim() || `orca ${args[0]} produced no output` };
-  }
-  try {
-    const parsed = JSON.parse(raw) as { ok?: boolean; result?: T; error?: any };
-    if (parsed.ok === false) {
-      const err = typeof parsed.error === "string" ? parsed.error : JSON.stringify(parsed.error);
-      return { ok: false, error: err || "orca reported failure" };
-    }
-    return { ok: true, result: parsed.result as T };
-  } catch {
-    return { ok: result.status === 0, error: result.status === 0 ? undefined : raw };
-  }
-}
-
-function orcaResolveRepoSelector(repoPath: string): string | null {
-  const listed = runOrca<{ repos?: Array<{ id: string; path: string }> }>(["repo", "list"]);
-  const match = listed.result?.repos?.find((r) => resolve(r.path) === resolve(repoPath));
-  if (match) return `id:${match.id}`;
-
-  const added = runOrca<{ repo?: { id: string } }>(["repo", "add", "--path", repoPath]);
-  if (added.ok && added.result?.repo?.id) return `id:${added.result.repo.id}`;
-
-  return null;
-}
-
-interface OrcaWorktree {
-  id: string;
-  path: string;
-  displayName?: string;
-  branch?: string;
-  isMainWorktree?: boolean;
-}
 
 function orcaCreateWorktree(repoPath: string, name: string, branch?: string): { ok: boolean; message: string; path?: string } {
   const selector = orcaResolveRepoSelector(repoPath);

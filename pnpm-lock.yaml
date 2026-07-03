@@ -532,6 +532,10 @@ importers:
         version: 5.9.3
 
   packages/worktree:
+    dependencies:
+      '@arvoretech/pi-orca-bridge':
+        specifier: workspace:^
+        version: link:../orca-bridge
     devDependencies:
       '@earendil-works/pi-ai':
         specifier: latest

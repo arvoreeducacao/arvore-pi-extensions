@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-worktree",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "PI extension to manage git worktrees across multi-repo workspaces with tree-themed names",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,6 +15,9 @@
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "dependencies": {
+    "@arvoretech/pi-orca-bridge": "workspace:^"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "latest",
