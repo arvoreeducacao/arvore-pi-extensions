@@ -104,7 +104,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     if (isEnabled(key) && record.content !== undefined) {
       originalSetWidget(key, record.content as never, record.options);
       record.rendered = true;
-    } else if (record.rendered) {
+    } else {
       originalSetWidget(key, undefined, record.options);
       record.rendered = false;
     }
@@ -121,9 +121,30 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     if (isEnabled(statusToggleKey(key)) && record.text !== undefined) {
       originalSetStatus(key, record.text);
       record.rendered = true;
-    } else if (record.rendered) {
+    } else {
       originalSetStatus(key, undefined);
       record.rendered = false;
+    }
+  }
+
+  function forceHideDisabled() {
+    if (originalSetWidget) {
+      for (const key of disabled) {
+        if (key.startsWith(STATUS_PREFIX)) continue;
+        if (key === OWN_WIDGET_KEY) continue;
+        originalSetWidget(key, undefined);
+        const record = registry.get(key);
+        if (record) record.rendered = false;
+      }
+    }
+    if (originalSetStatus) {
+      for (const key of disabled) {
+        if (!key.startsWith(STATUS_PREFIX)) continue;
+        const statusKey = key.slice(STATUS_PREFIX.length);
+        originalSetStatus(statusKey, undefined);
+        const record = statusRegistry.get(statusKey);
+        if (record) record.rendered = false;
+      }
     }
   }
 
@@ -302,6 +323,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     if (!ctx.hasUI) return;
     patchSetWidget(ctx.ui);
     restoreConfig(ctx);
+    forceHideDisabled();
     for (const key of registry.keys()) applyWidget(key);
     for (const key of statusRegistry.keys()) applyStatus(key);
   });
@@ -310,6 +332,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     if (!ctx.hasUI) return;
     patchSetWidget(ctx.ui);
     restoreConfig(ctx);
+    forceHideDisabled();
     for (const key of registry.keys()) applyWidget(key);
     for (const key of statusRegistry.keys()) applyStatus(key);
   });
