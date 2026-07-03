@@ -99,12 +99,19 @@ async function triggerSync(pi: ExtensionAPI, cwd: string, setStatus: (text: stri
   if (!creds) return;
 
   syncing = true;
-  const status = hidden ? () => {} : setStatus;
+  const safeSetStatus = (text: string) => {
+    try {
+      setStatus(text);
+    } catch {
+      void 0;
+    }
+  };
+  const status = hidden ? () => {} : safeSetStatus;
   try {
     await runSync(cwd, status);
   } catch (error) {
     if (!hidden) {
-      setStatus(`codebase: sync failed`);
+      safeSetStatus(`codebase: sync failed`);
     }
     void error;
   } finally {
