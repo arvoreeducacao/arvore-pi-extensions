@@ -1,0 +1,54 @@
+{
+  "name": "@arvoretech/pi-design-copilot",
+  "version": "0.1.0",
+  "description": "PI extension that makes the model much better at Árvore UI work: searchable icon index (find_icon), brand asset registry (find_asset), a mandatory design brief with a hard gate before generating UI, and a heuristics review sub-agent gate.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "data"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit",
+    "gen:icons": "tsx scripts/build-icon-manifest.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0",
+    "@earendil-works/pi-ai": ">=0.74.0",
+    "@earendil-works/pi-tui": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-tui": "latest",
+    "@earendil-works/pi-agent-core": "latest",
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "design",
+    "design-system",
+    "bonsai",
+    "icons",
+    "heuristics"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/design-copilot"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}

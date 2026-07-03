@@ -1,0 +1,9678 @@
+{
+  "generatedAt": "2026-07-03T14:22:46.442Z",
+  "source": "frontend-arvore-nextjs/src/components/icons",
+  "importPath": "@/components/icons",
+  "count": 966,
+  "icons": [
+    {
+      "name": "AbacusIcon",
+      "file": "abacus",
+      "keywords": [
+        "abacus"
+      ]
+    },
+    {
+      "name": "AddIcon",
+      "file": "add",
+      "keywords": [
+        "add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "AddCircleIcon",
+      "file": "add-circle",
+      "keywords": [
+        "add",
+        "circle",
+        "add-circle",
+        "add circle",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "AddSquareIcon",
+      "file": "add-square",
+      "keywords": [
+        "add",
+        "square",
+        "add-square",
+        "add square",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "AddressBookIcon",
+      "file": "address-book",
+      "keywords": [
+        "address",
+        "book",
+        "address-book",
+        "address book",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "AirplaneIcon",
+      "file": "airplane",
+      "keywords": [
+        "airplane"
+      ]
+    },
+    {
+      "name": "AirplayAudioIcon",
+      "file": "airplay-audio",
+      "keywords": [
+        "airplay",
+        "audio",
+        "airplay-audio",
+        "airplay audio"
+      ]
+    },
+    {
+      "name": "AirplayScreenIcon",
+      "file": "airplay-screen",
+      "keywords": [
+        "airplay",
+        "screen",
+        "airplay-screen",
+        "airplay screen"
+      ]
+    },
+    {
+      "name": "AlarmIcon",
+      "file": "alarm",
+      "keywords": [
+        "alarm"
+      ]
+    },
+    {
+      "name": "AlarmAddIcon",
+      "file": "alarm-add",
+      "keywords": [
+        "alarm",
+        "add",
+        "alarm-add",
+        "alarm add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "AlarmCancelIcon",
+      "file": "alarm-cancel",
+      "keywords": [
+        "alarm",
+        "cancel",
+        "alarm-cancel",
+        "alarm cancel"
+      ]
+    },
+    {
+      "name": "AlarmCheckIcon",
+      "file": "alarm-check",
+      "keywords": [
+        "alarm",
+        "check",
+        "alarm-check",
+        "alarm check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "AlarmOffIcon",
+      "file": "alarm-off",
+      "keywords": [
+        "alarm",
+        "off",
+        "alarm-off",
+        "alarm off"
+      ]
+    },
+    {
+      "name": "AlarmSnoozeIcon",
+      "file": "alarm-snooze",
+      "keywords": [
+        "alarm",
+        "snooze",
+        "alarm-snooze",
+        "alarm snooze"
+      ]
+    },
+    {
+      "name": "AlbumAudioIcon",
+      "file": "album-audio",
+      "keywords": [
+        "album",
+        "audio",
+        "album-audio",
+        "album audio"
+      ]
+    },
+    {
+      "name": "AlbumMusicIcon",
+      "file": "album-music",
+      "keywords": [
+        "album",
+        "music",
+        "album-music",
+        "album music"
+      ]
+    },
+    {
+      "name": "AlbumPhotoIcon",
+      "file": "album-photo",
+      "keywords": [
+        "album",
+        "photo",
+        "album-photo",
+        "album photo"
+      ]
+    },
+    {
+      "name": "AlbumPortraitIcon",
+      "file": "album-portrait",
+      "keywords": [
+        "album",
+        "portrait",
+        "album-portrait",
+        "album portrait"
+      ]
+    },
+    {
+      "name": "AlbumTimeIcon",
+      "file": "album-time",
+      "keywords": [
+        "album",
+        "time",
+        "album-time",
+        "album time"
+      ]
+    },
+    {
+      "name": "AlertIcon",
+      "file": "alert",
+      "keywords": [
+        "alert",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "AlignCenterIcon",
+      "file": "align-center",
+      "keywords": [
+        "align",
+        "center",
+        "align-center",
+        "align center"
+      ]
+    },
+    {
+      "name": "AlignJustifyIcon",
+      "file": "align-justify",
+      "keywords": [
+        "align",
+        "justify",
+        "align-justify",
+        "align justify"
+      ]
+    },
+    {
+      "name": "AlignJustifyLeftIcon",
+      "file": "align-justify-left",
+      "keywords": [
+        "align",
+        "justify",
+        "left",
+        "align-justify-left",
+        "align justify left"
+      ]
+    },
+    {
+      "name": "AlignJustifyRightIcon",
+      "file": "align-justify-right",
+      "keywords": [
+        "align",
+        "justify",
+        "right",
+        "align-justify-right",
+        "align justify right"
+      ]
+    },
+    {
+      "name": "AlignLeftIcon",
+      "file": "align-left",
+      "keywords": [
+        "align",
+        "left",
+        "align-left",
+        "align left"
+      ]
+    },
+    {
+      "name": "AlignRightIcon",
+      "file": "align-right",
+      "keywords": [
+        "align",
+        "right",
+        "align-right",
+        "align right"
+      ]
+    },
+    {
+      "name": "AllOutIcon",
+      "file": "all-out",
+      "keywords": [
+        "all",
+        "out",
+        "all-out",
+        "all out"
+      ]
+    },
+    {
+      "name": "AllSansIcon",
+      "file": "all-sans",
+      "keywords": [
+        "all",
+        "sans",
+        "all-sans",
+        "all sans"
+      ]
+    },
+    {
+      "name": "AmpersandIcon",
+      "file": "ampersand",
+      "keywords": [
+        "ampersand"
+      ]
+    },
+    {
+      "name": "AppleBiteIcon",
+      "file": "apple-bite",
+      "keywords": [
+        "apple",
+        "bite",
+        "apple-bite",
+        "apple bite"
+      ]
+    },
+    {
+      "name": "ArcheryIcon",
+      "file": "archery",
+      "keywords": [
+        "archery"
+      ]
+    },
+    {
+      "name": "ArchiveIcon",
+      "file": "archive",
+      "keywords": [
+        "archive"
+      ]
+    },
+    {
+      "name": "ArchiveDownloadIcon",
+      "file": "archive-download",
+      "keywords": [
+        "archive",
+        "download",
+        "archive-download",
+        "archive download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "ArchiveUploadIcon",
+      "file": "archive-upload",
+      "keywords": [
+        "archive",
+        "upload",
+        "archive-upload",
+        "archive upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "ArrowDivergeIcon",
+      "file": "arrow-diverge",
+      "keywords": [
+        "arrow",
+        "diverge",
+        "arrow-diverge",
+        "arrow diverge",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowDownIcon",
+      "file": "arrow-down",
+      "keywords": [
+        "arrow",
+        "down",
+        "arrow-down",
+        "arrow down",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowDownLeftIcon",
+      "file": "arrow-down-left",
+      "keywords": [
+        "arrow",
+        "down",
+        "left",
+        "arrow-down-left",
+        "arrow down left",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowDownRightIcon",
+      "file": "arrow-down-right",
+      "keywords": [
+        "arrow",
+        "down",
+        "right",
+        "arrow-down-right",
+        "arrow down right",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowExpandIcon",
+      "file": "arrow-expand",
+      "keywords": [
+        "arrow",
+        "expand",
+        "arrow-expand",
+        "arrow expand",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowLeftIcon",
+      "file": "arrow-left",
+      "keywords": [
+        "arrow",
+        "left",
+        "arrow-left",
+        "arrow left",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowMergeIcon",
+      "file": "arrow-merge",
+      "keywords": [
+        "arrow",
+        "merge",
+        "arrow-merge",
+        "arrow merge",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowRightIcon",
+      "file": "arrow-right",
+      "keywords": [
+        "arrow",
+        "right",
+        "arrow-right",
+        "arrow right",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowShrinkIcon",
+      "file": "arrow-shrink",
+      "keywords": [
+        "arrow",
+        "shrink",
+        "arrow-shrink",
+        "arrow shrink",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowSwapIcon",
+      "file": "arrow-swap",
+      "keywords": [
+        "arrow",
+        "swap",
+        "arrow-swap",
+        "arrow swap",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowUpIcon",
+      "file": "arrow-up",
+      "keywords": [
+        "arrow",
+        "up",
+        "arrow-up",
+        "arrow up",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowUpLeftIcon",
+      "file": "arrow-up-left",
+      "keywords": [
+        "arrow",
+        "up",
+        "left",
+        "arrow-up-left",
+        "arrow up left",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArrowUpRightIcon",
+      "file": "arrow-up-right",
+      "keywords": [
+        "arrow",
+        "up",
+        "right",
+        "arrow-up-right",
+        "arrow up right",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "ArtPaletteIcon",
+      "file": "art-palette",
+      "keywords": [
+        "art",
+        "palette",
+        "art-palette",
+        "art palette"
+      ]
+    },
+    {
+      "name": "ArtesIcon",
+      "file": "artes",
+      "keywords": [
+        "artes"
+      ]
+    },
+    {
+      "name": "AssistiveListeningIcon",
+      "file": "assistive-listening",
+      "keywords": [
+        "assistive",
+        "listening",
+        "assistive-listening",
+        "assistive listening"
+      ]
+    },
+    {
+      "name": "AssistiveListeningTelecoilIcon",
+      "file": "assistive-listening-telecoil",
+      "keywords": [
+        "assistive",
+        "listening",
+        "telecoil",
+        "assistive-listening-telecoil",
+        "assistive listening telecoil"
+      ]
+    },
+    {
+      "name": "AtIcon",
+      "file": "at",
+      "keywords": [
+        "at"
+      ]
+    },
+    {
+      "name": "AtmIcon",
+      "file": "atm",
+      "keywords": [
+        "atm"
+      ]
+    },
+    {
+      "name": "AudioCascadeIcon",
+      "file": "audio-cascade",
+      "keywords": [
+        "audio",
+        "cascade",
+        "audio-cascade",
+        "audio cascade"
+      ]
+    },
+    {
+      "name": "AutoajudaIcon",
+      "file": "autoajuda",
+      "keywords": [
+        "autoajuda"
+      ]
+    },
+    {
+      "name": "AwardRibbonIcon",
+      "file": "award-ribbon",
+      "keywords": [
+        "award",
+        "ribbon",
+        "award-ribbon",
+        "award ribbon",
+        "celebracao",
+        "conquista",
+        "premio",
+        "achievement",
+        "premiacao"
+      ]
+    },
+    {
+      "name": "BackIcon",
+      "file": "back",
+      "keywords": [
+        "back"
+      ]
+    },
+    {
+      "name": "Back10Icon",
+      "file": "back-10",
+      "keywords": [
+        "back",
+        "10",
+        "back-10",
+        "back 10"
+      ]
+    },
+    {
+      "name": "Back30Icon",
+      "file": "back-30",
+      "keywords": [
+        "back",
+        "30",
+        "back-30",
+        "back 30"
+      ]
+    },
+    {
+      "name": "Back5Icon",
+      "file": "back-5",
+      "keywords": [
+        "back",
+        "5",
+        "back-5",
+        "back 5"
+      ]
+    },
+    {
+      "name": "BackpackIcon",
+      "file": "backpack",
+      "keywords": [
+        "backpack",
+        "aluno",
+        "estudante",
+        "mochila",
+        "student"
+      ]
+    },
+    {
+      "name": "BadgeIcon",
+      "file": "badge",
+      "keywords": [
+        "badge",
+        "conquista",
+        "selo",
+        "achievement",
+        "emblema"
+      ]
+    },
+    {
+      "name": "BadgeAltIcon",
+      "file": "badge-alt",
+      "keywords": [
+        "badge",
+        "alt",
+        "badge-alt",
+        "badge alt",
+        "conquista",
+        "selo",
+        "achievement",
+        "emblema"
+      ]
+    },
+    {
+      "name": "BadgeIdIcon",
+      "file": "badge-id",
+      "keywords": [
+        "badge",
+        "id",
+        "badge-id",
+        "badge id",
+        "conquista",
+        "selo",
+        "achievement",
+        "emblema"
+      ]
+    },
+    {
+      "name": "BadmintonRacketIcon",
+      "file": "badminton-racket",
+      "keywords": [
+        "badminton",
+        "racket",
+        "badminton-racket",
+        "badminton racket"
+      ]
+    },
+    {
+      "name": "BagBitcoinIcon",
+      "file": "bag-bitcoin",
+      "keywords": [
+        "bag",
+        "bitcoin",
+        "bag-bitcoin",
+        "bag bitcoin"
+      ]
+    },
+    {
+      "name": "BagDollarIcon",
+      "file": "bag-dollar",
+      "keywords": [
+        "bag",
+        "dollar",
+        "bag-dollar",
+        "bag dollar"
+      ]
+    },
+    {
+      "name": "BagEuroIcon",
+      "file": "bag-euro",
+      "keywords": [
+        "bag",
+        "euro",
+        "bag-euro",
+        "bag euro"
+      ]
+    },
+    {
+      "name": "BagFrancIcon",
+      "file": "bag-franc",
+      "keywords": [
+        "bag",
+        "franc",
+        "bag-franc",
+        "bag franc"
+      ]
+    },
+    {
+      "name": "BagMoneyIcon",
+      "file": "bag-money",
+      "keywords": [
+        "bag",
+        "money",
+        "bag-money",
+        "bag money"
+      ]
+    },
+    {
+      "name": "BagPoundIcon",
+      "file": "bag-pound",
+      "keywords": [
+        "bag",
+        "pound",
+        "bag-pound",
+        "bag pound"
+      ]
+    },
+    {
+      "name": "BagYenIcon",
+      "file": "bag-yen",
+      "keywords": [
+        "bag",
+        "yen",
+        "bag-yen",
+        "bag yen"
+      ]
+    },
+    {
+      "name": "BalloonIcon",
+      "file": "balloon",
+      "keywords": [
+        "balloon",
+        "festa",
+        "celebracao",
+        "balao",
+        "comemoracao"
+      ]
+    },
+    {
+      "name": "BanIcon",
+      "file": "ban",
+      "keywords": [
+        "ban"
+      ]
+    },
+    {
+      "name": "BankIcon",
+      "file": "bank",
+      "keywords": [
+        "bank"
+      ]
+    },
+    {
+      "name": "BanknoteIcon",
+      "file": "banknote",
+      "keywords": [
+        "banknote"
+      ]
+    },
+    {
+      "name": "BanknoteBitcoinIcon",
+      "file": "banknote-bitcoin",
+      "keywords": [
+        "banknote",
+        "bitcoin",
+        "banknote-bitcoin",
+        "banknote bitcoin"
+      ]
+    },
+    {
+      "name": "BanknoteDollarIcon",
+      "file": "banknote-dollar",
+      "keywords": [
+        "banknote",
+        "dollar",
+        "banknote-dollar",
+        "banknote dollar"
+      ]
+    },
+    {
+      "name": "BanknoteEuroIcon",
+      "file": "banknote-euro",
+      "keywords": [
+        "banknote",
+        "euro",
+        "banknote-euro",
+        "banknote euro"
+      ]
+    },
+    {
+      "name": "BanknoteFrancIcon",
+      "file": "banknote-franc",
+      "keywords": [
+        "banknote",
+        "franc",
+        "banknote-franc",
+        "banknote franc"
+      ]
+    },
+    {
+      "name": "BanknoteOffIcon",
+      "file": "banknote-off",
+      "keywords": [
+        "banknote",
+        "off",
+        "banknote-off",
+        "banknote off"
+      ]
+    },
+    {
+      "name": "BanknotePoundIcon",
+      "file": "banknote-pound",
+      "keywords": [
+        "banknote",
+        "pound",
+        "banknote-pound",
+        "banknote pound"
+      ]
+    },
+    {
+      "name": "BanknoteYenIcon",
+      "file": "banknote-yen",
+      "keywords": [
+        "banknote",
+        "yen",
+        "banknote-yen",
+        "banknote yen"
+      ]
+    },
+    {
+      "name": "BarcodeIcon",
+      "file": "barcode",
+      "keywords": [
+        "barcode"
+      ]
+    },
+    {
+      "name": "BarcodeScanIcon",
+      "file": "barcode-scan",
+      "keywords": [
+        "barcode",
+        "scan",
+        "barcode-scan",
+        "barcode scan"
+      ]
+    },
+    {
+      "name": "BasketIcon",
+      "file": "basket",
+      "keywords": [
+        "basket"
+      ]
+    },
+    {
+      "name": "BasketballJerseyIcon",
+      "file": "basketball-jersey",
+      "keywords": [
+        "basketball",
+        "jersey",
+        "basketball-jersey",
+        "basketball jersey"
+      ]
+    },
+    {
+      "name": "BearFaceIcon",
+      "file": "bear-face",
+      "keywords": [
+        "bear",
+        "face",
+        "bear-face",
+        "bear face"
+      ]
+    },
+    {
+      "name": "BellIcon",
+      "file": "bell",
+      "keywords": [
+        "bell",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "BellAddIcon",
+      "file": "bell-add",
+      "keywords": [
+        "bell",
+        "add",
+        "bell-add",
+        "bell add",
+        "notification",
+        "sino",
+        "notificacao",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "BellOffIcon",
+      "file": "bell-off",
+      "keywords": [
+        "bell",
+        "off",
+        "bell-off",
+        "bell off",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "BellRingIcon",
+      "file": "bell-ring",
+      "keywords": [
+        "bell",
+        "ring",
+        "bell-ring",
+        "bell ring",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "BellSnoozeIcon",
+      "file": "bell-snooze",
+      "keywords": [
+        "bell",
+        "snooze",
+        "bell-snooze",
+        "bell snooze",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "BellTimeIcon",
+      "file": "bell-time",
+      "keywords": [
+        "bell",
+        "time",
+        "bell-time",
+        "bell time",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "BellsIcon",
+      "file": "bells",
+      "keywords": [
+        "bells"
+      ]
+    },
+    {
+      "name": "BezierCurveIcon",
+      "file": "bezier-curve",
+      "keywords": [
+        "bezier",
+        "curve",
+        "bezier-curve",
+        "bezier curve"
+      ]
+    },
+    {
+      "name": "BilliardRackIcon",
+      "file": "billiard-rack",
+      "keywords": [
+        "billiard",
+        "rack",
+        "billiard-rack",
+        "billiard rack"
+      ]
+    },
+    {
+      "name": "BinaryIcon",
+      "file": "binary",
+      "keywords": [
+        "binary"
+      ]
+    },
+    {
+      "name": "BiografiasEAutobiografiasIcon",
+      "file": "biografias-e-autobiografias",
+      "keywords": [
+        "biografias",
+        "e",
+        "autobiografias",
+        "biografias-e-autobiografias",
+        "biografias e autobiografias"
+      ]
+    },
+    {
+      "name": "BirdhouseIcon",
+      "file": "birdhouse",
+      "keywords": [
+        "birdhouse"
+      ]
+    },
+    {
+      "name": "BitcoinIcon",
+      "file": "bitcoin",
+      "keywords": [
+        "bitcoin"
+      ]
+    },
+    {
+      "name": "BlindWalkingIcon",
+      "file": "blind-walking",
+      "keywords": [
+        "blind",
+        "walking",
+        "blind-walking",
+        "blind walking"
+      ]
+    },
+    {
+      "name": "BlockIcon",
+      "file": "block",
+      "keywords": [
+        "block"
+      ]
+    },
+    {
+      "name": "BlockAltIcon",
+      "file": "block-alt",
+      "keywords": [
+        "block",
+        "alt",
+        "block-alt",
+        "block alt"
+      ]
+    },
+    {
+      "name": "BookIcon",
+      "file": "book",
+      "keywords": [
+        "book",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookCodeIcon",
+      "file": "book-code",
+      "keywords": [
+        "book",
+        "code",
+        "book-code",
+        "book code",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookConfigIcon",
+      "file": "book-config",
+      "keywords": [
+        "book",
+        "config",
+        "book-config",
+        "book config",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookOpenIcon",
+      "file": "book-open",
+      "keywords": [
+        "book",
+        "open",
+        "book-open",
+        "book open",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookOpenFilledIcon",
+      "file": "book-open-filled",
+      "keywords": [
+        "book",
+        "open",
+        "filled",
+        "book-open-filled",
+        "book open filled",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookPersonIcon",
+      "file": "book-person",
+      "keywords": [
+        "book",
+        "person",
+        "book-person",
+        "book person",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookPersonFilledIcon",
+      "file": "book-person-filled",
+      "keywords": [
+        "book",
+        "person",
+        "filled",
+        "book-person-filled",
+        "book person filled",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "BookmarkIcon",
+      "file": "bookmark",
+      "keywords": [
+        "bookmark"
+      ]
+    },
+    {
+      "name": "BookmarkAddIcon",
+      "file": "bookmark-add",
+      "keywords": [
+        "bookmark",
+        "add",
+        "bookmark-add",
+        "bookmark add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "BookmarkFillIcon",
+      "file": "bookmark-fill",
+      "keywords": [
+        "bookmark",
+        "fill",
+        "bookmark-fill",
+        "bookmark fill"
+      ]
+    },
+    {
+      "name": "BooksIcon",
+      "file": "books",
+      "keywords": [
+        "books"
+      ]
+    },
+    {
+      "name": "BooksAltIcon",
+      "file": "books-alt",
+      "keywords": [
+        "books",
+        "alt",
+        "books-alt",
+        "books alt"
+      ]
+    },
+    {
+      "name": "BooksPencilIcon",
+      "file": "books-pencil",
+      "keywords": [
+        "books",
+        "pencil",
+        "books-pencil",
+        "books pencil"
+      ]
+    },
+    {
+      "name": "BootIcon",
+      "file": "boot",
+      "keywords": [
+        "boot"
+      ]
+    },
+    {
+      "name": "BowIcon",
+      "file": "bow",
+      "keywords": [
+        "bow"
+      ]
+    },
+    {
+      "name": "BowlingIcon",
+      "file": "bowling",
+      "keywords": [
+        "bowling"
+      ]
+    },
+    {
+      "name": "BowlingPinsIcon",
+      "file": "bowling-pins",
+      "keywords": [
+        "bowling",
+        "pins",
+        "bowling-pins",
+        "bowling pins"
+      ]
+    },
+    {
+      "name": "BoxIcon",
+      "file": "box",
+      "keywords": [
+        "box"
+      ]
+    },
+    {
+      "name": "BoxBankersIcon",
+      "file": "box-bankers",
+      "keywords": [
+        "box",
+        "bankers",
+        "box-bankers",
+        "box bankers"
+      ]
+    },
+    {
+      "name": "BoxingIcon",
+      "file": "boxing",
+      "keywords": [
+        "boxing"
+      ]
+    },
+    {
+      "name": "BrailleIcon",
+      "file": "braille",
+      "keywords": [
+        "braille"
+      ]
+    },
+    {
+      "name": "BrailleHandIcon",
+      "file": "braille-hand",
+      "keywords": [
+        "braille",
+        "hand",
+        "braille-hand",
+        "braille hand"
+      ]
+    },
+    {
+      "name": "BranchIcon",
+      "file": "branch",
+      "keywords": [
+        "branch"
+      ]
+    },
+    {
+      "name": "BriefcaseIcon",
+      "file": "briefcase",
+      "keywords": [
+        "briefcase"
+      ]
+    },
+    {
+      "name": "BriefcaseMetalIcon",
+      "file": "briefcase-metal",
+      "keywords": [
+        "briefcase",
+        "metal",
+        "briefcase-metal",
+        "briefcase metal"
+      ]
+    },
+    {
+      "name": "BriefcaseNextIcon",
+      "file": "briefcase-next",
+      "keywords": [
+        "briefcase",
+        "next",
+        "briefcase-next",
+        "briefcase next"
+      ]
+    },
+    {
+      "name": "BrightnessHighIcon",
+      "file": "brightness-high",
+      "keywords": [
+        "brightness",
+        "high",
+        "brightness-high",
+        "brightness high"
+      ]
+    },
+    {
+      "name": "BrightnessLowIcon",
+      "file": "brightness-low",
+      "keywords": [
+        "brightness",
+        "low",
+        "brightness-low",
+        "brightness low"
+      ]
+    },
+    {
+      "name": "BrightnessMediumIcon",
+      "file": "brightness-medium",
+      "keywords": [
+        "brightness",
+        "medium",
+        "brightness-medium",
+        "brightness medium"
+      ]
+    },
+    {
+      "name": "BrowserIcon",
+      "file": "browser",
+      "keywords": [
+        "browser"
+      ]
+    },
+    {
+      "name": "BrowserAltIcon",
+      "file": "browser-alt",
+      "keywords": [
+        "browser",
+        "alt",
+        "browser-alt",
+        "browser alt"
+      ]
+    },
+    {
+      "name": "BrowserCodeIcon",
+      "file": "browser-code",
+      "keywords": [
+        "browser",
+        "code",
+        "browser-code",
+        "browser code"
+      ]
+    },
+    {
+      "name": "BrowserCodeAltIcon",
+      "file": "browser-code-alt",
+      "keywords": [
+        "browser",
+        "code",
+        "alt",
+        "browser-code-alt",
+        "browser code alt"
+      ]
+    },
+    {
+      "name": "BrushIcon",
+      "file": "brush",
+      "keywords": [
+        "brush"
+      ]
+    },
+    {
+      "name": "BucketIcon",
+      "file": "bucket",
+      "keywords": [
+        "bucket"
+      ]
+    },
+    {
+      "name": "BucketDripIcon",
+      "file": "bucket-drip",
+      "keywords": [
+        "bucket",
+        "drip",
+        "bucket-drip",
+        "bucket drip"
+      ]
+    },
+    {
+      "name": "BugIcon",
+      "file": "bug",
+      "keywords": [
+        "bug"
+      ]
+    },
+    {
+      "name": "BugOffIcon",
+      "file": "bug-off",
+      "keywords": [
+        "bug",
+        "off",
+        "bug-off",
+        "bug off"
+      ]
+    },
+    {
+      "name": "CalculatorIcon",
+      "file": "calculator",
+      "keywords": [
+        "calculator"
+      ]
+    },
+    {
+      "name": "CalendarIcon",
+      "file": "calendar",
+      "keywords": [
+        "calendar",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "Calendar15Icon",
+      "file": "calendar-15",
+      "keywords": [
+        "calendar",
+        "15",
+        "calendar-15",
+        "calendar 15",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarAddIcon",
+      "file": "calendar-add",
+      "keywords": [
+        "calendar",
+        "add",
+        "calendar-add",
+        "calendar add",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "CalendarAltIcon",
+      "file": "calendar-alt",
+      "keywords": [
+        "calendar",
+        "alt",
+        "calendar-alt",
+        "calendar alt",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarCancelIcon",
+      "file": "calendar-cancel",
+      "keywords": [
+        "calendar",
+        "cancel",
+        "calendar-cancel",
+        "calendar cancel",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarCheckIcon",
+      "file": "calendar-check",
+      "keywords": [
+        "calendar",
+        "check",
+        "calendar-check",
+        "calendar check",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CalendarDateIcon",
+      "file": "calendar-date",
+      "keywords": [
+        "calendar",
+        "date",
+        "calendar-date",
+        "calendar date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarDatesIcon",
+      "file": "calendar-dates",
+      "keywords": [
+        "calendar",
+        "dates",
+        "calendar-dates",
+        "calendar dates",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarDownloadIcon",
+      "file": "calendar-download",
+      "keywords": [
+        "calendar",
+        "download",
+        "calendar-download",
+        "calendar download",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "CalendarFavoriteIcon",
+      "file": "calendar-favorite",
+      "keywords": [
+        "calendar",
+        "favorite",
+        "calendar-favorite",
+        "calendar favorite",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarHeartIcon",
+      "file": "calendar-heart",
+      "keywords": [
+        "calendar",
+        "heart",
+        "calendar-heart",
+        "calendar heart",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "CalendarNextIcon",
+      "file": "calendar-next",
+      "keywords": [
+        "calendar",
+        "next",
+        "calendar-next",
+        "calendar next",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarPreviousIcon",
+      "file": "calendar-previous",
+      "keywords": [
+        "calendar",
+        "previous",
+        "calendar-previous",
+        "calendar previous",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarSnoozeIcon",
+      "file": "calendar-snooze",
+      "keywords": [
+        "calendar",
+        "snooze",
+        "calendar-snooze",
+        "calendar snooze",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarTimeIcon",
+      "file": "calendar-time",
+      "keywords": [
+        "calendar",
+        "time",
+        "calendar-time",
+        "calendar time",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda"
+      ]
+    },
+    {
+      "name": "CalendarUploadIcon",
+      "file": "calendar-upload",
+      "keywords": [
+        "calendar",
+        "upload",
+        "calendar-upload",
+        "calendar upload",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "CalendarUserIcon",
+      "file": "calendar-user",
+      "keywords": [
+        "calendar",
+        "user",
+        "calendar-user",
+        "calendar user",
+        "date",
+        "schedule",
+        "calendario",
+        "data",
+        "agenda",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "CameraAddIcon",
+      "file": "camera-add",
+      "keywords": [
+        "camera",
+        "add",
+        "camera-add",
+        "camera add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "CameraFilterIcon",
+      "file": "camera-filter",
+      "keywords": [
+        "camera",
+        "filter",
+        "camera-filter",
+        "camera filter",
+        "filtro",
+        "filtrar"
+      ]
+    },
+    {
+      "name": "CameraMicIcon",
+      "file": "camera-mic",
+      "keywords": [
+        "camera",
+        "mic",
+        "camera-mic",
+        "camera mic"
+      ]
+    },
+    {
+      "name": "CancelIcon",
+      "file": "cancel",
+      "keywords": [
+        "cancel"
+      ]
+    },
+    {
+      "name": "CancelCircleIcon",
+      "file": "cancel-circle",
+      "keywords": [
+        "cancel",
+        "circle",
+        "cancel-circle",
+        "cancel circle"
+      ]
+    },
+    {
+      "name": "CancelSquareIcon",
+      "file": "cancel-square",
+      "keywords": [
+        "cancel",
+        "square",
+        "cancel-square",
+        "cancel square"
+      ]
+    },
+    {
+      "name": "CandyCaneIcon",
+      "file": "candy-cane",
+      "keywords": [
+        "candy",
+        "cane",
+        "candy-cane",
+        "candy cane"
+      ]
+    },
+    {
+      "name": "CardHeartIcon",
+      "file": "card-heart",
+      "keywords": [
+        "card",
+        "heart",
+        "card-heart",
+        "card heart",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "CaretDownIcon",
+      "file": "caret-down",
+      "keywords": [
+        "caret",
+        "down",
+        "caret-down",
+        "caret down"
+      ]
+    },
+    {
+      "name": "CaretDownCircleIcon",
+      "file": "caret-down-circle",
+      "keywords": [
+        "caret",
+        "down",
+        "circle",
+        "caret-down-circle",
+        "caret down circle"
+      ]
+    },
+    {
+      "name": "CaretDownDoubleIcon",
+      "file": "caret-down-double",
+      "keywords": [
+        "caret",
+        "down",
+        "double",
+        "caret-down-double",
+        "caret down double"
+      ]
+    },
+    {
+      "name": "CaretLeftIcon",
+      "file": "caret-left",
+      "keywords": [
+        "caret",
+        "left",
+        "caret-left",
+        "caret left"
+      ]
+    },
+    {
+      "name": "CaretLeftCircleIcon",
+      "file": "caret-left-circle",
+      "keywords": [
+        "caret",
+        "left",
+        "circle",
+        "caret-left-circle",
+        "caret left circle"
+      ]
+    },
+    {
+      "name": "CaretLeftDoubleIcon",
+      "file": "caret-left-double",
+      "keywords": [
+        "caret",
+        "left",
+        "double",
+        "caret-left-double",
+        "caret left double"
+      ]
+    },
+    {
+      "name": "CaretRightIcon",
+      "file": "caret-right",
+      "keywords": [
+        "caret",
+        "right",
+        "caret-right",
+        "caret right"
+      ]
+    },
+    {
+      "name": "CaretRightCircleIcon",
+      "file": "caret-right-circle",
+      "keywords": [
+        "caret",
+        "right",
+        "circle",
+        "caret-right-circle",
+        "caret right circle"
+      ]
+    },
+    {
+      "name": "CaretRightDoubleIcon",
+      "file": "caret-right-double",
+      "keywords": [
+        "caret",
+        "right",
+        "double",
+        "caret-right-double",
+        "caret right double"
+      ]
+    },
+    {
+      "name": "CaretUpIcon",
+      "file": "caret-up",
+      "keywords": [
+        "caret",
+        "up",
+        "caret-up",
+        "caret up"
+      ]
+    },
+    {
+      "name": "CaretUpCircleIcon",
+      "file": "caret-up-circle",
+      "keywords": [
+        "caret",
+        "up",
+        "circle",
+        "caret-up-circle",
+        "caret up circle"
+      ]
+    },
+    {
+      "name": "CaretUpDoubleIcon",
+      "file": "caret-up-double",
+      "keywords": [
+        "caret",
+        "up",
+        "double",
+        "caret-up-double",
+        "caret up double"
+      ]
+    },
+    {
+      "name": "CarouselIcon",
+      "file": "carousel",
+      "keywords": [
+        "carousel"
+      ]
+    },
+    {
+      "name": "CartIcon",
+      "file": "cart",
+      "keywords": [
+        "cart"
+      ]
+    },
+    {
+      "name": "CartAddIcon",
+      "file": "cart-add",
+      "keywords": [
+        "cart",
+        "add",
+        "cart-add",
+        "cart add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "CartCancelIcon",
+      "file": "cart-cancel",
+      "keywords": [
+        "cart",
+        "cancel",
+        "cart-cancel",
+        "cart cancel"
+      ]
+    },
+    {
+      "name": "CartDownloadIcon",
+      "file": "cart-download",
+      "keywords": [
+        "cart",
+        "download",
+        "cart-download",
+        "cart download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "CartMinusIcon",
+      "file": "cart-minus",
+      "keywords": [
+        "cart",
+        "minus",
+        "cart-minus",
+        "cart minus"
+      ]
+    },
+    {
+      "name": "CartUploadIcon",
+      "file": "cart-upload",
+      "keywords": [
+        "cart",
+        "upload",
+        "cart-upload",
+        "cart upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "CasaELarIcon",
+      "file": "casa-e-lar",
+      "keywords": [
+        "casa",
+        "e",
+        "lar",
+        "casa-e-lar",
+        "casa e lar"
+      ]
+    },
+    {
+      "name": "CatFaceIcon",
+      "file": "cat-face",
+      "keywords": [
+        "cat",
+        "face",
+        "cat-face",
+        "cat face"
+      ]
+    },
+    {
+      "name": "CctvCameraIcon",
+      "file": "cctv-camera",
+      "keywords": [
+        "cctv",
+        "camera",
+        "cctv-camera",
+        "cctv camera"
+      ]
+    },
+    {
+      "name": "CellphoneIcon",
+      "file": "cellphone",
+      "keywords": [
+        "cellphone"
+      ]
+    },
+    {
+      "name": "CellphoneLandscapeIcon",
+      "file": "cellphone-landscape",
+      "keywords": [
+        "cellphone",
+        "landscape",
+        "cellphone-landscape",
+        "cellphone landscape"
+      ]
+    },
+    {
+      "name": "CellphoneOffIcon",
+      "file": "cellphone-off",
+      "keywords": [
+        "cellphone",
+        "off",
+        "cellphone-off",
+        "cellphone off"
+      ]
+    },
+    {
+      "name": "ChalkboardIcon",
+      "file": "chalkboard",
+      "keywords": [
+        "chalkboard",
+        "professor",
+        "educador",
+        "teacher",
+        "aula",
+        "lousa",
+        "quadro"
+      ]
+    },
+    {
+      "name": "ChampagneToastIcon",
+      "file": "champagne-toast",
+      "keywords": [
+        "champagne",
+        "toast",
+        "champagne-toast",
+        "champagne toast"
+      ]
+    },
+    {
+      "name": "ChartBarIcon",
+      "file": "chart-bar",
+      "keywords": [
+        "chart",
+        "bar",
+        "chart-bar",
+        "chart bar"
+      ]
+    },
+    {
+      "name": "ChartPieIcon",
+      "file": "chart-pie",
+      "keywords": [
+        "chart",
+        "pie",
+        "chart-pie",
+        "chart pie"
+      ]
+    },
+    {
+      "name": "ChatIcon",
+      "file": "chat",
+      "keywords": [
+        "chat",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatAlertIcon",
+      "file": "chat-alert",
+      "keywords": [
+        "chat",
+        "alert",
+        "chat-alert",
+        "chat alert",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "ChatAlertAltIcon",
+      "file": "chat-alert-alt",
+      "keywords": [
+        "chat",
+        "alert",
+        "alt",
+        "chat-alert-alt",
+        "chat alert alt",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "ChatAltIcon",
+      "file": "chat-alt",
+      "keywords": [
+        "chat",
+        "alt",
+        "chat-alt",
+        "chat alt",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatBubblesIcon",
+      "file": "chat-bubbles",
+      "keywords": [
+        "chat",
+        "bubbles",
+        "chat-bubbles",
+        "chat bubbles",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatBubblesAltIcon",
+      "file": "chat-bubbles-alt",
+      "keywords": [
+        "chat",
+        "bubbles",
+        "alt",
+        "chat-bubbles-alt",
+        "chat bubbles alt",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatConversationIcon",
+      "file": "chat-conversation",
+      "keywords": [
+        "chat",
+        "conversation",
+        "chat-conversation",
+        "chat conversation",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatConversationAltIcon",
+      "file": "chat-conversation-alt",
+      "keywords": [
+        "chat",
+        "conversation",
+        "alt",
+        "chat-conversation-alt",
+        "chat conversation alt",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatMessageIcon",
+      "file": "chat-message",
+      "keywords": [
+        "chat",
+        "message",
+        "chat-message",
+        "chat message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatMessageAltIcon",
+      "file": "chat-message-alt",
+      "keywords": [
+        "chat",
+        "message",
+        "alt",
+        "chat-message-alt",
+        "chat message alt",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatPersonIcon",
+      "file": "chat-person",
+      "keywords": [
+        "chat",
+        "person",
+        "chat-person",
+        "chat person",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ChatPersonAltIcon",
+      "file": "chat-person-alt",
+      "keywords": [
+        "chat",
+        "person",
+        "alt",
+        "chat-person-alt",
+        "chat person alt",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "CheckIcon",
+      "file": "check",
+      "keywords": [
+        "check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CheckCircleIcon",
+      "file": "check-circle",
+      "keywords": [
+        "check",
+        "circle",
+        "check-circle",
+        "check circle",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CheckCircleFillIcon",
+      "file": "check-circle-fill",
+      "keywords": [
+        "check",
+        "circle",
+        "fill",
+        "check-circle-fill",
+        "check circle fill",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CheckSquareIcon",
+      "file": "check-square",
+      "keywords": [
+        "check",
+        "square",
+        "check-square",
+        "check square",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CheckSquareFillIcon",
+      "file": "check-square-fill",
+      "keywords": [
+        "check",
+        "square",
+        "fill",
+        "check-square-fill",
+        "check square fill",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CheckboxIcon",
+      "file": "checkbox",
+      "keywords": [
+        "checkbox"
+      ]
+    },
+    {
+      "name": "CheckboxActiveIcon",
+      "file": "checkbox-active",
+      "keywords": [
+        "checkbox",
+        "active",
+        "checkbox-active",
+        "checkbox active"
+      ]
+    },
+    {
+      "name": "ChipIcon",
+      "file": "chip",
+      "keywords": [
+        "chip"
+      ]
+    },
+    {
+      "name": "ChristmasTreeIcon",
+      "file": "christmas-tree",
+      "keywords": [
+        "christmas",
+        "tree",
+        "christmas-tree",
+        "christmas tree"
+      ]
+    },
+    {
+      "name": "ChromecastIcon",
+      "file": "chromecast",
+      "keywords": [
+        "chromecast"
+      ]
+    },
+    {
+      "name": "CienciasDaNaturezaIcon",
+      "file": "ciencias-da-natureza",
+      "keywords": [
+        "ciencias",
+        "da",
+        "natureza",
+        "ciencias-da-natureza",
+        "ciencias da natureza"
+      ]
+    },
+    {
+      "name": "CienciasHumanasESociaisIcon",
+      "file": "ciencias-humanas-e-sociais",
+      "keywords": [
+        "ciencias",
+        "humanas",
+        "e",
+        "sociais",
+        "ciencias-humanas-e-sociais",
+        "ciencias humanas e sociais"
+      ]
+    },
+    {
+      "name": "CircuitBoardIcon",
+      "file": "circuit-board",
+      "keywords": [
+        "circuit",
+        "board",
+        "circuit-board",
+        "circuit board"
+      ]
+    },
+    {
+      "name": "ClipboardIcon",
+      "file": "clipboard",
+      "keywords": [
+        "clipboard"
+      ]
+    },
+    {
+      "name": "ClipboardAddIcon",
+      "file": "clipboard-add",
+      "keywords": [
+        "clipboard",
+        "add",
+        "clipboard-add",
+        "clipboard add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "ClipboardAlertIcon",
+      "file": "clipboard-alert",
+      "keywords": [
+        "clipboard",
+        "alert",
+        "clipboard-alert",
+        "clipboard alert",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "ClipboardBackIcon",
+      "file": "clipboard-back",
+      "keywords": [
+        "clipboard",
+        "back",
+        "clipboard-back",
+        "clipboard back"
+      ]
+    },
+    {
+      "name": "ClipboardCancelIcon",
+      "file": "clipboard-cancel",
+      "keywords": [
+        "clipboard",
+        "cancel",
+        "clipboard-cancel",
+        "clipboard cancel"
+      ]
+    },
+    {
+      "name": "ClipboardCheckIcon",
+      "file": "clipboard-check",
+      "keywords": [
+        "clipboard",
+        "check",
+        "clipboard-check",
+        "clipboard check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "ClipboardContentIcon",
+      "file": "clipboard-content",
+      "keywords": [
+        "clipboard",
+        "content",
+        "clipboard-content",
+        "clipboard content"
+      ]
+    },
+    {
+      "name": "ClipboardContentFilledIcon",
+      "file": "clipboard-content-filled",
+      "keywords": [
+        "clipboard",
+        "content",
+        "filled",
+        "clipboard-content-filled",
+        "clipboard content filled"
+      ]
+    },
+    {
+      "name": "ClipboardDownloadIcon",
+      "file": "clipboard-download",
+      "keywords": [
+        "clipboard",
+        "download",
+        "clipboard-download",
+        "clipboard download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "ClipboardMinusIcon",
+      "file": "clipboard-minus",
+      "keywords": [
+        "clipboard",
+        "minus",
+        "clipboard-minus",
+        "clipboard minus"
+      ]
+    },
+    {
+      "name": "ClipboardPencilIcon",
+      "file": "clipboard-pencil",
+      "keywords": [
+        "clipboard",
+        "pencil",
+        "clipboard-pencil",
+        "clipboard pencil"
+      ]
+    },
+    {
+      "name": "ClipboardPersonIcon",
+      "file": "clipboard-person",
+      "keywords": [
+        "clipboard",
+        "person",
+        "clipboard-person",
+        "clipboard person"
+      ]
+    },
+    {
+      "name": "ClipboardStrategyIcon",
+      "file": "clipboard-strategy",
+      "keywords": [
+        "clipboard",
+        "strategy",
+        "clipboard-strategy",
+        "clipboard strategy"
+      ]
+    },
+    {
+      "name": "ClockIcon",
+      "file": "clock",
+      "keywords": [
+        "clock",
+        "hora",
+        "tempo",
+        "relogio",
+        "time"
+      ]
+    },
+    {
+      "name": "ClosedCaptioningIcon",
+      "file": "closed-captioning",
+      "keywords": [
+        "closed",
+        "captioning",
+        "closed-captioning",
+        "closed captioning"
+      ]
+    },
+    {
+      "name": "CloudIcon",
+      "file": "cloud",
+      "keywords": [
+        "cloud"
+      ]
+    },
+    {
+      "name": "CloudAddIcon",
+      "file": "cloud-add",
+      "keywords": [
+        "cloud",
+        "add",
+        "cloud-add",
+        "cloud add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "CloudAudioIcon",
+      "file": "cloud-audio",
+      "keywords": [
+        "cloud",
+        "audio",
+        "cloud-audio",
+        "cloud audio"
+      ]
+    },
+    {
+      "name": "CloudCancelIcon",
+      "file": "cloud-cancel",
+      "keywords": [
+        "cloud",
+        "cancel",
+        "cloud-cancel",
+        "cloud cancel"
+      ]
+    },
+    {
+      "name": "CloudCheckIcon",
+      "file": "cloud-check",
+      "keywords": [
+        "cloud",
+        "check",
+        "cloud-check",
+        "cloud check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "CloudDayIcon",
+      "file": "cloud-day",
+      "keywords": [
+        "cloud",
+        "day",
+        "cloud-day",
+        "cloud day"
+      ]
+    },
+    {
+      "name": "CloudDownloadIcon",
+      "file": "cloud-download",
+      "keywords": [
+        "cloud",
+        "download",
+        "cloud-download",
+        "cloud download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "CloudMinusIcon",
+      "file": "cloud-minus",
+      "keywords": [
+        "cloud",
+        "minus",
+        "cloud-minus",
+        "cloud minus"
+      ]
+    },
+    {
+      "name": "CloudMixedIcon",
+      "file": "cloud-mixed",
+      "keywords": [
+        "cloud",
+        "mixed",
+        "cloud-mixed",
+        "cloud mixed"
+      ]
+    },
+    {
+      "name": "CloudMusicIcon",
+      "file": "cloud-music",
+      "keywords": [
+        "cloud",
+        "music",
+        "cloud-music",
+        "cloud music"
+      ]
+    },
+    {
+      "name": "CloudNightIcon",
+      "file": "cloud-night",
+      "keywords": [
+        "cloud",
+        "night",
+        "cloud-night",
+        "cloud night"
+      ]
+    },
+    {
+      "name": "CloudOffIcon",
+      "file": "cloud-off",
+      "keywords": [
+        "cloud",
+        "off",
+        "cloud-off",
+        "cloud off"
+      ]
+    },
+    {
+      "name": "CloudRainIcon",
+      "file": "cloud-rain",
+      "keywords": [
+        "cloud",
+        "rain",
+        "cloud-rain",
+        "cloud rain"
+      ]
+    },
+    {
+      "name": "CloudSnowIcon",
+      "file": "cloud-snow",
+      "keywords": [
+        "cloud",
+        "snow",
+        "cloud-snow",
+        "cloud snow"
+      ]
+    },
+    {
+      "name": "CloudUploadIcon",
+      "file": "cloud-upload",
+      "keywords": [
+        "cloud",
+        "upload",
+        "cloud-upload",
+        "cloud upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "CloudyIcon",
+      "file": "cloudy",
+      "keywords": [
+        "cloudy"
+      ]
+    },
+    {
+      "name": "CocktailIcon",
+      "file": "cocktail",
+      "keywords": [
+        "cocktail"
+      ]
+    },
+    {
+      "name": "CodeIcon",
+      "file": "code",
+      "keywords": [
+        "code"
+      ]
+    },
+    {
+      "name": "CodeAltIcon",
+      "file": "code-alt",
+      "keywords": [
+        "code",
+        "alt",
+        "code-alt",
+        "code alt"
+      ]
+    },
+    {
+      "name": "CoinBitcoinIcon",
+      "file": "coin-bitcoin",
+      "keywords": [
+        "coin",
+        "bitcoin",
+        "coin-bitcoin",
+        "coin bitcoin"
+      ]
+    },
+    {
+      "name": "CoinDollarIcon",
+      "file": "coin-dollar",
+      "keywords": [
+        "coin",
+        "dollar",
+        "coin-dollar",
+        "coin dollar"
+      ]
+    },
+    {
+      "name": "CoinEuroIcon",
+      "file": "coin-euro",
+      "keywords": [
+        "coin",
+        "euro",
+        "coin-euro",
+        "coin euro"
+      ]
+    },
+    {
+      "name": "CoinFrancIcon",
+      "file": "coin-franc",
+      "keywords": [
+        "coin",
+        "franc",
+        "coin-franc",
+        "coin franc"
+      ]
+    },
+    {
+      "name": "CoinLogoIcon",
+      "file": "coin-logo",
+      "keywords": [
+        "coin",
+        "logo",
+        "coin-logo",
+        "coin logo"
+      ]
+    },
+    {
+      "name": "CoinPoundIcon",
+      "file": "coin-pound",
+      "keywords": [
+        "coin",
+        "pound",
+        "coin-pound",
+        "coin pound"
+      ]
+    },
+    {
+      "name": "CoinYenIcon",
+      "file": "coin-yen",
+      "keywords": [
+        "coin",
+        "yen",
+        "coin-yen",
+        "coin yen"
+      ]
+    },
+    {
+      "name": "CoinsIcon",
+      "file": "coins",
+      "keywords": [
+        "coins"
+      ]
+    },
+    {
+      "name": "ComicStripIcon",
+      "file": "comic-strip",
+      "keywords": [
+        "comic",
+        "strip",
+        "comic-strip",
+        "comic strip"
+      ]
+    },
+    {
+      "name": "CommandIcon",
+      "file": "command",
+      "keywords": [
+        "command"
+      ]
+    },
+    {
+      "name": "CommitIcon",
+      "file": "commit",
+      "keywords": [
+        "commit"
+      ]
+    },
+    {
+      "name": "CompareIcon",
+      "file": "compare",
+      "keywords": [
+        "compare"
+      ]
+    },
+    {
+      "name": "CompassDirectionIcon",
+      "file": "compass-direction",
+      "keywords": [
+        "compass",
+        "direction",
+        "compass-direction",
+        "compass direction"
+      ]
+    },
+    {
+      "name": "ComputerCodeIcon",
+      "file": "computer-code",
+      "keywords": [
+        "computer",
+        "code",
+        "computer-code",
+        "computer code"
+      ]
+    },
+    {
+      "name": "ConciergeIcon",
+      "file": "concierge",
+      "keywords": [
+        "concierge"
+      ]
+    },
+    {
+      "name": "ContactBookIcon",
+      "file": "contact-book",
+      "keywords": [
+        "contact",
+        "book",
+        "contact-book",
+        "contact book",
+        "reading",
+        "livro",
+        "leitura"
+      ]
+    },
+    {
+      "name": "ContactCardIcon",
+      "file": "contact-card",
+      "keywords": [
+        "contact",
+        "card",
+        "contact-card",
+        "contact card"
+      ]
+    },
+    {
+      "name": "ContentIcon",
+      "file": "content",
+      "keywords": [
+        "content"
+      ]
+    },
+    {
+      "name": "ContentCheckIcon",
+      "file": "content-check",
+      "keywords": [
+        "content",
+        "check",
+        "content-check",
+        "content check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "ContosIcon",
+      "file": "contos",
+      "keywords": [
+        "contos"
+      ]
+    },
+    {
+      "name": "CountdownIcon",
+      "file": "countdown",
+      "keywords": [
+        "countdown"
+      ]
+    },
+    {
+      "name": "CraftsIcon",
+      "file": "crafts",
+      "keywords": [
+        "crafts"
+      ]
+    },
+    {
+      "name": "CrditCardAltIcon",
+      "file": "crdit-card-alt",
+      "keywords": [
+        "crdit",
+        "card",
+        "alt",
+        "crdit-card-alt",
+        "crdit card alt"
+      ]
+    },
+    {
+      "name": "CreditCardIcon",
+      "file": "credit-card",
+      "keywords": [
+        "credit",
+        "card",
+        "credit-card",
+        "credit card"
+      ]
+    },
+    {
+      "name": "CropIcon",
+      "file": "crop",
+      "keywords": [
+        "crop"
+      ]
+    },
+    {
+      "name": "CroquetIcon",
+      "file": "croquet",
+      "keywords": [
+        "croquet"
+      ]
+    },
+    {
+      "name": "CrystalBallIcon",
+      "file": "crystal-ball",
+      "keywords": [
+        "crystal",
+        "ball",
+        "crystal-ball",
+        "crystal ball"
+      ]
+    },
+    {
+      "name": "CurlingIcon",
+      "file": "curling",
+      "keywords": [
+        "curling"
+      ]
+    },
+    {
+      "name": "DaggerIcon",
+      "file": "dagger",
+      "keywords": [
+        "dagger"
+      ]
+    },
+    {
+      "name": "DatabaseIcon",
+      "file": "database",
+      "keywords": [
+        "database"
+      ]
+    },
+    {
+      "name": "DatabaseAddIcon",
+      "file": "database-add",
+      "keywords": [
+        "database",
+        "add",
+        "database-add",
+        "database add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "DatabaseCancelIcon",
+      "file": "database-cancel",
+      "keywords": [
+        "database",
+        "cancel",
+        "database-cancel",
+        "database cancel"
+      ]
+    },
+    {
+      "name": "DatabaseLockIcon",
+      "file": "database-lock",
+      "keywords": [
+        "database",
+        "lock",
+        "database-lock",
+        "database lock",
+        "secure",
+        "private",
+        "cadeado",
+        "seguro",
+        "privado"
+      ]
+    },
+    {
+      "name": "DatabaseMinusIcon",
+      "file": "database-minus",
+      "keywords": [
+        "database",
+        "minus",
+        "database-minus",
+        "database minus"
+      ]
+    },
+    {
+      "name": "DeafIcon",
+      "file": "deaf",
+      "keywords": [
+        "deaf"
+      ]
+    },
+    {
+      "name": "DeleteIcon",
+      "file": "delete",
+      "keywords": [
+        "delete"
+      ]
+    },
+    {
+      "name": "DeviceImageIcon",
+      "file": "device-image",
+      "keywords": [
+        "device",
+        "image",
+        "device-image",
+        "device image"
+      ]
+    },
+    {
+      "name": "DevicePortraitIcon",
+      "file": "device-portrait",
+      "keywords": [
+        "device",
+        "portrait",
+        "device-portrait",
+        "device portrait"
+      ]
+    },
+    {
+      "name": "DeviceScanIcon",
+      "file": "device-scan",
+      "keywords": [
+        "device",
+        "scan",
+        "device-scan",
+        "device scan"
+      ]
+    },
+    {
+      "name": "DiamondIcon",
+      "file": "diamond",
+      "keywords": [
+        "diamond"
+      ]
+    },
+    {
+      "name": "DiamondRingIcon",
+      "file": "diamond-ring",
+      "keywords": [
+        "diamond",
+        "ring",
+        "diamond-ring",
+        "diamond ring"
+      ]
+    },
+    {
+      "name": "DicionariosEReferenciaIcon",
+      "file": "dicionarios-e-referencia",
+      "keywords": [
+        "dicionarios",
+        "e",
+        "referencia",
+        "dicionarios-e-referencia",
+        "dicionarios e referencia"
+      ]
+    },
+    {
+      "name": "DiplomaIcon",
+      "file": "diploma",
+      "keywords": [
+        "diploma"
+      ]
+    },
+    {
+      "name": "DirectionsIcon",
+      "file": "directions",
+      "keywords": [
+        "directions"
+      ]
+    },
+    {
+      "name": "DirectionsMergeIcon",
+      "file": "directions-merge",
+      "keywords": [
+        "directions",
+        "merge",
+        "directions-merge",
+        "directions merge"
+      ]
+    },
+    {
+      "name": "DirectionsUTurnIcon",
+      "file": "directions-u-turn",
+      "keywords": [
+        "directions",
+        "u",
+        "turn",
+        "directions-u-turn",
+        "directions u turn"
+      ]
+    },
+    {
+      "name": "DnaIcon",
+      "file": "dna",
+      "keywords": [
+        "dna"
+      ]
+    },
+    {
+      "name": "DoNotEnterIcon",
+      "file": "do-not-enter",
+      "keywords": [
+        "do",
+        "not",
+        "enter",
+        "do-not-enter",
+        "do not enter",
+        "bloqueado",
+        "proibido",
+        "acesso-negado"
+      ]
+    },
+    {
+      "name": "DollarIcon",
+      "file": "dollar",
+      "keywords": [
+        "dollar"
+      ]
+    },
+    {
+      "name": "DolleyIcon",
+      "file": "dolley",
+      "keywords": [
+        "dolley"
+      ]
+    },
+    {
+      "name": "DoorHangerIcon",
+      "file": "door-hanger",
+      "keywords": [
+        "door",
+        "hanger",
+        "door-hanger",
+        "door hanger",
+        "sair",
+        "logout",
+        "exit",
+        "porta"
+      ]
+    },
+    {
+      "name": "DownloadIcon",
+      "file": "download",
+      "keywords": [
+        "download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "DownloadHarddriveIcon",
+      "file": "download-harddrive",
+      "keywords": [
+        "download",
+        "harddrive",
+        "download-harddrive",
+        "download harddrive",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "DraftingCompassIcon",
+      "file": "drafting-compass",
+      "keywords": [
+        "drafting",
+        "compass",
+        "drafting-compass",
+        "drafting compass"
+      ]
+    },
+    {
+      "name": "DreidelIcon",
+      "file": "dreidel",
+      "keywords": [
+        "dreidel"
+      ]
+    },
+    {
+      "name": "DressLongSleeveIcon",
+      "file": "dress-long-sleeve",
+      "keywords": [
+        "dress",
+        "long",
+        "sleeve",
+        "dress-long-sleeve",
+        "dress long sleeve"
+      ]
+    },
+    {
+      "name": "EReaderIcon",
+      "file": "e-reader",
+      "keywords": [
+        "e",
+        "reader",
+        "e-reader",
+        "e reader"
+      ]
+    },
+    {
+      "name": "EarOffIcon",
+      "file": "ear-off",
+      "keywords": [
+        "ear",
+        "off",
+        "ear-off",
+        "ear off"
+      ]
+    },
+    {
+      "name": "EarPartialIcon",
+      "file": "ear-partial",
+      "keywords": [
+        "ear",
+        "partial",
+        "ear-partial",
+        "ear partial"
+      ]
+    },
+    {
+      "name": "EarthIcon",
+      "file": "earth",
+      "keywords": [
+        "earth"
+      ]
+    },
+    {
+      "name": "EarthAltIcon",
+      "file": "earth-alt",
+      "keywords": [
+        "earth",
+        "alt",
+        "earth-alt",
+        "earth alt"
+      ]
+    },
+    {
+      "name": "EarthAlt2Icon",
+      "file": "earth-alt2",
+      "keywords": [
+        "earth",
+        "alt2",
+        "earth-alt2",
+        "earth alt2"
+      ]
+    },
+    {
+      "name": "EaselIcon",
+      "file": "easel",
+      "keywords": [
+        "easel"
+      ]
+    },
+    {
+      "name": "EaselLandscapeIcon",
+      "file": "easel-landscape",
+      "keywords": [
+        "easel",
+        "landscape",
+        "easel-landscape",
+        "easel landscape"
+      ]
+    },
+    {
+      "name": "EaselPortraitIcon",
+      "file": "easel-portrait",
+      "keywords": [
+        "easel",
+        "portrait",
+        "easel-portrait",
+        "easel portrait"
+      ]
+    },
+    {
+      "name": "EasterEggIcon",
+      "file": "easter-egg",
+      "keywords": [
+        "easter",
+        "egg",
+        "easter-egg",
+        "easter egg"
+      ]
+    },
+    {
+      "name": "EasterEggAltIcon",
+      "file": "easter-egg-alt",
+      "keywords": [
+        "easter",
+        "egg",
+        "alt",
+        "easter-egg-alt",
+        "easter egg alt"
+      ]
+    },
+    {
+      "name": "EasyReadingIcon",
+      "file": "easy-reading",
+      "keywords": [
+        "easy",
+        "reading",
+        "easy-reading",
+        "easy reading"
+      ]
+    },
+    {
+      "name": "EditIcon",
+      "file": "edit",
+      "keywords": [
+        "edit",
+        "pencil",
+        "write",
+        "editar",
+        "escrever"
+      ]
+    },
+    {
+      "name": "EducacaoIcon",
+      "file": "educacao",
+      "keywords": [
+        "educacao"
+      ]
+    },
+    {
+      "name": "EightBallIcon",
+      "file": "eight-ball",
+      "keywords": [
+        "eight",
+        "ball",
+        "eight-ball",
+        "eight ball"
+      ]
+    },
+    {
+      "name": "EjectIcon",
+      "file": "eject",
+      "keywords": [
+        "eject"
+      ]
+    },
+    {
+      "name": "ElevatorIcon",
+      "file": "elevator",
+      "keywords": [
+        "elevator"
+      ]
+    },
+    {
+      "name": "EllipsisIcon",
+      "file": "ellipsis",
+      "keywords": [
+        "ellipsis"
+      ]
+    },
+    {
+      "name": "EllipsisVerticalIcon",
+      "file": "ellipsis-vertical",
+      "keywords": [
+        "ellipsis",
+        "vertical",
+        "ellipsis-vertical",
+        "ellipsis vertical"
+      ]
+    },
+    {
+      "name": "EnvelopeIcon",
+      "file": "envelope",
+      "keywords": [
+        "envelope"
+      ]
+    },
+    {
+      "name": "EpsIcon",
+      "file": "eps",
+      "keywords": [
+        "eps"
+      ]
+    },
+    {
+      "name": "EqIcon",
+      "file": "eq",
+      "keywords": [
+        "eq"
+      ]
+    },
+    {
+      "name": "EraserIcon",
+      "file": "eraser",
+      "keywords": [
+        "eraser"
+      ]
+    },
+    {
+      "name": "EscalatorIcon",
+      "file": "escalator",
+      "keywords": [
+        "escalator"
+      ]
+    },
+    {
+      "name": "EsoterismoIcon",
+      "file": "esoterismo",
+      "keywords": [
+        "esoterismo"
+      ]
+    },
+    {
+      "name": "EuroIcon",
+      "file": "euro",
+      "keywords": [
+        "euro"
+      ]
+    },
+    {
+      "name": "ExpandIcon",
+      "file": "expand",
+      "keywords": [
+        "expand"
+      ]
+    },
+    {
+      "name": "ExplodeIcon",
+      "file": "explode",
+      "keywords": [
+        "explode"
+      ]
+    },
+    {
+      "name": "EyeIcon",
+      "file": "eye",
+      "keywords": [
+        "eye",
+        "ver",
+        "visualizar",
+        "view",
+        "olho"
+      ]
+    },
+    {
+      "name": "EyeDropperIcon",
+      "file": "eye-dropper",
+      "keywords": [
+        "eye",
+        "dropper",
+        "eye-dropper",
+        "eye dropper",
+        "ver",
+        "visualizar",
+        "view",
+        "olho"
+      ]
+    },
+    {
+      "name": "EyeOffIcon",
+      "file": "eye-off",
+      "keywords": [
+        "eye",
+        "off",
+        "eye-off",
+        "eye off",
+        "ver",
+        "visualizar",
+        "view",
+        "olho"
+      ]
+    },
+    {
+      "name": "EyePartialIcon",
+      "file": "eye-partial",
+      "keywords": [
+        "eye",
+        "partial",
+        "eye-partial",
+        "eye partial",
+        "ver",
+        "visualizar",
+        "view",
+        "olho"
+      ]
+    },
+    {
+      "name": "FaceIcon",
+      "file": "face",
+      "keywords": [
+        "face"
+      ]
+    },
+    {
+      "name": "FaceIdIcon",
+      "file": "face-id",
+      "keywords": [
+        "face",
+        "id",
+        "face-id",
+        "face id"
+      ]
+    },
+    {
+      "name": "FantasiaIcon",
+      "file": "fantasia",
+      "keywords": [
+        "fantasia"
+      ]
+    },
+    {
+      "name": "FastForwardIcon",
+      "file": "fast-forward",
+      "keywords": [
+        "fast",
+        "forward",
+        "fast-forward",
+        "fast forward"
+      ]
+    },
+    {
+      "name": "FavoriteIcon",
+      "file": "favorite",
+      "keywords": [
+        "favorite"
+      ]
+    },
+    {
+      "name": "FavoriteFilledIcon",
+      "file": "favorite-filled",
+      "keywords": [
+        "favorite",
+        "filled",
+        "favorite-filled",
+        "favorite filled"
+      ]
+    },
+    {
+      "name": "FavoriteHalfIcon",
+      "file": "favorite-half",
+      "keywords": [
+        "favorite",
+        "half",
+        "favorite-half",
+        "favorite half"
+      ]
+    },
+    {
+      "name": "FavoriteOffIcon",
+      "file": "favorite-off",
+      "keywords": [
+        "favorite",
+        "off",
+        "favorite-off",
+        "favorite off"
+      ]
+    },
+    {
+      "name": "FaxMachineIcon",
+      "file": "fax-machine",
+      "keywords": [
+        "fax",
+        "machine",
+        "fax-machine",
+        "fax machine"
+      ]
+    },
+    {
+      "name": "FeatherPenIcon",
+      "file": "feather-pen",
+      "keywords": [
+        "feather",
+        "pen",
+        "feather-pen",
+        "feather pen"
+      ]
+    },
+    {
+      "name": "FencingIcon",
+      "file": "fencing",
+      "keywords": [
+        "fencing"
+      ]
+    },
+    {
+      "name": "FiccaoCientificaIcon",
+      "file": "ficcao-cientifica",
+      "keywords": [
+        "ficcao",
+        "cientifica",
+        "ficcao-cientifica",
+        "ficcao cientifica"
+      ]
+    },
+    {
+      "name": "FileAiIcon",
+      "file": "file-ai",
+      "keywords": [
+        "file",
+        "ai",
+        "file-ai",
+        "file ai"
+      ]
+    },
+    {
+      "name": "FileArchiveIcon",
+      "file": "file-archive",
+      "keywords": [
+        "file",
+        "archive",
+        "file-archive",
+        "file archive"
+      ]
+    },
+    {
+      "name": "FileAudioIcon",
+      "file": "file-audio",
+      "keywords": [
+        "file",
+        "audio",
+        "file-audio",
+        "file audio"
+      ]
+    },
+    {
+      "name": "FileBadgeIcon",
+      "file": "file-badge",
+      "keywords": [
+        "file",
+        "badge",
+        "file-badge",
+        "file badge",
+        "conquista",
+        "selo",
+        "achievement",
+        "emblema"
+      ]
+    },
+    {
+      "name": "FileBitcoinIcon",
+      "file": "file-bitcoin",
+      "keywords": [
+        "file",
+        "bitcoin",
+        "file-bitcoin",
+        "file bitcoin"
+      ]
+    },
+    {
+      "name": "FileCabinetIcon",
+      "file": "file-cabinet",
+      "keywords": [
+        "file",
+        "cabinet",
+        "file-cabinet",
+        "file cabinet"
+      ]
+    },
+    {
+      "name": "FileCodeIcon",
+      "file": "file-code",
+      "keywords": [
+        "file",
+        "code",
+        "file-code",
+        "file code"
+      ]
+    },
+    {
+      "name": "FileDocIcon",
+      "file": "file-doc",
+      "keywords": [
+        "file",
+        "doc",
+        "file-doc",
+        "file doc"
+      ]
+    },
+    {
+      "name": "FileDollarIcon",
+      "file": "file-dollar",
+      "keywords": [
+        "file",
+        "dollar",
+        "file-dollar",
+        "file dollar"
+      ]
+    },
+    {
+      "name": "FileDownloadIcon",
+      "file": "file-download",
+      "keywords": [
+        "file",
+        "download",
+        "file-download",
+        "file download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "FileEpsIcon",
+      "file": "file-eps",
+      "keywords": [
+        "file",
+        "eps",
+        "file-eps",
+        "file eps"
+      ]
+    },
+    {
+      "name": "FileEuroIcon",
+      "file": "file-euro",
+      "keywords": [
+        "file",
+        "euro",
+        "file-euro",
+        "file euro"
+      ]
+    },
+    {
+      "name": "FileExeIcon",
+      "file": "file-exe",
+      "keywords": [
+        "file",
+        "exe",
+        "file-exe",
+        "file exe"
+      ]
+    },
+    {
+      "name": "FileFrancIcon",
+      "file": "file-franc",
+      "keywords": [
+        "file",
+        "franc",
+        "file-franc",
+        "file franc"
+      ]
+    },
+    {
+      "name": "FileGifIcon",
+      "file": "file-gif",
+      "keywords": [
+        "file",
+        "gif",
+        "file-gif",
+        "file gif"
+      ]
+    },
+    {
+      "name": "FileJpgIcon",
+      "file": "file-jpg",
+      "keywords": [
+        "file",
+        "jpg",
+        "file-jpg",
+        "file jpg"
+      ]
+    },
+    {
+      "name": "FileMovIcon",
+      "file": "file-mov",
+      "keywords": [
+        "file",
+        "mov",
+        "file-mov",
+        "file mov"
+      ]
+    },
+    {
+      "name": "FileMp3Icon",
+      "file": "file-mp3",
+      "keywords": [
+        "file",
+        "mp3",
+        "file-mp3",
+        "file mp3"
+      ]
+    },
+    {
+      "name": "FileMp4Icon",
+      "file": "file-mp4",
+      "keywords": [
+        "file",
+        "mp4",
+        "file-mp4",
+        "file mp4"
+      ]
+    },
+    {
+      "name": "FileMusicIcon",
+      "file": "file-music",
+      "keywords": [
+        "file",
+        "music",
+        "file-music",
+        "file music"
+      ]
+    },
+    {
+      "name": "FileOffIcon",
+      "file": "file-off",
+      "keywords": [
+        "file",
+        "off",
+        "file-off",
+        "file off"
+      ]
+    },
+    {
+      "name": "FilePartialIcon",
+      "file": "file-partial",
+      "keywords": [
+        "file",
+        "partial",
+        "file-partial",
+        "file partial"
+      ]
+    },
+    {
+      "name": "FilePdfIcon",
+      "file": "file-pdf",
+      "keywords": [
+        "file",
+        "pdf",
+        "file-pdf",
+        "file pdf"
+      ]
+    },
+    {
+      "name": "FilePngIcon",
+      "file": "file-png",
+      "keywords": [
+        "file",
+        "png",
+        "file-png",
+        "file png"
+      ]
+    },
+    {
+      "name": "FilePoundIcon",
+      "file": "file-pound",
+      "keywords": [
+        "file",
+        "pound",
+        "file-pound",
+        "file pound"
+      ]
+    },
+    {
+      "name": "FilePsdIcon",
+      "file": "file-psd",
+      "keywords": [
+        "file",
+        "psd",
+        "file-psd",
+        "file psd"
+      ]
+    },
+    {
+      "name": "FileSketchIcon",
+      "file": "file-sketch",
+      "keywords": [
+        "file",
+        "sketch",
+        "file-sketch",
+        "file sketch"
+      ]
+    },
+    {
+      "name": "FileSvgIcon",
+      "file": "file-svg",
+      "keywords": [
+        "file",
+        "svg",
+        "file-svg",
+        "file svg"
+      ]
+    },
+    {
+      "name": "FileTifIcon",
+      "file": "file-tif",
+      "keywords": [
+        "file",
+        "tif",
+        "file-tif",
+        "file tif"
+      ]
+    },
+    {
+      "name": "FileTxtIcon",
+      "file": "file-txt",
+      "keywords": [
+        "file",
+        "txt",
+        "file-txt",
+        "file txt"
+      ]
+    },
+    {
+      "name": "FileUploadIcon",
+      "file": "file-upload",
+      "keywords": [
+        "file",
+        "upload",
+        "file-upload",
+        "file upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "FileYenIcon",
+      "file": "file-yen",
+      "keywords": [
+        "file",
+        "yen",
+        "file-yen",
+        "file yen"
+      ]
+    },
+    {
+      "name": "FileZipIcon",
+      "file": "file-zip",
+      "keywords": [
+        "file",
+        "zip",
+        "file-zip",
+        "file zip"
+      ]
+    },
+    {
+      "name": "FilterIcon",
+      "file": "filter",
+      "keywords": [
+        "filter",
+        "filtro",
+        "filtrar"
+      ]
+    },
+    {
+      "name": "FingerprintIcon",
+      "file": "fingerprint",
+      "keywords": [
+        "fingerprint"
+      ]
+    },
+    {
+      "name": "FingersCrossedIcon",
+      "file": "fingers-crossed",
+      "keywords": [
+        "fingers",
+        "crossed",
+        "fingers-crossed",
+        "fingers crossed"
+      ]
+    },
+    {
+      "name": "FireworksIcon",
+      "file": "fireworks",
+      "keywords": [
+        "fireworks",
+        "celebracao",
+        "comemoracao",
+        "fogos",
+        "celebration"
+      ]
+    },
+    {
+      "name": "FlagIcon",
+      "file": "flag",
+      "keywords": [
+        "flag"
+      ]
+    },
+    {
+      "name": "FlagWaveIcon",
+      "file": "flag-wave",
+      "keywords": [
+        "flag",
+        "wave",
+        "flag-wave",
+        "flag wave"
+      ]
+    },
+    {
+      "name": "FlamesFireRiseIcon",
+      "file": "flames-fire-rise",
+      "keywords": [
+        "flames",
+        "fire",
+        "rise",
+        "flames-fire-rise",
+        "flames fire rise"
+      ]
+    },
+    {
+      "name": "FlorestaIcon",
+      "file": "floresta",
+      "keywords": [
+        "floresta"
+      ]
+    },
+    {
+      "name": "FlowerFilledIcon",
+      "file": "flower-filled",
+      "keywords": [
+        "flower",
+        "filled",
+        "flower-filled",
+        "flower filled"
+      ]
+    },
+    {
+      "name": "FlowerOutlineIcon",
+      "file": "flower-outline",
+      "keywords": [
+        "flower",
+        "outline",
+        "flower-outline",
+        "flower outline"
+      ]
+    },
+    {
+      "name": "FluencyIcon",
+      "file": "fluency",
+      "keywords": [
+        "fluency"
+      ]
+    },
+    {
+      "name": "FocusIcon",
+      "file": "focus",
+      "keywords": [
+        "focus"
+      ]
+    },
+    {
+      "name": "FolderIcon",
+      "file": "folder",
+      "keywords": [
+        "folder"
+      ]
+    },
+    {
+      "name": "FolderAddIcon",
+      "file": "folder-add",
+      "keywords": [
+        "folder",
+        "add",
+        "folder-add",
+        "folder add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "FolderAudioIcon",
+      "file": "folder-audio",
+      "keywords": [
+        "folder",
+        "audio",
+        "folder-audio",
+        "folder audio"
+      ]
+    },
+    {
+      "name": "FolderCancelIcon",
+      "file": "folder-cancel",
+      "keywords": [
+        "folder",
+        "cancel",
+        "folder-cancel",
+        "folder cancel"
+      ]
+    },
+    {
+      "name": "FolderCheckIcon",
+      "file": "folder-check",
+      "keywords": [
+        "folder",
+        "check",
+        "folder-check",
+        "folder check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "FolderCodeIcon",
+      "file": "folder-code",
+      "keywords": [
+        "folder",
+        "code",
+        "folder-code",
+        "folder code"
+      ]
+    },
+    {
+      "name": "FolderDownloadIcon",
+      "file": "folder-download",
+      "keywords": [
+        "folder",
+        "download",
+        "folder-download",
+        "folder download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "FolderImageIcon",
+      "file": "folder-image",
+      "keywords": [
+        "folder",
+        "image",
+        "folder-image",
+        "folder image"
+      ]
+    },
+    {
+      "name": "FolderMusicIcon",
+      "file": "folder-music",
+      "keywords": [
+        "folder",
+        "music",
+        "folder-music",
+        "folder music"
+      ]
+    },
+    {
+      "name": "FolderOpenIcon",
+      "file": "folder-open",
+      "keywords": [
+        "folder",
+        "open",
+        "folder-open",
+        "folder open"
+      ]
+    },
+    {
+      "name": "FolderUploadIcon",
+      "file": "folder-upload",
+      "keywords": [
+        "folder",
+        "upload",
+        "folder-upload",
+        "folder upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "FolderUserIcon",
+      "file": "folder-user",
+      "keywords": [
+        "folder",
+        "user",
+        "folder-user",
+        "folder user",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "FoldersIcon",
+      "file": "folders",
+      "keywords": [
+        "folders"
+      ]
+    },
+    {
+      "name": "FoldersImageIcon",
+      "file": "folders-image",
+      "keywords": [
+        "folders",
+        "image",
+        "folders-image",
+        "folders image"
+      ]
+    },
+    {
+      "name": "FontdefaultIcon",
+      "file": "fontdefault",
+      "keywords": [
+        "fontdefault"
+      ]
+    },
+    {
+      "name": "FootballIcon",
+      "file": "football",
+      "keywords": [
+        "football"
+      ]
+    },
+    {
+      "name": "FootballJerseyIcon",
+      "file": "football-jersey",
+      "keywords": [
+        "football",
+        "jersey",
+        "football-jersey",
+        "football jersey"
+      ]
+    },
+    {
+      "name": "ForestSaplingsIcon",
+      "file": "forest-saplings",
+      "keywords": [
+        "forest",
+        "saplings",
+        "forest-saplings",
+        "forest saplings"
+      ]
+    },
+    {
+      "name": "ForkedIcon",
+      "file": "forked",
+      "keywords": [
+        "forked"
+      ]
+    },
+    {
+      "name": "FormatBoldIcon",
+      "file": "format-bold",
+      "keywords": [
+        "format",
+        "bold",
+        "format-bold",
+        "format bold"
+      ]
+    },
+    {
+      "name": "FormatBorderColorIcon",
+      "file": "format-border-color",
+      "keywords": [
+        "format",
+        "border",
+        "color",
+        "format-border-color",
+        "format border color"
+      ]
+    },
+    {
+      "name": "FormatFillIcon",
+      "file": "format-fill",
+      "keywords": [
+        "format",
+        "fill",
+        "format-fill",
+        "format fill"
+      ]
+    },
+    {
+      "name": "FormatItalicIcon",
+      "file": "format-italic",
+      "keywords": [
+        "format",
+        "italic",
+        "format-italic",
+        "format italic"
+      ]
+    },
+    {
+      "name": "FormatOffIcon",
+      "file": "format-off",
+      "keywords": [
+        "format",
+        "off",
+        "format-off",
+        "format off"
+      ]
+    },
+    {
+      "name": "FormatSizeIcon",
+      "file": "format-size",
+      "keywords": [
+        "format",
+        "size",
+        "format-size",
+        "format size"
+      ]
+    },
+    {
+      "name": "FormatStrikethroughIcon",
+      "file": "format-strikethrough",
+      "keywords": [
+        "format",
+        "strikethrough",
+        "format-strikethrough",
+        "format strikethrough"
+      ]
+    },
+    {
+      "name": "FormatStrikethroughAltIcon",
+      "file": "format-strikethrough-alt",
+      "keywords": [
+        "format",
+        "strikethrough",
+        "alt",
+        "format-strikethrough-alt",
+        "format strikethrough alt"
+      ]
+    },
+    {
+      "name": "FormatTextIcon",
+      "file": "format-text",
+      "keywords": [
+        "format",
+        "text",
+        "format-text",
+        "format text"
+      ]
+    },
+    {
+      "name": "FormatTextAltIcon",
+      "file": "format-text-alt",
+      "keywords": [
+        "format",
+        "text",
+        "alt",
+        "format-text-alt",
+        "format text alt"
+      ]
+    },
+    {
+      "name": "FormatTextColorIcon",
+      "file": "format-text-color",
+      "keywords": [
+        "format",
+        "text",
+        "color",
+        "format-text-color",
+        "format text color"
+      ]
+    },
+    {
+      "name": "FormatUnderlineIcon",
+      "file": "format-underline",
+      "keywords": [
+        "format",
+        "underline",
+        "format-underline",
+        "format underline"
+      ]
+    },
+    {
+      "name": "ForwardIcon",
+      "file": "forward",
+      "keywords": [
+        "forward"
+      ]
+    },
+    {
+      "name": "Forward10Icon",
+      "file": "forward-10",
+      "keywords": [
+        "forward",
+        "10",
+        "forward-10",
+        "forward 10"
+      ]
+    },
+    {
+      "name": "Forward30Icon",
+      "file": "forward-30",
+      "keywords": [
+        "forward",
+        "30",
+        "forward-30",
+        "forward 30"
+      ]
+    },
+    {
+      "name": "Forward5Icon",
+      "file": "forward-5",
+      "keywords": [
+        "forward",
+        "5",
+        "forward-5",
+        "forward 5"
+      ]
+    },
+    {
+      "name": "FourLeafCloverIcon",
+      "file": "four-leaf-clover",
+      "keywords": [
+        "four",
+        "leaf",
+        "clover",
+        "four-leaf-clover",
+        "four leaf clover"
+      ]
+    },
+    {
+      "name": "FrancIcon",
+      "file": "franc",
+      "keywords": [
+        "franc"
+      ]
+    },
+    {
+      "name": "GamesIcon",
+      "file": "games",
+      "keywords": [
+        "games"
+      ]
+    },
+    {
+      "name": "GavelIcon",
+      "file": "gavel",
+      "keywords": [
+        "gavel"
+      ]
+    },
+    {
+      "name": "GhostIcon",
+      "file": "ghost",
+      "keywords": [
+        "ghost"
+      ]
+    },
+    {
+      "name": "GifIcon",
+      "file": "gif",
+      "keywords": [
+        "gif"
+      ]
+    },
+    {
+      "name": "GiftIcon",
+      "file": "gift",
+      "keywords": [
+        "gift",
+        "presente",
+        "recompensa",
+        "reward",
+        "premio"
+      ]
+    },
+    {
+      "name": "GiftsIcon",
+      "file": "gifts",
+      "keywords": [
+        "gifts"
+      ]
+    },
+    {
+      "name": "GingerbreadManIcon",
+      "file": "gingerbread-man",
+      "keywords": [
+        "gingerbread",
+        "man",
+        "gingerbread-man",
+        "gingerbread man"
+      ]
+    },
+    {
+      "name": "GlassesIcon",
+      "file": "glasses",
+      "keywords": [
+        "glasses"
+      ]
+    },
+    {
+      "name": "GlobeIcon",
+      "file": "globe",
+      "keywords": [
+        "globe"
+      ]
+    },
+    {
+      "name": "GlueBottleIcon",
+      "file": "glue-bottle",
+      "keywords": [
+        "glue",
+        "bottle",
+        "glue-bottle",
+        "glue bottle"
+      ]
+    },
+    {
+      "name": "GoldBarsIcon",
+      "file": "gold-bars",
+      "keywords": [
+        "gold",
+        "bars",
+        "gold-bars",
+        "gold bars"
+      ]
+    },
+    {
+      "name": "GradeAIcon",
+      "file": "grade-a",
+      "keywords": [
+        "grade",
+        "a",
+        "grade-a",
+        "grade a"
+      ]
+    },
+    {
+      "name": "GradeFIcon",
+      "file": "grade-f",
+      "keywords": [
+        "grade",
+        "f",
+        "grade-f",
+        "grade f"
+      ]
+    },
+    {
+      "name": "GraduationCapIcon",
+      "file": "graduation-cap",
+      "keywords": [
+        "graduation",
+        "cap",
+        "graduation-cap",
+        "graduation cap",
+        "formatura",
+        "aluno",
+        "estudante",
+        "graduacao",
+        "student"
+      ]
+    },
+    {
+      "name": "GraduationCapFilledIcon",
+      "file": "graduation-cap-filled",
+      "keywords": [
+        "graduation",
+        "cap",
+        "filled",
+        "graduation-cap-filled",
+        "graduation cap filled"
+      ]
+    },
+    {
+      "name": "GraphBarIcon",
+      "file": "graph-bar",
+      "keywords": [
+        "graph",
+        "bar",
+        "graph-bar",
+        "graph bar"
+      ]
+    },
+    {
+      "name": "GraphLineIcon",
+      "file": "graph-line",
+      "keywords": [
+        "graph",
+        "line",
+        "graph-line",
+        "graph line"
+      ]
+    },
+    {
+      "name": "GroceryBagIcon",
+      "file": "grocery-bag",
+      "keywords": [
+        "grocery",
+        "bag",
+        "grocery-bag",
+        "grocery bag"
+      ]
+    },
+    {
+      "name": "GroupIcon",
+      "file": "group",
+      "keywords": [
+        "group"
+      ]
+    },
+    {
+      "name": "Group1Icon",
+      "file": "group-1",
+      "keywords": [
+        "group",
+        "1",
+        "group-1",
+        "group 1"
+      ]
+    },
+    {
+      "name": "GroupAddIcon",
+      "file": "group-add",
+      "keywords": [
+        "group",
+        "add",
+        "group-add",
+        "group add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "GroupFourIcon",
+      "file": "group-four",
+      "keywords": [
+        "group",
+        "four",
+        "group-four",
+        "group four"
+      ]
+    },
+    {
+      "name": "HaleIcon",
+      "file": "hale",
+      "keywords": [
+        "hale"
+      ]
+    },
+    {
+      "name": "HandIcon",
+      "file": "hand",
+      "keywords": [
+        "hand"
+      ]
+    },
+    {
+      "name": "HandOffIcon",
+      "file": "hand-off",
+      "keywords": [
+        "hand",
+        "off",
+        "hand-off",
+        "hand off"
+      ]
+    },
+    {
+      "name": "HappyIcon",
+      "file": "happy",
+      "keywords": [
+        "happy"
+      ]
+    },
+    {
+      "name": "HatPilgrimIcon",
+      "file": "hat-pilgrim",
+      "keywords": [
+        "hat",
+        "pilgrim",
+        "hat-pilgrim",
+        "hat pilgrim"
+      ]
+    },
+    {
+      "name": "HeadphonesIcon",
+      "file": "headphones",
+      "keywords": [
+        "headphones"
+      ]
+    },
+    {
+      "name": "HeadsetIcon",
+      "file": "headset",
+      "keywords": [
+        "headset"
+      ]
+    },
+    {
+      "name": "HeartIcon",
+      "file": "heart",
+      "keywords": [
+        "heart",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "HeartArrowIcon",
+      "file": "heart-arrow",
+      "keywords": [
+        "heart",
+        "arrow",
+        "heart-arrow",
+        "heart arrow",
+        "like",
+        "love",
+        "coracao",
+        "curtir",
+        "chevron",
+        "direction",
+        "seta",
+        "direcao"
+      ]
+    },
+    {
+      "name": "HeartFillIcon",
+      "file": "heart-fill",
+      "keywords": [
+        "heart",
+        "fill",
+        "heart-fill",
+        "heart fill",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "HeartHalfIcon",
+      "file": "heart-half",
+      "keywords": [
+        "heart",
+        "half",
+        "heart-half",
+        "heart half",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "HeartMoneyIcon",
+      "file": "heart-money",
+      "keywords": [
+        "heart",
+        "money",
+        "heart-money",
+        "heart money",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "HeartOffIcon",
+      "file": "heart-off",
+      "keywords": [
+        "heart",
+        "off",
+        "heart-off",
+        "heart off",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "HeartsIcon",
+      "file": "hearts",
+      "keywords": [
+        "hearts"
+      ]
+    },
+    {
+      "name": "HelpIcon",
+      "file": "help",
+      "keywords": [
+        "help"
+      ]
+    },
+    {
+      "name": "HelpCenterIcon",
+      "file": "help-center",
+      "keywords": [
+        "help",
+        "center",
+        "help-center",
+        "help center"
+      ]
+    },
+    {
+      "name": "HierarchyIcon",
+      "file": "hierarchy",
+      "keywords": [
+        "hierarchy"
+      ]
+    },
+    {
+      "name": "HistoriaEmQuadrinhosIcon",
+      "file": "historia-em-quadrinhos",
+      "keywords": [
+        "historia",
+        "em",
+        "quadrinhos",
+        "historia-em-quadrinhos",
+        "historia em quadrinhos"
+      ]
+    },
+    {
+      "name": "HistoryIcon",
+      "file": "history",
+      "keywords": [
+        "history"
+      ]
+    },
+    {
+      "name": "HobbyKnifeIcon",
+      "file": "hobby-knife",
+      "keywords": [
+        "hobby",
+        "knife",
+        "hobby-knife",
+        "hobby knife"
+      ]
+    },
+    {
+      "name": "HollyIcon",
+      "file": "holly",
+      "keywords": [
+        "holly"
+      ]
+    },
+    {
+      "name": "HomeIcon",
+      "file": "home",
+      "keywords": [
+        "home",
+        "house",
+        "inicio",
+        "casa"
+      ]
+    },
+    {
+      "name": "HomeFilledIcon",
+      "file": "home-filled",
+      "keywords": [
+        "home",
+        "filled",
+        "home-filled",
+        "home filled",
+        "house",
+        "inicio",
+        "casa"
+      ]
+    },
+    {
+      "name": "HotTubIcon",
+      "file": "hot-tub",
+      "keywords": [
+        "hot",
+        "tub",
+        "hot-tub",
+        "hot tub"
+      ]
+    },
+    {
+      "name": "HotTubMultiIcon",
+      "file": "hot-tub-multi",
+      "keywords": [
+        "hot",
+        "tub",
+        "multi",
+        "hot-tub-multi",
+        "hot tub multi"
+      ]
+    },
+    {
+      "name": "HourglassIcon",
+      "file": "hourglass",
+      "keywords": [
+        "hourglass"
+      ]
+    },
+    {
+      "name": "HourglassAltIcon",
+      "file": "hourglass-alt",
+      "keywords": [
+        "hourglass",
+        "alt",
+        "hourglass-alt",
+        "hourglass alt"
+      ]
+    },
+    {
+      "name": "HouseMusicIcon",
+      "file": "house-music",
+      "keywords": [
+        "house",
+        "music",
+        "house-music",
+        "house music"
+      ]
+    },
+    {
+      "name": "HurricaneIcon",
+      "file": "hurricane",
+      "keywords": [
+        "hurricane"
+      ]
+    },
+    {
+      "name": "IdeaIcon",
+      "file": "idea",
+      "keywords": [
+        "idea"
+      ]
+    },
+    {
+      "name": "ImageIcon",
+      "file": "image",
+      "keywords": [
+        "image"
+      ]
+    },
+    {
+      "name": "ImageCarouselIcon",
+      "file": "image-carousel",
+      "keywords": [
+        "image",
+        "carousel",
+        "image-carousel",
+        "image carousel"
+      ]
+    },
+    {
+      "name": "ImageChatIcon",
+      "file": "image-chat",
+      "keywords": [
+        "image",
+        "chat",
+        "image-chat",
+        "image chat",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "ImageSearchIcon",
+      "file": "image-search",
+      "keywords": [
+        "image",
+        "search",
+        "image-search",
+        "image search",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "ImagesIcon",
+      "file": "images",
+      "keywords": [
+        "images"
+      ]
+    },
+    {
+      "name": "InboxIcon",
+      "file": "inbox",
+      "keywords": [
+        "inbox"
+      ]
+    },
+    {
+      "name": "InboxAddIcon",
+      "file": "inbox-add",
+      "keywords": [
+        "inbox",
+        "add",
+        "inbox-add",
+        "inbox add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "InboxDownloadIcon",
+      "file": "inbox-download",
+      "keywords": [
+        "inbox",
+        "download",
+        "inbox-download",
+        "inbox download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "InboxFullIcon",
+      "file": "inbox-full",
+      "keywords": [
+        "inbox",
+        "full",
+        "inbox-full",
+        "inbox full"
+      ]
+    },
+    {
+      "name": "InboxMultiIcon",
+      "file": "inbox-multi",
+      "keywords": [
+        "inbox",
+        "multi",
+        "inbox-multi",
+        "inbox multi"
+      ]
+    },
+    {
+      "name": "InboxMusicIcon",
+      "file": "inbox-music",
+      "keywords": [
+        "inbox",
+        "music",
+        "inbox-music",
+        "inbox music"
+      ]
+    },
+    {
+      "name": "InboxUploadIcon",
+      "file": "inbox-upload",
+      "keywords": [
+        "inbox",
+        "upload",
+        "inbox-upload",
+        "inbox upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "IndentIcon",
+      "file": "indent",
+      "keywords": [
+        "indent"
+      ]
+    },
+    {
+      "name": "IndentDecreaseIcon",
+      "file": "indent-decrease",
+      "keywords": [
+        "indent",
+        "decrease",
+        "indent-decrease",
+        "indent decrease"
+      ]
+    },
+    {
+      "name": "InfoIcon",
+      "file": "info",
+      "keywords": [
+        "info",
+        "informacao",
+        "sobre",
+        "detalhes"
+      ]
+    },
+    {
+      "name": "InformationIcon",
+      "file": "information",
+      "keywords": [
+        "information"
+      ]
+    },
+    {
+      "name": "InkwellIcon",
+      "file": "inkwell",
+      "keywords": [
+        "inkwell"
+      ]
+    },
+    {
+      "name": "JackOLanternIcon",
+      "file": "jack-o-lantern",
+      "keywords": [
+        "jack",
+        "o",
+        "lantern",
+        "jack-o-lantern",
+        "jack o lantern"
+      ]
+    },
+    {
+      "name": "JournalIcon",
+      "file": "journal",
+      "keywords": [
+        "journal"
+      ]
+    },
+    {
+      "name": "JournalPencilIcon",
+      "file": "journal-pencil",
+      "keywords": [
+        "journal",
+        "pencil",
+        "journal-pencil",
+        "journal pencil"
+      ]
+    },
+    {
+      "name": "JourneysIcon",
+      "file": "journeys",
+      "keywords": [
+        "journeys"
+      ]
+    },
+    {
+      "name": "JpgIcon",
+      "file": "jpg",
+      "keywords": [
+        "jpg"
+      ]
+    },
+    {
+      "name": "KeyIcon",
+      "file": "key",
+      "keywords": [
+        "key"
+      ]
+    },
+    {
+      "name": "KeyboardIcon",
+      "file": "keyboard",
+      "keywords": [
+        "keyboard"
+      ]
+    },
+    {
+      "name": "KeyholeIcon",
+      "file": "keyhole",
+      "keywords": [
+        "keyhole"
+      ]
+    },
+    {
+      "name": "KeyholeAltIcon",
+      "file": "keyhole-alt",
+      "keywords": [
+        "keyhole",
+        "alt",
+        "keyhole-alt",
+        "keyhole alt"
+      ]
+    },
+    {
+      "name": "KeynoteIcon",
+      "file": "keynote",
+      "keywords": [
+        "keynote"
+      ]
+    },
+    {
+      "name": "KeypadIcon",
+      "file": "keypad",
+      "keywords": [
+        "keypad"
+      ]
+    },
+    {
+      "name": "LacrosseIcon",
+      "file": "lacrosse",
+      "keywords": [
+        "lacrosse"
+      ]
+    },
+    {
+      "name": "LacrosseBallIcon",
+      "file": "lacrosse-ball",
+      "keywords": [
+        "lacrosse",
+        "ball",
+        "lacrosse-ball",
+        "lacrosse ball"
+      ]
+    },
+    {
+      "name": "LayoutGridRearrangeIcon",
+      "file": "layout-grid-rearrange",
+      "keywords": [
+        "layout",
+        "grid",
+        "rearrange",
+        "layout-grid-rearrange",
+        "layout grid rearrange"
+      ]
+    },
+    {
+      "name": "LeafIcon",
+      "file": "leaf",
+      "keywords": [
+        "leaf"
+      ]
+    },
+    {
+      "name": "LeafFilledIcon",
+      "file": "leaf-filled",
+      "keywords": [
+        "leaf",
+        "filled",
+        "leaf-filled",
+        "leaf filled"
+      ]
+    },
+    {
+      "name": "LegoIcon",
+      "file": "lego",
+      "keywords": [
+        "lego"
+      ]
+    },
+    {
+      "name": "LendasEMitosIcon",
+      "file": "lendas-e-mitos",
+      "keywords": [
+        "lendas",
+        "e",
+        "mitos",
+        "lendas-e-mitos",
+        "lendas e mitos"
+      ]
+    },
+    {
+      "name": "LenseIcon",
+      "file": "lense",
+      "keywords": [
+        "lense"
+      ]
+    },
+    {
+      "name": "LibraryIcon",
+      "file": "library",
+      "keywords": [
+        "library"
+      ]
+    },
+    {
+      "name": "LifeRingIcon",
+      "file": "life-ring",
+      "keywords": [
+        "life",
+        "ring",
+        "life-ring",
+        "life ring"
+      ]
+    },
+    {
+      "name": "LightbulbIcon",
+      "file": "lightbulb",
+      "keywords": [
+        "lightbulb"
+      ]
+    },
+    {
+      "name": "LightningIcon",
+      "file": "lightning",
+      "keywords": [
+        "lightning"
+      ]
+    },
+    {
+      "name": "LinguaPortuguesaIcon",
+      "file": "lingua-portuguesa",
+      "keywords": [
+        "lingua",
+        "portuguesa",
+        "lingua-portuguesa",
+        "lingua portuguesa"
+      ]
+    },
+    {
+      "name": "ListIcon",
+      "file": "list",
+      "keywords": [
+        "list"
+      ]
+    },
+    {
+      "name": "ListCheckIcon",
+      "file": "list-check",
+      "keywords": [
+        "list",
+        "check",
+        "list-check",
+        "list check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "ListNumberedIcon",
+      "file": "list-numbered",
+      "keywords": [
+        "list",
+        "numbered",
+        "list-numbered",
+        "list numbered"
+      ]
+    },
+    {
+      "name": "ListPlayIcon",
+      "file": "list-play",
+      "keywords": [
+        "list",
+        "play",
+        "list-play",
+        "list play",
+        "start",
+        "video",
+        "reproduzir",
+        "iniciar"
+      ]
+    },
+    {
+      "name": "ListReorderIcon",
+      "file": "list-reorder",
+      "keywords": [
+        "list",
+        "reorder",
+        "list-reorder",
+        "list reorder"
+      ]
+    },
+    {
+      "name": "LiteraturaInfantojuvenilIcon",
+      "file": "literatura-infantojuvenil",
+      "keywords": [
+        "literatura",
+        "infantojuvenil",
+        "literatura-infantojuvenil",
+        "literatura infantojuvenil"
+      ]
+    },
+    {
+      "name": "LocationIcon",
+      "file": "location",
+      "keywords": [
+        "location"
+      ]
+    },
+    {
+      "name": "LocationAddIcon",
+      "file": "location-add",
+      "keywords": [
+        "location",
+        "add",
+        "location-add",
+        "location add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "LocationCancelIcon",
+      "file": "location-cancel",
+      "keywords": [
+        "location",
+        "cancel",
+        "location-cancel",
+        "location cancel"
+      ]
+    },
+    {
+      "name": "LocationOffIcon",
+      "file": "location-off",
+      "keywords": [
+        "location",
+        "off",
+        "location-off",
+        "location off"
+      ]
+    },
+    {
+      "name": "LocationTargetIcon",
+      "file": "location-target",
+      "keywords": [
+        "location",
+        "target",
+        "location-target",
+        "location target"
+      ]
+    },
+    {
+      "name": "LockIcon",
+      "file": "lock",
+      "keywords": [
+        "lock",
+        "secure",
+        "private",
+        "cadeado",
+        "seguro",
+        "privado"
+      ]
+    },
+    {
+      "name": "LockOffIcon",
+      "file": "lock-off",
+      "keywords": [
+        "lock",
+        "off",
+        "lock-off",
+        "lock off",
+        "secure",
+        "private",
+        "cadeado",
+        "seguro",
+        "privado"
+      ]
+    },
+    {
+      "name": "LogoIcon",
+      "file": "logo",
+      "keywords": [
+        "logo"
+      ]
+    },
+    {
+      "name": "LoveLetterIcon",
+      "file": "love-letter",
+      "keywords": [
+        "love",
+        "letter",
+        "love-letter",
+        "love letter"
+      ]
+    },
+    {
+      "name": "LuggageCartIcon",
+      "file": "luggage-cart",
+      "keywords": [
+        "luggage",
+        "cart",
+        "luggage-cart",
+        "luggage cart"
+      ]
+    },
+    {
+      "name": "LunchboxIcon",
+      "file": "lunchbox",
+      "keywords": [
+        "lunchbox"
+      ]
+    },
+    {
+      "name": "MacroIcon",
+      "file": "macro",
+      "keywords": [
+        "macro"
+      ]
+    },
+    {
+      "name": "MagazineIcon",
+      "file": "magazine",
+      "keywords": [
+        "magazine"
+      ]
+    },
+    {
+      "name": "MagicWandIcon",
+      "file": "magic-wand",
+      "keywords": [
+        "magic",
+        "wand",
+        "magic-wand",
+        "magic wand"
+      ]
+    },
+    {
+      "name": "MagnetIcon",
+      "file": "magnet",
+      "keywords": [
+        "magnet"
+      ]
+    },
+    {
+      "name": "MailIcon",
+      "file": "mail",
+      "keywords": [
+        "mail"
+      ]
+    },
+    {
+      "name": "MailAddIcon",
+      "file": "mail-add",
+      "keywords": [
+        "mail",
+        "add",
+        "mail-add",
+        "mail add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "MailAddAltIcon",
+      "file": "mail-add-alt",
+      "keywords": [
+        "mail",
+        "add",
+        "alt",
+        "mail-add-alt",
+        "mail add alt",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "MailCascadeIcon",
+      "file": "mail-cascade",
+      "keywords": [
+        "mail",
+        "cascade",
+        "mail-cascade",
+        "mail cascade"
+      ]
+    },
+    {
+      "name": "MailDownloadIcon",
+      "file": "mail-download",
+      "keywords": [
+        "mail",
+        "download",
+        "mail-download",
+        "mail download",
+        "save",
+        "baixar",
+        "salvar"
+      ]
+    },
+    {
+      "name": "MailLetterIcon",
+      "file": "mail-letter",
+      "keywords": [
+        "mail",
+        "letter",
+        "mail-letter",
+        "mail letter"
+      ]
+    },
+    {
+      "name": "MailMultiIcon",
+      "file": "mail-multi",
+      "keywords": [
+        "mail",
+        "multi",
+        "mail-multi",
+        "mail multi"
+      ]
+    },
+    {
+      "name": "MailOpenIcon",
+      "file": "mail-open",
+      "keywords": [
+        "mail",
+        "open",
+        "mail-open",
+        "mail open"
+      ]
+    },
+    {
+      "name": "MailSearchIcon",
+      "file": "mail-search",
+      "keywords": [
+        "mail",
+        "search",
+        "mail-search",
+        "mail search",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "MailTimeIcon",
+      "file": "mail-time",
+      "keywords": [
+        "mail",
+        "time",
+        "mail-time",
+        "mail time"
+      ]
+    },
+    {
+      "name": "MailUploadIcon",
+      "file": "mail-upload",
+      "keywords": [
+        "mail",
+        "upload",
+        "mail-upload",
+        "mail upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "MailboxIcon",
+      "file": "mailbox",
+      "keywords": [
+        "mailbox"
+      ]
+    },
+    {
+      "name": "ManBoyIcon",
+      "file": "man-boy",
+      "keywords": [
+        "man",
+        "boy",
+        "man-boy",
+        "man boy"
+      ]
+    },
+    {
+      "name": "ManFancyIcon",
+      "file": "man-fancy",
+      "keywords": [
+        "man",
+        "fancy",
+        "man-fancy",
+        "man fancy"
+      ]
+    },
+    {
+      "name": "ManGirlIcon",
+      "file": "man-girl",
+      "keywords": [
+        "man",
+        "girl",
+        "man-girl",
+        "man girl"
+      ]
+    },
+    {
+      "name": "ManWomanIcon",
+      "file": "man-woman",
+      "keywords": [
+        "man",
+        "woman",
+        "man-woman",
+        "man woman"
+      ]
+    },
+    {
+      "name": "MapIcon",
+      "file": "map",
+      "keywords": [
+        "map"
+      ]
+    },
+    {
+      "name": "MapAltIcon",
+      "file": "map-alt",
+      "keywords": [
+        "map",
+        "alt",
+        "map-alt",
+        "map alt"
+      ]
+    },
+    {
+      "name": "MapGridIcon",
+      "file": "map-grid",
+      "keywords": [
+        "map",
+        "grid",
+        "map-grid",
+        "map grid"
+      ]
+    },
+    {
+      "name": "MapLocationIcon",
+      "file": "map-location",
+      "keywords": [
+        "map",
+        "location",
+        "map-location",
+        "map location"
+      ]
+    },
+    {
+      "name": "MapSearchIcon",
+      "file": "map-search",
+      "keywords": [
+        "map",
+        "search",
+        "map-search",
+        "map search",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "MatematicaIcon",
+      "file": "matematica",
+      "keywords": [
+        "matematica"
+      ]
+    },
+    {
+      "name": "MedalIcon",
+      "file": "medal",
+      "keywords": [
+        "medal",
+        "celebracao",
+        "conquista",
+        "premio",
+        "achievement",
+        "medalha"
+      ]
+    },
+    {
+      "name": "MedalFilledIcon",
+      "file": "medal-filled",
+      "keywords": [
+        "medal",
+        "filled",
+        "medal-filled",
+        "medal filled",
+        "celebracao",
+        "conquista",
+        "premio",
+        "achievement",
+        "medalha"
+      ]
+    },
+    {
+      "name": "MediaPlayerIcon",
+      "file": "media-player",
+      "keywords": [
+        "media",
+        "player",
+        "media-player",
+        "media player"
+      ]
+    },
+    {
+      "name": "MegaphoneIcon",
+      "file": "megaphone",
+      "keywords": [
+        "megaphone"
+      ]
+    },
+    {
+      "name": "MemoIcon",
+      "file": "memo",
+      "keywords": [
+        "memo"
+      ]
+    },
+    {
+      "name": "MemoMoneyIcon",
+      "file": "memo-money",
+      "keywords": [
+        "memo",
+        "money",
+        "memo-money",
+        "memo money"
+      ]
+    },
+    {
+      "name": "MenIcon",
+      "file": "men",
+      "keywords": [
+        "men"
+      ]
+    },
+    {
+      "name": "MenorahIcon",
+      "file": "menorah",
+      "keywords": [
+        "menorah"
+      ]
+    },
+    {
+      "name": "MenuIcon",
+      "file": "menu",
+      "keywords": [
+        "menu",
+        "hamburger",
+        "opcoes"
+      ]
+    },
+    {
+      "name": "MenuFilledIcon",
+      "file": "menu-filled",
+      "keywords": [
+        "menu",
+        "filled",
+        "menu-filled",
+        "menu filled",
+        "hamburger",
+        "opcoes"
+      ]
+    },
+    {
+      "name": "MenuVerticalIcon",
+      "file": "menu-vertical",
+      "keywords": [
+        "menu",
+        "vertical",
+        "menu-vertical",
+        "menu vertical",
+        "hamburger",
+        "opcoes"
+      ]
+    },
+    {
+      "name": "MergeIcon",
+      "file": "merge",
+      "keywords": [
+        "merge"
+      ]
+    },
+    {
+      "name": "MicIcon",
+      "file": "mic",
+      "keywords": [
+        "mic"
+      ]
+    },
+    {
+      "name": "MicAltIcon",
+      "file": "mic-alt",
+      "keywords": [
+        "mic",
+        "alt",
+        "mic-alt",
+        "mic alt"
+      ]
+    },
+    {
+      "name": "MicAltOffIcon",
+      "file": "mic-alt-off",
+      "keywords": [
+        "mic",
+        "alt",
+        "off",
+        "mic-alt-off",
+        "mic alt off"
+      ]
+    },
+    {
+      "name": "MicCordedIcon",
+      "file": "mic-corded",
+      "keywords": [
+        "mic",
+        "corded",
+        "mic-corded",
+        "mic corded"
+      ]
+    },
+    {
+      "name": "MicOffIcon",
+      "file": "mic-off",
+      "keywords": [
+        "mic",
+        "off",
+        "mic-off",
+        "mic off"
+      ]
+    },
+    {
+      "name": "MicStandIcon",
+      "file": "mic-stand",
+      "keywords": [
+        "mic",
+        "stand",
+        "mic-stand",
+        "mic stand"
+      ]
+    },
+    {
+      "name": "MicroscopeIcon",
+      "file": "microscope",
+      "keywords": [
+        "microscope"
+      ]
+    },
+    {
+      "name": "MinimizeIcon",
+      "file": "minimize",
+      "keywords": [
+        "minimize"
+      ]
+    },
+    {
+      "name": "MinusIcon",
+      "file": "minus",
+      "keywords": [
+        "minus"
+      ]
+    },
+    {
+      "name": "MinusCircleIcon",
+      "file": "minus-circle",
+      "keywords": [
+        "minus",
+        "circle",
+        "minus-circle",
+        "minus circle"
+      ]
+    },
+    {
+      "name": "MinusSquareIcon",
+      "file": "minus-square",
+      "keywords": [
+        "minus",
+        "square",
+        "minus-square",
+        "minus square"
+      ]
+    },
+    {
+      "name": "MinusSquareFillIcon",
+      "file": "minus-square-fill",
+      "keywords": [
+        "minus",
+        "square",
+        "fill",
+        "minus-square-fill",
+        "minus square fill"
+      ]
+    },
+    {
+      "name": "MisterioPolicialETerrorIcon",
+      "file": "misterio-policial-e-terror",
+      "keywords": [
+        "misterio",
+        "policial",
+        "e",
+        "terror",
+        "misterio-policial-e-terror",
+        "misterio policial e terror"
+      ]
+    },
+    {
+      "name": "MixedPrecipitationIcon",
+      "file": "mixed-precipitation",
+      "keywords": [
+        "mixed",
+        "precipitation",
+        "mixed-precipitation",
+        "mixed precipitation"
+      ]
+    },
+    {
+      "name": "MoneyCardIcon",
+      "file": "money-card",
+      "keywords": [
+        "money",
+        "card",
+        "money-card",
+        "money card"
+      ]
+    },
+    {
+      "name": "MoneyChatIcon",
+      "file": "money-chat",
+      "keywords": [
+        "money",
+        "chat",
+        "money-chat",
+        "money chat",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "MoneyCircleIcon",
+      "file": "money-circle",
+      "keywords": [
+        "money",
+        "circle",
+        "money-circle",
+        "money circle"
+      ]
+    },
+    {
+      "name": "MoneyHomeIcon",
+      "file": "money-home",
+      "keywords": [
+        "money",
+        "home",
+        "money-home",
+        "money home",
+        "house",
+        "inicio",
+        "casa"
+      ]
+    },
+    {
+      "name": "MoonIcon",
+      "file": "moon",
+      "keywords": [
+        "moon"
+      ]
+    },
+    {
+      "name": "MoonFirstQuarterIcon",
+      "file": "moon-first-quarter",
+      "keywords": [
+        "moon",
+        "first",
+        "quarter",
+        "moon-first-quarter",
+        "moon first quarter"
+      ]
+    },
+    {
+      "name": "MoonFullIcon",
+      "file": "moon-full",
+      "keywords": [
+        "moon",
+        "full",
+        "moon-full",
+        "moon full"
+      ]
+    },
+    {
+      "name": "MoonLastQuarterIcon",
+      "file": "moon-last-quarter",
+      "keywords": [
+        "moon",
+        "last",
+        "quarter",
+        "moon-last-quarter",
+        "moon last quarter"
+      ]
+    },
+    {
+      "name": "MoonNewIcon",
+      "file": "moon-new",
+      "keywords": [
+        "moon",
+        "new",
+        "moon-new",
+        "moon new"
+      ]
+    },
+    {
+      "name": "MoonWaningCrescentIcon",
+      "file": "moon-waning-crescent",
+      "keywords": [
+        "moon",
+        "waning",
+        "crescent",
+        "moon-waning-crescent",
+        "moon waning crescent"
+      ]
+    },
+    {
+      "name": "MoonWaxingGibbousIcon",
+      "file": "moon-waxing-gibbous",
+      "keywords": [
+        "moon",
+        "waxing",
+        "gibbous",
+        "moon-waxing-gibbous",
+        "moon waxing gibbous"
+      ]
+    },
+    {
+      "name": "MusicCascadeIcon",
+      "file": "music-cascade",
+      "keywords": [
+        "music",
+        "cascade",
+        "music-cascade",
+        "music cascade"
+      ]
+    },
+    {
+      "name": "MusicDeepHouseIcon",
+      "file": "music-deep-house",
+      "keywords": [
+        "music",
+        "deep",
+        "house",
+        "music-deep-house",
+        "music deep house"
+      ]
+    },
+    {
+      "name": "MusicNotesIcon",
+      "file": "music-notes",
+      "keywords": [
+        "music",
+        "notes",
+        "music-notes",
+        "music notes"
+      ]
+    },
+    {
+      "name": "NavigationIcon",
+      "file": "navigation",
+      "keywords": [
+        "navigation"
+      ]
+    },
+    {
+      "name": "NavigationCircleIcon",
+      "file": "navigation-circle",
+      "keywords": [
+        "navigation",
+        "circle",
+        "navigation-circle",
+        "navigation circle"
+      ]
+    },
+    {
+      "name": "NearMeIcon",
+      "file": "near-me",
+      "keywords": [
+        "near",
+        "me",
+        "near-me",
+        "near me"
+      ]
+    },
+    {
+      "name": "NearMeCircleIcon",
+      "file": "near-me-circle",
+      "keywords": [
+        "near",
+        "me",
+        "circle",
+        "near-me-circle",
+        "near me circle"
+      ]
+    },
+    {
+      "name": "NecklaceIcon",
+      "file": "necklace",
+      "keywords": [
+        "necklace"
+      ]
+    },
+    {
+      "name": "NegociosEEconomiaIcon",
+      "file": "negocios-e-economia",
+      "keywords": [
+        "negocios",
+        "e",
+        "economia",
+        "negocios-e-economia",
+        "negocios e economia"
+      ]
+    },
+    {
+      "name": "NestEggIcon",
+      "file": "nest-egg",
+      "keywords": [
+        "nest",
+        "egg",
+        "nest-egg",
+        "nest egg"
+      ]
+    },
+    {
+      "name": "NewspaperIcon",
+      "file": "newspaper",
+      "keywords": [
+        "newspaper"
+      ]
+    },
+    {
+      "name": "NewspaperAltIcon",
+      "file": "newspaper-alt",
+      "keywords": [
+        "newspaper",
+        "alt",
+        "newspaper-alt",
+        "newspaper alt"
+      ]
+    },
+    {
+      "name": "NewspaperAltFilledIcon",
+      "file": "newspaper-alt-filled",
+      "keywords": [
+        "newspaper",
+        "alt",
+        "filled",
+        "newspaper-alt-filled",
+        "newspaper alt filled"
+      ]
+    },
+    {
+      "name": "NinjaIcon",
+      "file": "ninja",
+      "keywords": [
+        "ninja"
+      ]
+    },
+    {
+      "name": "NorthIcon",
+      "file": "north",
+      "keywords": [
+        "north"
+      ]
+    },
+    {
+      "name": "NotebookIcon",
+      "file": "notebook",
+      "keywords": [
+        "notebook"
+      ]
+    },
+    {
+      "name": "OpenedCaptioningIcon",
+      "file": "opened-captioning",
+      "keywords": [
+        "opened",
+        "captioning",
+        "opened-captioning",
+        "opened captioning"
+      ]
+    },
+    {
+      "name": "OrnamentIcon",
+      "file": "ornament",
+      "keywords": [
+        "ornament"
+      ]
+    },
+    {
+      "name": "OwlIcon",
+      "file": "owl",
+      "keywords": [
+        "owl"
+      ]
+    },
+    {
+      "name": "PadlockIcon",
+      "file": "padlock",
+      "keywords": [
+        "padlock"
+      ]
+    },
+    {
+      "name": "PadlockLockFilledIcon",
+      "file": "padlock-lock-filled",
+      "keywords": [
+        "padlock",
+        "lock",
+        "filled",
+        "padlock-lock-filled",
+        "padlock lock filled",
+        "secure",
+        "private",
+        "cadeado",
+        "seguro",
+        "privado"
+      ]
+    },
+    {
+      "name": "PadlockOffIcon",
+      "file": "padlock-off",
+      "keywords": [
+        "padlock",
+        "off",
+        "padlock-off",
+        "padlock off"
+      ]
+    },
+    {
+      "name": "PadlockUnlockIcon",
+      "file": "padlock-unlock",
+      "keywords": [
+        "padlock",
+        "unlock",
+        "padlock-unlock",
+        "padlock unlock"
+      ]
+    },
+    {
+      "name": "PadlockUnlockFilledIcon",
+      "file": "padlock-unlock-filled",
+      "keywords": [
+        "padlock",
+        "unlock",
+        "filled",
+        "padlock-unlock-filled",
+        "padlock unlock filled"
+      ]
+    },
+    {
+      "name": "PageIcon",
+      "file": "page",
+      "keywords": [
+        "page"
+      ]
+    },
+    {
+      "name": "PageAddIcon",
+      "file": "page-add",
+      "keywords": [
+        "page",
+        "add",
+        "page-add",
+        "page add",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "PageAltIcon",
+      "file": "page-alt",
+      "keywords": [
+        "page",
+        "alt",
+        "page-alt",
+        "page alt"
+      ]
+    },
+    {
+      "name": "PageCancelIcon",
+      "file": "page-cancel",
+      "keywords": [
+        "page",
+        "cancel",
+        "page-cancel",
+        "page cancel"
+      ]
+    },
+    {
+      "name": "PageCheckIcon",
+      "file": "page-check",
+      "keywords": [
+        "page",
+        "check",
+        "page-check",
+        "page check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "PageContentIcon",
+      "file": "page-content",
+      "keywords": [
+        "page",
+        "content",
+        "page-content",
+        "page content"
+      ]
+    },
+    {
+      "name": "PageMinusIcon",
+      "file": "page-minus",
+      "keywords": [
+        "page",
+        "minus",
+        "page-minus",
+        "page minus"
+      ]
+    },
+    {
+      "name": "PageSearchIcon",
+      "file": "page-search",
+      "keywords": [
+        "page",
+        "search",
+        "page-search",
+        "page search",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "PageSearchAltIcon",
+      "file": "page-search-alt",
+      "keywords": [
+        "page",
+        "search",
+        "alt",
+        "page-search-alt",
+        "page search alt",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "PagesIcon",
+      "file": "pages",
+      "keywords": [
+        "pages"
+      ]
+    },
+    {
+      "name": "PagesInsertIcon",
+      "file": "pages-insert",
+      "keywords": [
+        "pages",
+        "insert",
+        "pages-insert",
+        "pages insert"
+      ]
+    },
+    {
+      "name": "PaginaDuplaIcon",
+      "file": "pagina-dupla",
+      "keywords": [
+        "pagina",
+        "dupla",
+        "pagina-dupla",
+        "pagina dupla"
+      ]
+    },
+    {
+      "name": "PaginaUnicaIcon",
+      "file": "pagina-unica",
+      "keywords": [
+        "pagina",
+        "unica",
+        "pagina-unica",
+        "pagina unica"
+      ]
+    },
+    {
+      "name": "PaintRollerIcon",
+      "file": "paint-roller",
+      "keywords": [
+        "paint",
+        "roller",
+        "paint-roller",
+        "paint roller"
+      ]
+    },
+    {
+      "name": "PaintbrushIcon",
+      "file": "paintbrush",
+      "keywords": [
+        "paintbrush"
+      ]
+    },
+    {
+      "name": "PaletteIcon",
+      "file": "palette",
+      "keywords": [
+        "palette"
+      ]
+    },
+    {
+      "name": "PaperAirplaneIcon",
+      "file": "paper-airplane",
+      "keywords": [
+        "paper",
+        "airplane",
+        "paper-airplane",
+        "paper airplane"
+      ]
+    },
+    {
+      "name": "PaperFastChronicleIcon",
+      "file": "paper-fast-chronicle",
+      "keywords": [
+        "paper",
+        "fast",
+        "chronicle",
+        "paper-fast-chronicle",
+        "paper fast chronicle"
+      ]
+    },
+    {
+      "name": "PaperHandIcon",
+      "file": "paper-hand",
+      "keywords": [
+        "paper",
+        "hand",
+        "paper-hand",
+        "paper hand"
+      ]
+    },
+    {
+      "name": "PaperclipIcon",
+      "file": "paperclip",
+      "keywords": [
+        "paperclip"
+      ]
+    },
+    {
+      "name": "ParkingIcon",
+      "file": "parking",
+      "keywords": [
+        "parking"
+      ]
+    },
+    {
+      "name": "ParkingOffIcon",
+      "file": "parking-off",
+      "keywords": [
+        "parking",
+        "off",
+        "parking-off",
+        "parking off"
+      ]
+    },
+    {
+      "name": "PartlyCloudyIcon",
+      "file": "partly-cloudy",
+      "keywords": [
+        "partly",
+        "cloudy",
+        "partly-cloudy",
+        "partly cloudy"
+      ]
+    },
+    {
+      "name": "PartyBellIcon",
+      "file": "party-bell",
+      "keywords": [
+        "party",
+        "bell",
+        "party-bell",
+        "party bell",
+        "celebracao",
+        "festa",
+        "comemorar",
+        "celebrar",
+        "celebration",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "PartyHornIcon",
+      "file": "party-horn",
+      "keywords": [
+        "party",
+        "horn",
+        "party-horn",
+        "party horn",
+        "celebracao",
+        "festa",
+        "comemorar",
+        "celebrar",
+        "celebration"
+      ]
+    },
+    {
+      "name": "PassportIcon",
+      "file": "passport",
+      "keywords": [
+        "passport"
+      ]
+    },
+    {
+      "name": "PauseIcon",
+      "file": "pause",
+      "keywords": [
+        "pause"
+      ]
+    },
+    {
+      "name": "PauseCircleIcon",
+      "file": "pause-circle",
+      "keywords": [
+        "pause",
+        "circle",
+        "pause-circle",
+        "pause circle"
+      ]
+    },
+    {
+      "name": "PauseFillIcon",
+      "file": "pause-fill",
+      "keywords": [
+        "pause",
+        "fill",
+        "pause-fill",
+        "pause fill"
+      ]
+    },
+    {
+      "name": "PdfIcon",
+      "file": "pdf",
+      "keywords": [
+        "pdf"
+      ]
+    },
+    {
+      "name": "PenIcon",
+      "file": "pen",
+      "keywords": [
+        "pen"
+      ]
+    },
+    {
+      "name": "PenNibIcon",
+      "file": "pen-nib",
+      "keywords": [
+        "pen",
+        "nib",
+        "pen-nib",
+        "pen nib"
+      ]
+    },
+    {
+      "name": "PenOffIcon",
+      "file": "pen-off",
+      "keywords": [
+        "pen",
+        "off",
+        "pen-off",
+        "pen off"
+      ]
+    },
+    {
+      "name": "PencilIcon",
+      "file": "pencil",
+      "keywords": [
+        "pencil"
+      ]
+    },
+    {
+      "name": "PencilOffIcon",
+      "file": "pencil-off",
+      "keywords": [
+        "pencil",
+        "off",
+        "pencil-off",
+        "pencil off"
+      ]
+    },
+    {
+      "name": "PencilPaintbrushIcon",
+      "file": "pencil-paintbrush",
+      "keywords": [
+        "pencil",
+        "paintbrush",
+        "pencil-paintbrush",
+        "pencil paintbrush"
+      ]
+    },
+    {
+      "name": "PencilPaintbrushPenIcon",
+      "file": "pencil-paintbrush-pen",
+      "keywords": [
+        "pencil",
+        "paintbrush",
+        "pen",
+        "pencil-paintbrush-pen",
+        "pencil paintbrush pen"
+      ]
+    },
+    {
+      "name": "PercentageIcon",
+      "file": "percentage",
+      "keywords": [
+        "percentage"
+      ]
+    },
+    {
+      "name": "PercentageChatIcon",
+      "file": "percentage-chat",
+      "keywords": [
+        "percentage",
+        "chat",
+        "percentage-chat",
+        "percentage chat",
+        "message",
+        "comment",
+        "conversa",
+        "mensagem",
+        "comentario"
+      ]
+    },
+    {
+      "name": "PeriodicoInfantojuvenilIcon",
+      "file": "periodico-infantojuvenil",
+      "keywords": [
+        "periodico",
+        "infantojuvenil",
+        "periodico-infantojuvenil",
+        "periodico infantojuvenil"
+      ]
+    },
+    {
+      "name": "PeriodicosIcon",
+      "file": "periodicos",
+      "keywords": [
+        "periodicos"
+      ]
+    },
+    {
+      "name": "PersonIcon",
+      "file": "person",
+      "keywords": [
+        "person"
+      ]
+    },
+    {
+      "name": "PersonOffIcon",
+      "file": "person-off",
+      "keywords": [
+        "person",
+        "off",
+        "person-off",
+        "person off"
+      ]
+    },
+    {
+      "name": "PersonRaisedarmsIcon",
+      "file": "person-raisedarms",
+      "keywords": [
+        "person",
+        "raisedarms",
+        "person-raisedarms",
+        "person raisedarms"
+      ]
+    },
+    {
+      "name": "PersonSpreadIcon",
+      "file": "person-spread",
+      "keywords": [
+        "person",
+        "spread",
+        "person-spread",
+        "person spread"
+      ]
+    },
+    {
+      "name": "PhoneIcon",
+      "file": "phone",
+      "keywords": [
+        "phone"
+      ]
+    },
+    {
+      "name": "PhoneButtonsIcon",
+      "file": "phone-buttons",
+      "keywords": [
+        "phone",
+        "buttons",
+        "phone-buttons",
+        "phone buttons"
+      ]
+    },
+    {
+      "name": "PhoneHangupIcon",
+      "file": "phone-hangup",
+      "keywords": [
+        "phone",
+        "hangup",
+        "phone-hangup",
+        "phone hangup"
+      ]
+    },
+    {
+      "name": "PhoneOffIcon",
+      "file": "phone-off",
+      "keywords": [
+        "phone",
+        "off",
+        "phone-off",
+        "phone off"
+      ]
+    },
+    {
+      "name": "PhonePickupIcon",
+      "file": "phone-pickup",
+      "keywords": [
+        "phone",
+        "pickup",
+        "phone-pickup",
+        "phone pickup"
+      ]
+    },
+    {
+      "name": "PhoneTalkingIcon",
+      "file": "phone-talking",
+      "keywords": [
+        "phone",
+        "talking",
+        "phone-talking",
+        "phone talking"
+      ]
+    },
+    {
+      "name": "PiggyBankIcon",
+      "file": "piggy-bank",
+      "keywords": [
+        "piggy",
+        "bank",
+        "piggy-bank",
+        "piggy bank"
+      ]
+    },
+    {
+      "name": "PinIcon",
+      "file": "pin",
+      "keywords": [
+        "pin"
+      ]
+    },
+    {
+      "name": "PlaneArrivalIcon",
+      "file": "plane-arrival",
+      "keywords": [
+        "plane",
+        "arrival",
+        "plane-arrival",
+        "plane arrival"
+      ]
+    },
+    {
+      "name": "PlaneDepartureIcon",
+      "file": "plane-departure",
+      "keywords": [
+        "plane",
+        "departure",
+        "plane-departure",
+        "plane departure"
+      ]
+    },
+    {
+      "name": "PlayIcon",
+      "file": "play",
+      "keywords": [
+        "play",
+        "start",
+        "video",
+        "reproduzir",
+        "iniciar"
+      ]
+    },
+    {
+      "name": "PlayCircleIcon",
+      "file": "play-circle",
+      "keywords": [
+        "play",
+        "circle",
+        "play-circle",
+        "play circle",
+        "start",
+        "video",
+        "reproduzir",
+        "iniciar"
+      ]
+    },
+    {
+      "name": "PlayFillIcon",
+      "file": "play-fill",
+      "keywords": [
+        "play",
+        "fill",
+        "play-fill",
+        "play fill",
+        "start",
+        "video",
+        "reproduzir",
+        "iniciar"
+      ]
+    },
+    {
+      "name": "PlayLibraryIcon",
+      "file": "play-library",
+      "keywords": [
+        "play",
+        "library",
+        "play-library",
+        "play library",
+        "start",
+        "video",
+        "reproduzir",
+        "iniciar"
+      ]
+    },
+    {
+      "name": "PlaylistIcon",
+      "file": "playlist",
+      "keywords": [
+        "playlist"
+      ]
+    },
+    {
+      "name": "PluginIcon",
+      "file": "plugin",
+      "keywords": [
+        "plugin"
+      ]
+    },
+    {
+      "name": "PngIcon",
+      "file": "png",
+      "keywords": [
+        "png"
+      ]
+    },
+    {
+      "name": "PodcastIcon",
+      "file": "podcast",
+      "keywords": [
+        "podcast"
+      ]
+    },
+    {
+      "name": "PodiumIcon",
+      "file": "podium",
+      "keywords": [
+        "podium"
+      ]
+    },
+    {
+      "name": "PointDownIcon",
+      "file": "point-down",
+      "keywords": [
+        "point",
+        "down",
+        "point-down",
+        "point down"
+      ]
+    },
+    {
+      "name": "PointLeftIcon",
+      "file": "point-left",
+      "keywords": [
+        "point",
+        "left",
+        "point-left",
+        "point left"
+      ]
+    },
+    {
+      "name": "PointRightIcon",
+      "file": "point-right",
+      "keywords": [
+        "point",
+        "right",
+        "point-right",
+        "point right"
+      ]
+    },
+    {
+      "name": "PointUpIcon",
+      "file": "point-up",
+      "keywords": [
+        "point",
+        "up",
+        "point-up",
+        "point up"
+      ]
+    },
+    {
+      "name": "PolicemanIcon",
+      "file": "policeman",
+      "keywords": [
+        "policeman"
+      ]
+    },
+    {
+      "name": "PollIcon",
+      "file": "poll",
+      "keywords": [
+        "poll"
+      ]
+    },
+    {
+      "name": "PoolLadderIcon",
+      "file": "pool-ladder",
+      "keywords": [
+        "pool",
+        "ladder",
+        "pool-ladder",
+        "pool ladder"
+      ]
+    },
+    {
+      "name": "PopcornIcon",
+      "file": "popcorn",
+      "keywords": [
+        "popcorn"
+      ]
+    },
+    {
+      "name": "PortraitIcon",
+      "file": "portrait",
+      "keywords": [
+        "portrait"
+      ]
+    },
+    {
+      "name": "PortraitCarouselIcon",
+      "file": "portrait-carousel",
+      "keywords": [
+        "portrait",
+        "carousel",
+        "portrait-carousel",
+        "portrait carousel"
+      ]
+    },
+    {
+      "name": "PortraitsIcon",
+      "file": "portraits",
+      "keywords": [
+        "portraits"
+      ]
+    },
+    {
+      "name": "PoundIcon",
+      "file": "pound",
+      "keywords": [
+        "pound"
+      ]
+    },
+    {
+      "name": "PresentationIcon",
+      "file": "presentation",
+      "keywords": [
+        "presentation"
+      ]
+    },
+    {
+      "name": "PresentationAltIcon",
+      "file": "presentation-alt",
+      "keywords": [
+        "presentation",
+        "alt",
+        "presentation-alt",
+        "presentation alt"
+      ]
+    },
+    {
+      "name": "PrinterIcon",
+      "file": "printer",
+      "keywords": [
+        "printer"
+      ]
+    },
+    {
+      "name": "ProtractorIcon",
+      "file": "protractor",
+      "keywords": [
+        "protractor"
+      ]
+    },
+    {
+      "name": "PullRequestIcon",
+      "file": "pull-request",
+      "keywords": [
+        "pull",
+        "request",
+        "pull-request",
+        "pull request"
+      ]
+    },
+    {
+      "name": "PurseIcon",
+      "file": "purse",
+      "keywords": [
+        "purse"
+      ]
+    },
+    {
+      "name": "QrCodeIcon",
+      "file": "qr-code",
+      "keywords": [
+        "qr",
+        "code",
+        "qr-code",
+        "qr code"
+      ]
+    },
+    {
+      "name": "QuoteCloseIcon",
+      "file": "quote-close",
+      "keywords": [
+        "quote",
+        "close",
+        "quote-close",
+        "quote close",
+        "x",
+        "cancel",
+        "dismiss",
+        "fechar",
+        "cancelar"
+      ]
+    },
+    {
+      "name": "QuoteCloseAltIcon",
+      "file": "quote-close-alt",
+      "keywords": [
+        "quote",
+        "close",
+        "alt",
+        "quote-close-alt",
+        "quote close alt",
+        "x",
+        "cancel",
+        "dismiss",
+        "fechar",
+        "cancelar"
+      ]
+    },
+    {
+      "name": "QuoteOpenIcon",
+      "file": "quote-open",
+      "keywords": [
+        "quote",
+        "open",
+        "quote-open",
+        "quote open"
+      ]
+    },
+    {
+      "name": "QuoteOpenAltIcon",
+      "file": "quote-open-alt",
+      "keywords": [
+        "quote",
+        "open",
+        "alt",
+        "quote-open-alt",
+        "quote open alt"
+      ]
+    },
+    {
+      "name": "RadioButtonIcon",
+      "file": "radio-button",
+      "keywords": [
+        "radio",
+        "button",
+        "radio-button",
+        "radio button"
+      ]
+    },
+    {
+      "name": "RadioButtonActiveIcon",
+      "file": "radio-button-active",
+      "keywords": [
+        "radio",
+        "button",
+        "active",
+        "radio-button-active",
+        "radio button active"
+      ]
+    },
+    {
+      "name": "Rain3Icon",
+      "file": "rain-3",
+      "keywords": [
+        "rain",
+        "3",
+        "rain-3",
+        "rain 3"
+      ]
+    },
+    {
+      "name": "ReceiptIcon",
+      "file": "receipt",
+      "keywords": [
+        "receipt"
+      ]
+    },
+    {
+      "name": "ReceiptMoneyIcon",
+      "file": "receipt-money",
+      "keywords": [
+        "receipt",
+        "money",
+        "receipt-money",
+        "receipt money"
+      ]
+    },
+    {
+      "name": "RecordIcon",
+      "file": "record",
+      "keywords": [
+        "record"
+      ]
+    },
+    {
+      "name": "RedeyeIcon",
+      "file": "redeye",
+      "keywords": [
+        "redeye"
+      ]
+    },
+    {
+      "name": "RefundIcon",
+      "file": "refund",
+      "keywords": [
+        "refund"
+      ]
+    },
+    {
+      "name": "RegisterIcon",
+      "file": "register",
+      "keywords": [
+        "register"
+      ]
+    },
+    {
+      "name": "ReligiaoEEspiritualidadeIcon",
+      "file": "religiao-e-espiritualidade",
+      "keywords": [
+        "religiao",
+        "e",
+        "espiritualidade",
+        "religiao-e-espiritualidade",
+        "religiao e espiritualidade"
+      ]
+    },
+    {
+      "name": "ReminderIcon",
+      "file": "reminder",
+      "keywords": [
+        "reminder"
+      ]
+    },
+    {
+      "name": "ReplyIcon",
+      "file": "reply",
+      "keywords": [
+        "reply"
+      ]
+    },
+    {
+      "name": "ReplyAllIcon",
+      "file": "reply-all",
+      "keywords": [
+        "reply",
+        "all",
+        "reply-all",
+        "reply all"
+      ]
+    },
+    {
+      "name": "RewindIcon",
+      "file": "rewind",
+      "keywords": [
+        "rewind"
+      ]
+    },
+    {
+      "name": "RoadIcon",
+      "file": "road",
+      "keywords": [
+        "road"
+      ]
+    },
+    {
+      "name": "RockHandIcon",
+      "file": "rock-hand",
+      "keywords": [
+        "rock",
+        "hand",
+        "rock-hand",
+        "rock hand"
+      ]
+    },
+    {
+      "name": "RocketsIcon",
+      "file": "rockets",
+      "keywords": [
+        "rockets"
+      ]
+    },
+    {
+      "name": "RolagemIcon",
+      "file": "rolagem",
+      "keywords": [
+        "rolagem"
+      ]
+    },
+    {
+      "name": "RomanticoIcon",
+      "file": "romantico",
+      "keywords": [
+        "romantico"
+      ]
+    },
+    {
+      "name": "RoomCardIcon",
+      "file": "room-card",
+      "keywords": [
+        "room",
+        "card",
+        "room-card",
+        "room card"
+      ]
+    },
+    {
+      "name": "RotateIcon",
+      "file": "rotate",
+      "keywords": [
+        "rotate"
+      ]
+    },
+    {
+      "name": "RouteHighwayIcon",
+      "file": "route-highway",
+      "keywords": [
+        "route",
+        "highway",
+        "route-highway",
+        "route highway"
+      ]
+    },
+    {
+      "name": "RouteInterstateIcon",
+      "file": "route-interstate",
+      "keywords": [
+        "route",
+        "interstate",
+        "route-interstate",
+        "route interstate"
+      ]
+    },
+    {
+      "name": "RouterIcon",
+      "file": "router",
+      "keywords": [
+        "router"
+      ]
+    },
+    {
+      "name": "RubberStampIcon",
+      "file": "rubber-stamp",
+      "keywords": [
+        "rubber",
+        "stamp",
+        "rubber-stamp",
+        "rubber stamp"
+      ]
+    },
+    {
+      "name": "RugbyIcon",
+      "file": "rugby",
+      "keywords": [
+        "rugby"
+      ]
+    },
+    {
+      "name": "RulerIcon",
+      "file": "ruler",
+      "keywords": [
+        "ruler"
+      ]
+    },
+    {
+      "name": "RulerSquareIcon",
+      "file": "ruler-square",
+      "keywords": [
+        "ruler",
+        "square",
+        "ruler-square",
+        "ruler square"
+      ]
+    },
+    {
+      "name": "SafeIcon",
+      "file": "safe",
+      "keywords": [
+        "safe"
+      ]
+    },
+    {
+      "name": "SailBoat3Icon",
+      "file": "sail-boat-3",
+      "keywords": [
+        "sail",
+        "boat",
+        "3",
+        "sail-boat-3",
+        "sail boat 3"
+      ]
+    },
+    {
+      "name": "SandalsIcon",
+      "file": "sandals",
+      "keywords": [
+        "sandals"
+      ]
+    },
+    {
+      "name": "SatelliteSignalIcon",
+      "file": "satellite-signal",
+      "keywords": [
+        "satellite",
+        "signal",
+        "satellite-signal",
+        "satellite signal"
+      ]
+    },
+    {
+      "name": "SaudeEBemEstarIcon",
+      "file": "saude-e-bem-estar",
+      "keywords": [
+        "saude",
+        "e",
+        "bem",
+        "estar",
+        "saude-e-bem-estar",
+        "saude e bem estar"
+      ]
+    },
+    {
+      "name": "ScalesIcon",
+      "file": "scales",
+      "keywords": [
+        "scales"
+      ]
+    },
+    {
+      "name": "SchoolIcon",
+      "file": "school",
+      "keywords": [
+        "school",
+        "escola",
+        "colegio"
+      ]
+    },
+    {
+      "name": "SchoolBellIcon",
+      "file": "school-bell",
+      "keywords": [
+        "school",
+        "bell",
+        "school-bell",
+        "school bell",
+        "escola",
+        "colegio",
+        "notification",
+        "sino",
+        "notificacao"
+      ]
+    },
+    {
+      "name": "SchoolbusIcon",
+      "file": "schoolbus",
+      "keywords": [
+        "schoolbus"
+      ]
+    },
+    {
+      "name": "ScienceIcon",
+      "file": "science",
+      "keywords": [
+        "science"
+      ]
+    },
+    {
+      "name": "ScissorsIcon",
+      "file": "scissors",
+      "keywords": [
+        "scissors"
+      ]
+    },
+    {
+      "name": "ScribbleIcon",
+      "file": "scribble",
+      "keywords": [
+        "scribble"
+      ]
+    },
+    {
+      "name": "ScriptIcon",
+      "file": "script",
+      "keywords": [
+        "script"
+      ]
+    },
+    {
+      "name": "SdCardIcon",
+      "file": "sd-card",
+      "keywords": [
+        "sd",
+        "card",
+        "sd-card",
+        "sd card"
+      ]
+    },
+    {
+      "name": "SdCardOffIcon",
+      "file": "sd-card-off",
+      "keywords": [
+        "sd",
+        "card",
+        "off",
+        "sd-card-off",
+        "sd card off"
+      ]
+    },
+    {
+      "name": "SearchIcon",
+      "file": "search",
+      "keywords": [
+        "search",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "SearchFilledIcon",
+      "file": "search-filled",
+      "keywords": [
+        "search",
+        "filled",
+        "search-filled",
+        "search filled",
+        "find",
+        "magnifier",
+        "buscar",
+        "procurar",
+        "lupa"
+      ]
+    },
+    {
+      "name": "SeasonFallIcon",
+      "file": "season-fall",
+      "keywords": [
+        "season",
+        "fall",
+        "season-fall",
+        "season fall"
+      ]
+    },
+    {
+      "name": "SeasonMudIcon",
+      "file": "season-mud",
+      "keywords": [
+        "season",
+        "mud",
+        "season-mud",
+        "season mud"
+      ]
+    },
+    {
+      "name": "SeasonSpringIcon",
+      "file": "season-spring",
+      "keywords": [
+        "season",
+        "spring",
+        "season-spring",
+        "season spring"
+      ]
+    },
+    {
+      "name": "SeasonStickIcon",
+      "file": "season-stick",
+      "keywords": [
+        "season",
+        "stick",
+        "season-stick",
+        "season stick"
+      ]
+    },
+    {
+      "name": "SeasonSummerIcon",
+      "file": "season-summer",
+      "keywords": [
+        "season",
+        "summer",
+        "season-summer",
+        "season summer"
+      ]
+    },
+    {
+      "name": "SeasonWinterIcon",
+      "file": "season-winter",
+      "keywords": [
+        "season",
+        "winter",
+        "season-winter",
+        "season winter"
+      ]
+    },
+    {
+      "name": "SeatIcon",
+      "file": "seat",
+      "keywords": [
+        "seat"
+      ]
+    },
+    {
+      "name": "SeatReclineIcon",
+      "file": "seat-recline",
+      "keywords": [
+        "seat",
+        "recline",
+        "seat-recline",
+        "seat recline"
+      ]
+    },
+    {
+      "name": "Seconds10Icon",
+      "file": "seconds-10",
+      "keywords": [
+        "seconds",
+        "10",
+        "seconds-10",
+        "seconds 10"
+      ]
+    },
+    {
+      "name": "Seconds3Icon",
+      "file": "seconds-3",
+      "keywords": [
+        "seconds",
+        "3",
+        "seconds-3",
+        "seconds 3"
+      ]
+    },
+    {
+      "name": "Seconds30Icon",
+      "file": "seconds-30",
+      "keywords": [
+        "seconds",
+        "30",
+        "seconds-30",
+        "seconds 30"
+      ]
+    },
+    {
+      "name": "Seconds5Icon",
+      "file": "seconds-5",
+      "keywords": [
+        "seconds",
+        "5",
+        "seconds-5",
+        "seconds 5"
+      ]
+    },
+    {
+      "name": "SecurityCameraIcon",
+      "file": "security-camera",
+      "keywords": [
+        "security",
+        "camera",
+        "security-camera",
+        "security camera"
+      ]
+    },
+    {
+      "name": "SecurityPadlockIcon",
+      "file": "security-padlock",
+      "keywords": [
+        "security",
+        "padlock",
+        "security-padlock",
+        "security padlock"
+      ]
+    },
+    {
+      "name": "SecurityWarningFilledIcon",
+      "file": "security-warning-filled",
+      "keywords": [
+        "security",
+        "warning",
+        "filled",
+        "security-warning-filled",
+        "security warning filled"
+      ]
+    },
+    {
+      "name": "SendDownIcon",
+      "file": "send-down",
+      "keywords": [
+        "send",
+        "down",
+        "send-down",
+        "send down"
+      ]
+    },
+    {
+      "name": "SendForwardIcon",
+      "file": "send-forward",
+      "keywords": [
+        "send",
+        "forward",
+        "send-forward",
+        "send forward"
+      ]
+    },
+    {
+      "name": "SendInIcon",
+      "file": "send-in",
+      "keywords": [
+        "send",
+        "in",
+        "send-in",
+        "send in"
+      ]
+    },
+    {
+      "name": "SendMailIcon",
+      "file": "send-mail",
+      "keywords": [
+        "send",
+        "mail",
+        "send-mail",
+        "send mail"
+      ]
+    },
+    {
+      "name": "SendOutIcon",
+      "file": "send-out",
+      "keywords": [
+        "send",
+        "out",
+        "send-out",
+        "send out"
+      ]
+    },
+    {
+      "name": "SendUpIcon",
+      "file": "send-up",
+      "keywords": [
+        "send",
+        "up",
+        "send-up",
+        "send up"
+      ]
+    },
+    {
+      "name": "SettingsIcon",
+      "file": "settings",
+      "keywords": [
+        "settings",
+        "gear",
+        "cog",
+        "config",
+        "configuracao",
+        "ajustes"
+      ]
+    },
+    {
+      "name": "ShareIcon",
+      "file": "share",
+      "keywords": [
+        "share"
+      ]
+    },
+    {
+      "name": "ShareAltIcon",
+      "file": "share-alt",
+      "keywords": [
+        "share",
+        "alt",
+        "share-alt",
+        "share alt"
+      ]
+    },
+    {
+      "name": "ShieldIcon",
+      "file": "shield",
+      "keywords": [
+        "shield"
+      ]
+    },
+    {
+      "name": "ShieldAlertIcon",
+      "file": "shield-alert",
+      "keywords": [
+        "shield",
+        "alert",
+        "shield-alert",
+        "shield alert",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "ShieldCheckIcon",
+      "file": "shield-check",
+      "keywords": [
+        "shield",
+        "check",
+        "shield-check",
+        "shield check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "ShieldOffIcon",
+      "file": "shield-off",
+      "keywords": [
+        "shield",
+        "off",
+        "shield-off",
+        "shield off"
+      ]
+    },
+    {
+      "name": "ShippingIcon",
+      "file": "shipping",
+      "keywords": [
+        "shipping"
+      ]
+    },
+    {
+      "name": "ShippingFastIcon",
+      "file": "shipping-fast",
+      "keywords": [
+        "shipping",
+        "fast",
+        "shipping-fast",
+        "shipping fast"
+      ]
+    },
+    {
+      "name": "ShoppingIcon",
+      "file": "shopping",
+      "keywords": [
+        "shopping"
+      ]
+    },
+    {
+      "name": "ShoppingBagIcon",
+      "file": "shopping-bag",
+      "keywords": [
+        "shopping",
+        "bag",
+        "shopping-bag",
+        "shopping bag"
+      ]
+    },
+    {
+      "name": "ShoppingBasketIcon",
+      "file": "shopping-basket",
+      "keywords": [
+        "shopping",
+        "basket",
+        "shopping-basket",
+        "shopping basket"
+      ]
+    },
+    {
+      "name": "ShoppingBasketAltIcon",
+      "file": "shopping-basket-alt",
+      "keywords": [
+        "shopping",
+        "basket",
+        "alt",
+        "shopping-basket-alt",
+        "shopping basket alt"
+      ]
+    },
+    {
+      "name": "ShredderIcon",
+      "file": "shredder",
+      "keywords": [
+        "shredder"
+      ]
+    },
+    {
+      "name": "ShrinkIcon",
+      "file": "shrink",
+      "keywords": [
+        "shrink"
+      ]
+    },
+    {
+      "name": "ShuffleboardIcon",
+      "file": "shuffleboard",
+      "keywords": [
+        "shuffleboard"
+      ]
+    },
+    {
+      "name": "ShuttleIcon",
+      "file": "shuttle",
+      "keywords": [
+        "shuttle"
+      ]
+    },
+    {
+      "name": "ShuttlecockIcon",
+      "file": "shuttlecock",
+      "keywords": [
+        "shuttlecock"
+      ]
+    },
+    {
+      "name": "SignLanguageIcon",
+      "file": "sign-language",
+      "keywords": [
+        "sign",
+        "language",
+        "sign-language",
+        "sign language"
+      ]
+    },
+    {
+      "name": "SignsIcon",
+      "file": "signs",
+      "keywords": [
+        "signs"
+      ]
+    },
+    {
+      "name": "SignsAltIcon",
+      "file": "signs-alt",
+      "keywords": [
+        "signs",
+        "alt",
+        "signs-alt",
+        "signs alt"
+      ]
+    },
+    {
+      "name": "SimCardIcon",
+      "file": "sim-card",
+      "keywords": [
+        "sim",
+        "card",
+        "sim-card",
+        "sim card"
+      ]
+    },
+    {
+      "name": "SimCardAlertIcon",
+      "file": "sim-card-alert",
+      "keywords": [
+        "sim",
+        "card",
+        "alert",
+        "sim-card-alert",
+        "sim card alert",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "SimCardOffIcon",
+      "file": "sim-card-off",
+      "keywords": [
+        "sim",
+        "card",
+        "off",
+        "sim-card-off",
+        "sim card off"
+      ]
+    },
+    {
+      "name": "SirenIcon",
+      "file": "siren",
+      "keywords": [
+        "siren"
+      ]
+    },
+    {
+      "name": "SkateIcon",
+      "file": "skate",
+      "keywords": [
+        "skate"
+      ]
+    },
+    {
+      "name": "SkateboardIcon",
+      "file": "skateboard",
+      "keywords": [
+        "skateboard"
+      ]
+    },
+    {
+      "name": "SkatingIcon",
+      "file": "skating",
+      "keywords": [
+        "skating"
+      ]
+    },
+    {
+      "name": "SkipBackwardIcon",
+      "file": "skip-backward",
+      "keywords": [
+        "skip",
+        "backward",
+        "skip-backward",
+        "skip backward"
+      ]
+    },
+    {
+      "name": "SkipForwardIcon",
+      "file": "skip-forward",
+      "keywords": [
+        "skip",
+        "forward",
+        "skip-forward",
+        "skip forward"
+      ]
+    },
+    {
+      "name": "SnowIcon",
+      "file": "snow",
+      "keywords": [
+        "snow"
+      ]
+    },
+    {
+      "name": "SnowflakeIcon",
+      "file": "snowflake",
+      "keywords": [
+        "snowflake"
+      ]
+    },
+    {
+      "name": "SnowflakeAltIcon",
+      "file": "snowflake-alt",
+      "keywords": [
+        "snowflake",
+        "alt",
+        "snowflake-alt",
+        "snowflake alt"
+      ]
+    },
+    {
+      "name": "SoccerIcon",
+      "file": "soccer",
+      "keywords": [
+        "soccer"
+      ]
+    },
+    {
+      "name": "SocietyIcon",
+      "file": "society",
+      "keywords": [
+        "society"
+      ]
+    },
+    {
+      "name": "SpaIcon",
+      "file": "spa",
+      "keywords": [
+        "spa"
+      ]
+    },
+    {
+      "name": "SpecialAlertIcon",
+      "file": "special-alert",
+      "keywords": [
+        "special",
+        "alert",
+        "special-alert",
+        "special alert",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "SpecialCheckIcon",
+      "file": "special-check",
+      "keywords": [
+        "special",
+        "check",
+        "special-check",
+        "special check",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "SpecialDiscountIcon",
+      "file": "special-discount",
+      "keywords": [
+        "special",
+        "discount",
+        "special-discount",
+        "special discount"
+      ]
+    },
+    {
+      "name": "SpecialMoneyIcon",
+      "file": "special-money",
+      "keywords": [
+        "special",
+        "money",
+        "special-money",
+        "special money"
+      ]
+    },
+    {
+      "name": "Speed05xIcon",
+      "file": "speed-0-5x",
+      "keywords": [
+        "speed",
+        "0",
+        "5x",
+        "speed-0-5x",
+        "speed 0 5x"
+      ]
+    },
+    {
+      "name": "Speed15xIcon",
+      "file": "speed-1-5x",
+      "keywords": [
+        "speed",
+        "1",
+        "5x",
+        "speed-1-5x",
+        "speed 1 5x"
+      ]
+    },
+    {
+      "name": "Speed1xIcon",
+      "file": "speed-1x",
+      "keywords": [
+        "speed",
+        "1x",
+        "speed-1x",
+        "speed 1x"
+      ]
+    },
+    {
+      "name": "Speed2xIcon",
+      "file": "speed-2x",
+      "keywords": [
+        "speed",
+        "2x",
+        "speed-2x",
+        "speed 2x"
+      ]
+    },
+    {
+      "name": "Speed3xIcon",
+      "file": "speed-3x",
+      "keywords": [
+        "speed",
+        "3x",
+        "speed-3x",
+        "speed 3x"
+      ]
+    },
+    {
+      "name": "Speed4xIcon",
+      "file": "speed-4x",
+      "keywords": [
+        "speed",
+        "4x",
+        "speed-4x",
+        "speed 4x"
+      ]
+    },
+    {
+      "name": "SportsFieldIcon",
+      "file": "sports-field",
+      "keywords": [
+        "sports",
+        "field",
+        "sports-field",
+        "sports field"
+      ]
+    },
+    {
+      "name": "SportsTimerIcon",
+      "file": "sports-timer",
+      "keywords": [
+        "sports",
+        "timer",
+        "sports-timer",
+        "sports timer"
+      ]
+    },
+    {
+      "name": "SprayPaintIcon",
+      "file": "spray-paint",
+      "keywords": [
+        "spray",
+        "paint",
+        "spray-paint",
+        "spray paint"
+      ]
+    },
+    {
+      "name": "SpyIcon",
+      "file": "spy",
+      "keywords": [
+        "spy"
+      ]
+    },
+    {
+      "name": "StackIcon",
+      "file": "stack",
+      "keywords": [
+        "stack"
+      ]
+    },
+    {
+      "name": "StairCarIcon",
+      "file": "stair-car",
+      "keywords": [
+        "stair",
+        "car",
+        "stair-car",
+        "stair car"
+      ]
+    },
+    {
+      "name": "StairsDownIcon",
+      "file": "stairs-down",
+      "keywords": [
+        "stairs",
+        "down",
+        "stairs-down",
+        "stairs down"
+      ]
+    },
+    {
+      "name": "StairsUpIcon",
+      "file": "stairs-up",
+      "keywords": [
+        "stairs",
+        "up",
+        "stairs-up",
+        "stairs up"
+      ]
+    },
+    {
+      "name": "StampIcon",
+      "file": "stamp",
+      "keywords": [
+        "stamp"
+      ]
+    },
+    {
+      "name": "StampInsetIcon",
+      "file": "stamp-inset",
+      "keywords": [
+        "stamp",
+        "inset",
+        "stamp-inset",
+        "stamp inset"
+      ]
+    },
+    {
+      "name": "StanpPortraitIcon",
+      "file": "stanp-portrait",
+      "keywords": [
+        "stanp",
+        "portrait",
+        "stanp-portrait",
+        "stanp portrait"
+      ]
+    },
+    {
+      "name": "StarOfDavidIcon",
+      "file": "star-of-david",
+      "keywords": [
+        "star",
+        "of",
+        "david",
+        "star-of-david",
+        "star of david",
+        "favorite",
+        "estrela",
+        "favorito"
+      ]
+    },
+    {
+      "name": "StocksDownIcon",
+      "file": "stocks-down",
+      "keywords": [
+        "stocks",
+        "down",
+        "stocks-down",
+        "stocks down"
+      ]
+    },
+    {
+      "name": "StocksUpIcon",
+      "file": "stocks-up",
+      "keywords": [
+        "stocks",
+        "up",
+        "stocks-up",
+        "stocks up"
+      ]
+    },
+    {
+      "name": "StopIcon",
+      "file": "stop",
+      "keywords": [
+        "stop"
+      ]
+    },
+    {
+      "name": "StopSignIcon",
+      "file": "stop-sign",
+      "keywords": [
+        "stop",
+        "sign",
+        "stop-sign",
+        "stop sign"
+      ]
+    },
+    {
+      "name": "StopsignAlertIcon",
+      "file": "stopsign-alert",
+      "keywords": [
+        "stopsign",
+        "alert",
+        "stopsign-alert",
+        "stopsign alert",
+        "warning",
+        "attention",
+        "aviso",
+        "atencao",
+        "alerta"
+      ]
+    },
+    {
+      "name": "StopwatchIcon",
+      "file": "stopwatch",
+      "keywords": [
+        "stopwatch"
+      ]
+    },
+    {
+      "name": "StopwatchOffIcon",
+      "file": "stopwatch-off",
+      "keywords": [
+        "stopwatch",
+        "off",
+        "stopwatch-off",
+        "stopwatch off"
+      ]
+    },
+    {
+      "name": "StoreIcon",
+      "file": "store",
+      "keywords": [
+        "store"
+      ]
+    },
+    {
+      "name": "StoreAltIcon",
+      "file": "store-alt",
+      "keywords": [
+        "store",
+        "alt",
+        "store-alt",
+        "store alt"
+      ]
+    },
+    {
+      "name": "StormIcon",
+      "file": "storm",
+      "keywords": [
+        "storm"
+      ]
+    },
+    {
+      "name": "StrategyIcon",
+      "file": "strategy",
+      "keywords": [
+        "strategy"
+      ]
+    },
+    {
+      "name": "SuitcaseIcon",
+      "file": "suitcase",
+      "keywords": [
+        "suitcase"
+      ]
+    },
+    {
+      "name": "Sun3Icon",
+      "file": "sun-3",
+      "keywords": [
+        "sun",
+        "3",
+        "sun-3",
+        "sun 3"
+      ]
+    },
+    {
+      "name": "SunTimeIcon",
+      "file": "sun-time",
+      "keywords": [
+        "sun",
+        "time",
+        "sun-time",
+        "sun time"
+      ]
+    },
+    {
+      "name": "SunglassesIcon",
+      "file": "sunglasses",
+      "keywords": [
+        "sunglasses"
+      ]
+    },
+    {
+      "name": "SunriseIcon",
+      "file": "sunrise",
+      "keywords": [
+        "sunrise"
+      ]
+    },
+    {
+      "name": "SunscreenIcon",
+      "file": "sunscreen",
+      "keywords": [
+        "sunscreen"
+      ]
+    },
+    {
+      "name": "SunsetIcon",
+      "file": "sunset",
+      "keywords": [
+        "sunset"
+      ]
+    },
+    {
+      "name": "SupportDogIcon",
+      "file": "support-dog",
+      "keywords": [
+        "support",
+        "dog",
+        "support-dog",
+        "support dog"
+      ]
+    },
+    {
+      "name": "SurprisedIcon",
+      "file": "surprised",
+      "keywords": [
+        "surprised"
+      ]
+    },
+    {
+      "name": "SurveyIcon",
+      "file": "survey",
+      "keywords": [
+        "survey"
+      ]
+    },
+    {
+      "name": "SwapFillIcon",
+      "file": "swap-fill",
+      "keywords": [
+        "swap",
+        "fill",
+        "swap-fill",
+        "swap fill"
+      ]
+    },
+    {
+      "name": "SwapStrokeIcon",
+      "file": "swap-stroke",
+      "keywords": [
+        "swap",
+        "stroke",
+        "swap-stroke",
+        "swap stroke"
+      ]
+    },
+    {
+      "name": "SwatchbookIcon",
+      "file": "swatchbook",
+      "keywords": [
+        "swatchbook"
+      ]
+    },
+    {
+      "name": "SwordIcon",
+      "file": "sword",
+      "keywords": [
+        "sword"
+      ]
+    },
+    {
+      "name": "SyncIcon",
+      "file": "sync",
+      "keywords": [
+        "sync"
+      ]
+    },
+    {
+      "name": "TagIcon",
+      "file": "tag",
+      "keywords": [
+        "tag"
+      ]
+    },
+    {
+      "name": "TagMoneyIcon",
+      "file": "tag-money",
+      "keywords": [
+        "tag",
+        "money",
+        "tag-money",
+        "tag money"
+      ]
+    },
+    {
+      "name": "TagSpecialIcon",
+      "file": "tag-special",
+      "keywords": [
+        "tag",
+        "special",
+        "tag-special",
+        "tag special"
+      ]
+    },
+    {
+      "name": "TallyIcon",
+      "file": "tally",
+      "keywords": [
+        "tally"
+      ]
+    },
+    {
+      "name": "TapeDispenserIcon",
+      "file": "tape-dispenser",
+      "keywords": [
+        "tape",
+        "dispenser",
+        "tape-dispenser",
+        "tape dispenser"
+      ]
+    },
+    {
+      "name": "TargetIcon",
+      "file": "target",
+      "keywords": [
+        "target"
+      ]
+    },
+    {
+      "name": "TeamIcon",
+      "file": "team",
+      "keywords": [
+        "team"
+      ]
+    },
+    {
+      "name": "TecnologiaEEngenhariaIcon",
+      "file": "tecnologia-e-engenharia",
+      "keywords": [
+        "tecnologia",
+        "e",
+        "engenharia",
+        "tecnologia-e-engenharia",
+        "tecnologia e engenharia"
+      ]
+    },
+    {
+      "name": "TelescopeIcon",
+      "file": "telescope",
+      "keywords": [
+        "telescope"
+      ]
+    },
+    {
+      "name": "TerminalIcon",
+      "file": "terminal",
+      "keywords": [
+        "terminal"
+      ]
+    },
+    {
+      "name": "TheaterMasksIcon",
+      "file": "theater-masks",
+      "keywords": [
+        "theater",
+        "masks",
+        "theater-masks",
+        "theater masks"
+      ]
+    },
+    {
+      "name": "ThumbsDownIcon",
+      "file": "thumbs-down",
+      "keywords": [
+        "thumbs",
+        "down",
+        "thumbs-down",
+        "thumbs down"
+      ]
+    },
+    {
+      "name": "ThumbsUpIcon",
+      "file": "thumbs-up",
+      "keywords": [
+        "thumbs",
+        "up",
+        "thumbs-up",
+        "thumbs up"
+      ]
+    },
+    {
+      "name": "ThumbtackIcon",
+      "file": "thumbtack",
+      "keywords": [
+        "thumbtack"
+      ]
+    },
+    {
+      "name": "TifIcon",
+      "file": "tif",
+      "keywords": [
+        "tif"
+      ]
+    },
+    {
+      "name": "TildeIcon",
+      "file": "tilde",
+      "keywords": [
+        "tilde"
+      ]
+    },
+    {
+      "name": "TimeIcon",
+      "file": "time",
+      "keywords": [
+        "time"
+      ]
+    },
+    {
+      "name": "TimerIcon",
+      "file": "timer",
+      "keywords": [
+        "timer"
+      ]
+    },
+    {
+      "name": "TimerAltIcon",
+      "file": "timer-alt",
+      "keywords": [
+        "timer",
+        "alt",
+        "timer-alt",
+        "timer alt"
+      ]
+    },
+    {
+      "name": "TornadoIcon",
+      "file": "tornado",
+      "keywords": [
+        "tornado"
+      ]
+    },
+    {
+      "name": "TrafficConeIcon",
+      "file": "traffic-cone",
+      "keywords": [
+        "traffic",
+        "cone",
+        "traffic-cone",
+        "traffic cone"
+      ]
+    },
+    {
+      "name": "TrafficLightsIcon",
+      "file": "traffic-lights",
+      "keywords": [
+        "traffic",
+        "lights",
+        "traffic-lights",
+        "traffic lights"
+      ]
+    },
+    {
+      "name": "TransferIcon",
+      "file": "transfer",
+      "keywords": [
+        "transfer"
+      ]
+    },
+    {
+      "name": "TransferAltIcon",
+      "file": "transfer-alt",
+      "keywords": [
+        "transfer",
+        "alt",
+        "transfer-alt",
+        "transfer alt"
+      ]
+    },
+    {
+      "name": "TrashIcon",
+      "file": "trash",
+      "keywords": [
+        "trash"
+      ]
+    },
+    {
+      "name": "TrashCancelIcon",
+      "file": "trash-cancel",
+      "keywords": [
+        "trash",
+        "cancel",
+        "trash-cancel",
+        "trash cancel"
+      ]
+    },
+    {
+      "name": "TravelCardIcon",
+      "file": "travel-card",
+      "keywords": [
+        "travel",
+        "card",
+        "travel-card",
+        "travel card"
+      ]
+    },
+    {
+      "name": "TreasureChestIcon",
+      "file": "treasure-chest",
+      "keywords": [
+        "treasure",
+        "chest",
+        "treasure-chest",
+        "treasure chest"
+      ]
+    },
+    {
+      "name": "TreePalmIcon",
+      "file": "tree-palm",
+      "keywords": [
+        "tree",
+        "palm",
+        "tree-palm",
+        "tree palm"
+      ]
+    },
+    {
+      "name": "TrendDownIcon",
+      "file": "trend-down",
+      "keywords": [
+        "trend",
+        "down",
+        "trend-down",
+        "trend down"
+      ]
+    },
+    {
+      "name": "TrendUpIcon",
+      "file": "trend-up",
+      "keywords": [
+        "trend",
+        "up",
+        "trend-up",
+        "trend up"
+      ]
+    },
+    {
+      "name": "TrophyIcon",
+      "file": "trophy",
+      "keywords": [
+        "trophy",
+        "celebracao",
+        "celebrar",
+        "conquista",
+        "premio",
+        "vitoria",
+        "winner",
+        "achievement"
+      ]
+    },
+    {
+      "name": "TrophyFilledIcon",
+      "file": "trophy-filled",
+      "keywords": [
+        "trophy",
+        "filled",
+        "trophy-filled",
+        "trophy filled",
+        "celebracao",
+        "celebrar",
+        "conquista",
+        "premio",
+        "vitoria",
+        "winner",
+        "achievement"
+      ]
+    },
+    {
+      "name": "TtyIcon",
+      "file": "tty",
+      "keywords": [
+        "tty"
+      ]
+    },
+    {
+      "name": "TuneIcon",
+      "file": "tune",
+      "keywords": [
+        "tune"
+      ]
+    },
+    {
+      "name": "TuneAltIcon",
+      "file": "tune-alt",
+      "keywords": [
+        "tune",
+        "alt",
+        "tune-alt",
+        "tune alt"
+      ]
+    },
+    {
+      "name": "TurkeyIcon",
+      "file": "turkey",
+      "keywords": [
+        "turkey"
+      ]
+    },
+    {
+      "name": "TvIcon",
+      "file": "tv",
+      "keywords": [
+        "tv"
+      ]
+    },
+    {
+      "name": "TweetIcon",
+      "file": "tweet",
+      "keywords": [
+        "tweet"
+      ]
+    },
+    {
+      "name": "TweetAltIcon",
+      "file": "tweet-alt",
+      "keywords": [
+        "tweet",
+        "alt",
+        "tweet-alt",
+        "tweet alt"
+      ]
+    },
+    {
+      "name": "TypeSquareIcon",
+      "file": "type-square",
+      "keywords": [
+        "type",
+        "square",
+        "type-square",
+        "type square"
+      ]
+    },
+    {
+      "name": "TypographyIcon",
+      "file": "typography",
+      "keywords": [
+        "typography"
+      ]
+    },
+    {
+      "name": "UmbrellaIcon",
+      "file": "umbrella",
+      "keywords": [
+        "umbrella"
+      ]
+    },
+    {
+      "name": "UmbrellaBeachIcon",
+      "file": "umbrella-beach",
+      "keywords": [
+        "umbrella",
+        "beach",
+        "umbrella-beach",
+        "umbrella beach"
+      ]
+    },
+    {
+      "name": "UniversalAccessIcon",
+      "file": "universal-access",
+      "keywords": [
+        "universal",
+        "access",
+        "universal-access",
+        "universal access"
+      ]
+    },
+    {
+      "name": "UniversalAccessAltIcon",
+      "file": "universal-access-alt",
+      "keywords": [
+        "universal",
+        "access",
+        "alt",
+        "universal-access-alt",
+        "universal access alt"
+      ]
+    },
+    {
+      "name": "UniversalAccessOffIcon",
+      "file": "universal-access-off",
+      "keywords": [
+        "universal",
+        "access",
+        "off",
+        "universal-access-off",
+        "universal access off"
+      ]
+    },
+    {
+      "name": "UnlockIcon",
+      "file": "unlock",
+      "keywords": [
+        "unlock"
+      ]
+    },
+    {
+      "name": "UploadIcon",
+      "file": "upload",
+      "keywords": [
+        "upload",
+        "send",
+        "enviar",
+        "subir"
+      ]
+    },
+    {
+      "name": "UserIcon",
+      "file": "user",
+      "keywords": [
+        "user",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UserAddIcon",
+      "file": "user-add",
+      "keywords": [
+        "user",
+        "add",
+        "user-add",
+        "user add",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa",
+        "plus",
+        "create",
+        "new",
+        "adicionar",
+        "novo",
+        "criar"
+      ]
+    },
+    {
+      "name": "UserCancelIcon",
+      "file": "user-cancel",
+      "keywords": [
+        "user",
+        "cancel",
+        "user-cancel",
+        "user cancel",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UserCheckIcon",
+      "file": "user-check",
+      "keywords": [
+        "user",
+        "check",
+        "user-check",
+        "user check",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa",
+        "ok",
+        "done",
+        "success",
+        "confirmar",
+        "concluido",
+        "sucesso"
+      ]
+    },
+    {
+      "name": "UserCircleIcon",
+      "file": "user-circle",
+      "keywords": [
+        "user",
+        "circle",
+        "user-circle",
+        "user circle",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UserHeartIcon",
+      "file": "user-heart",
+      "keywords": [
+        "user",
+        "heart",
+        "user-heart",
+        "user heart",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa",
+        "like",
+        "love",
+        "coracao",
+        "curtir"
+      ]
+    },
+    {
+      "name": "UserListIcon",
+      "file": "user-list",
+      "keywords": [
+        "user",
+        "list",
+        "user-list",
+        "user list",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UserMinusIcon",
+      "file": "user-minus",
+      "keywords": [
+        "user",
+        "minus",
+        "user-minus",
+        "user minus",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UserOffIcon",
+      "file": "user-off",
+      "keywords": [
+        "user",
+        "off",
+        "user-off",
+        "user off",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UserSquareIcon",
+      "file": "user-square",
+      "keywords": [
+        "user",
+        "square",
+        "user-square",
+        "user square",
+        "person",
+        "profile",
+        "account",
+        "usuario",
+        "perfil",
+        "conta",
+        "pessoa"
+      ]
+    },
+    {
+      "name": "UsersIcon",
+      "file": "users",
+      "keywords": [
+        "users"
+      ]
+    },
+    {
+      "name": "ViagemETurismoIcon",
+      "file": "viagem-e-turismo",
+      "keywords": [
+        "viagem",
+        "e",
+        "turismo",
+        "viagem-e-turismo",
+        "viagem e turismo"
+      ]
+    },
+    {
+      "name": "VoicemailIcon",
+      "file": "voicemail",
+      "keywords": [
+        "voicemail"
+      ]
+    },
+    {
+      "name": "VolumeIcon",
+      "file": "volume",
+      "keywords": [
+        "volume"
+      ]
+    },
+    {
+      "name": "VolumeHighIcon",
+      "file": "volume-high",
+      "keywords": [
+        "volume",
+        "high",
+        "volume-high",
+        "volume high"
+      ]
+    },
+    {
+      "name": "VolumeLowIcon",
+      "file": "volume-low",
+      "keywords": [
+        "volume",
+        "low",
+        "volume-low",
+        "volume low"
+      ]
+    },
+    {
+      "name": "VolumeMuteIcon",
+      "file": "volume-mute",
+      "keywords": [
+        "volume",
+        "mute",
+        "volume-mute",
+        "volume mute"
+      ]
+    },
+    {
+      "name": "VolumeOffIcon",
+      "file": "volume-off",
+      "keywords": [
+        "volume",
+        "off",
+        "volume-off",
+        "volume off"
+      ]
+    },
+    {
+      "name": "WalletIcon",
+      "file": "wallet",
+      "keywords": [
+        "wallet"
+      ]
+    },
+    {
+      "name": "WalletCryptoIcon",
+      "file": "wallet-crypto",
+      "keywords": [
+        "wallet",
+        "crypto",
+        "wallet-crypto",
+        "wallet crypto"
+      ]
+    },
+    {
+      "name": "WarningIcon",
+      "file": "warning",
+      "keywords": [
+        "warning"
+      ]
+    },
+    {
+      "name": "WatchIcon",
+      "file": "watch",
+      "keywords": [
+        "watch"
+      ]
+    },
+    {
+      "name": "WatchAppleIcon",
+      "file": "watch-apple",
+      "keywords": [
+        "watch",
+        "apple",
+        "watch-apple",
+        "watch apple"
+      ]
+    },
+    {
+      "name": "WatchSmartIcon",
+      "file": "watch-smart",
+      "keywords": [
+        "watch",
+        "smart",
+        "watch-smart",
+        "watch smart"
+      ]
+    },
+    {
+      "name": "WheelchairIcon",
+      "file": "wheelchair",
+      "keywords": [
+        "wheelchair"
+      ]
+    },
+    {
+      "name": "WheelchairAltIcon",
+      "file": "wheelchair-alt",
+      "keywords": [
+        "wheelchair",
+        "alt",
+        "wheelchair-alt",
+        "wheelchair alt"
+      ]
+    },
+    {
+      "name": "WhistleIcon",
+      "file": "whistle",
+      "keywords": [
+        "whistle"
+      ]
+    },
+    {
+      "name": "WindIcon",
+      "file": "wind",
+      "keywords": [
+        "wind"
+      ]
+    },
+    {
+      "name": "WindowIcon",
+      "file": "window",
+      "keywords": [
+        "window"
+      ]
+    },
+    {
+      "name": "WindowLayoutIcon",
+      "file": "window-layout",
+      "keywords": [
+        "window",
+        "layout",
+        "window-layout",
+        "window layout"
+      ]
+    },
+    {
+      "name": "WinnersDiasIcon",
+      "file": "winners-dias",
+      "keywords": [
+        "winners",
+        "dias",
+        "winners-dias",
+        "winners dias"
+      ]
+    },
+    {
+      "name": "WitchHatIcon",
+      "file": "witch-hat",
+      "keywords": [
+        "witch",
+        "hat",
+        "witch-hat",
+        "witch hat"
+      ]
+    },
+    {
+      "name": "WomanBoyIcon",
+      "file": "woman-boy",
+      "keywords": [
+        "woman",
+        "boy",
+        "woman-boy",
+        "woman boy"
+      ]
+    },
+    {
+      "name": "WomanFancyIcon",
+      "file": "woman-fancy",
+      "keywords": [
+        "woman",
+        "fancy",
+        "woman-fancy",
+        "woman fancy"
+      ]
+    },
+    {
+      "name": "WomanGirlIcon",
+      "file": "woman-girl",
+      "keywords": [
+        "woman",
+        "girl",
+        "woman-girl",
+        "woman girl"
+      ]
+    },
+    {
+      "name": "WomanManIcon",
+      "file": "woman-man",
+      "keywords": [
+        "woman",
+        "man",
+        "woman-man",
+        "woman man"
+      ]
+    },
+    {
+      "name": "WomenIcon",
+      "file": "women",
+      "keywords": [
+        "women"
+      ]
+    },
+    {
+      "name": "WorldIcon",
+      "file": "world",
+      "keywords": [
+        "world"
+      ]
+    },
+    {
+      "name": "WreathIcon",
+      "file": "wreath",
+      "keywords": [
+        "wreath"
+      ]
+    },
+    {
+      "name": "WritingIcon",
+      "file": "writing",
+      "keywords": [
+        "writing"
+      ]
+    },
+    {
+      "name": "YenIcon",
+      "file": "yen",
+      "keywords": [
+        "yen"
+      ]
+    },
+    {
+      "name": "ZipIcon",
+      "file": "zip",
+      "keywords": [
+        "zip"
+      ]
+    },
+    {
+      "name": "ZipArchiveIcon",
+      "file": "zip-archive",
+      "keywords": [
+        "zip",
+        "archive",
+        "zip-archive",
+        "zip archive"
+      ]
+    },
+    {
+      "name": "ZoomInIcon",
+      "file": "zoom-in",
+      "keywords": [
+        "zoom",
+        "in",
+        "zoom-in",
+        "zoom in"
+      ]
+    },
+    {
+      "name": "ZoomOutIcon",
+      "file": "zoom-out",
+      "keywords": [
+        "zoom",
+        "out",
+        "zoom-out",
+        "zoom out"
+      ]
+    }
+  ]
+}
