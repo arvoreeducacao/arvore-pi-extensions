@@ -1,10 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 interface IconEntry {
   name: string;
@@ -24,13 +21,31 @@ interface FindIconDetails {
   top?: string;
 }
 
+const MANIFEST_REL = "design/design-system/icons.manifest.json";
+
 let cache: IconManifest | null = null;
 
-function loadManifest(): IconManifest | null {
+function resolveManifestPath(cwd: string): string | null {
+  const override = process.env.ARVORE_ICONS_MANIFEST;
+  if (override && existsSync(override)) return override;
+
+  let dir = resolve(cwd);
+  for (let i = 0; i < 8; i++) {
+    const candidate = join(dir, MANIFEST_REL);
+    if (existsSync(candidate)) return candidate;
+    const parent = resolve(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+function loadManifest(cwd: string): IconManifest | null {
   if (cache) return cache;
+  const path = resolveManifestPath(cwd);
+  if (!path) return null;
   try {
-    const raw = readFileSync(join(__dirname, "..", "data", "icons.manifest.json"), "utf-8");
-    cache = JSON.parse(raw) as IconManifest;
+    cache = JSON.parse(readFileSync(path, "utf-8")) as IconManifest;
     return cache;
   } catch {
     return null;
@@ -90,15 +105,16 @@ export function registerIconTool(pi: ExtensionAPI): void {
         Type.Number({ description: "Max results to return (default 8)." }),
       ),
     }),
-    async execute(_toolCallId, params) {
-      const manifest = loadManifest();
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const cwd = (ctx as { cwd?: string } | undefined)?.cwd ?? process.cwd();
+      const manifest = loadManifest(cwd);
       if (!manifest) {
         const details: FindIconDetails = { error: "manifest_missing" };
         return {
           content: [
             {
               type: "text",
-              text: "Icon manifest not found. Run `pnpm --filter @arvoretech/pi-design-copilot gen:icons` to generate data/icons.manifest.json.",
+              text: "Icon manifest not found. Set ARVORE_ICONS_MANIFEST to the icons.manifest.json path, or run it from a workspace that contains design/design-system/icons.manifest.json (generated in arvore-hub via scripts/build-icon-manifest.mjs).",
             },
           ],
           details,

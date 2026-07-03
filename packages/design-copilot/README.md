@@ -2,19 +2,20 @@
 
 Extension do Pi que torna o modelo muito melhor em trabalho de UI da Árvore. Quatro capacidades que se reforçam:
 
-## 1. `find_icon` — índice pesquisável dos ~966 ícones
-O modelo não consegue "ver" 966 arquivos de ícone. Esta tool busca por conceito (PT **ou** EN) e devolve o nome exato do componente + a linha de import pronta.
+## 1. `find_icon` — índice pesquisável de ícones
+O modelo não consegue "ver" centenas de arquivos de ícone. Esta tool busca por conceito (PT **ou** EN) e devolve o nome exato do componente + a linha de import pronta.
 
 ```
 find_icon({ concept: "adicionar aluno" })
 → AddIcon, ... + import { AddIcon } from '@/components/icons'
 ```
 
-Índice pré-gerado em `data/icons.manifest.json`. Regenerar quando a pasta de ícones mudar:
+**Os dados vivem no workspace consumidor, não neste pacote OSS.** A tool resolve o manifest nesta ordem:
 
-```
-pnpm --filter @arvoretech/pi-design-copilot gen:icons
-```
+1. Env var `ARVORE_ICONS_MANIFEST` apontando pro arquivo `icons.manifest.json` (override explícito).
+2. Fallback: sobe a árvore de diretórios a partir do cwd procurando `design/design-system/icons.manifest.json`.
+
+No `arvore-hub` o manifest é gerado por `scripts/build-icon-manifest.mjs` (varre `frontend-arvore-nextjs/src/components/icons`) e commitado em `design/design-system/icons.manifest.json`. Assim o pacote publicado não carrega dados proprietários.
 
 ## 2. `find_asset` — registry de assets de marca
 Busca no registry curado (`design/design-system/assets/assets.manifest.json` no hub) por intenção. Quando existe thumbnail local leve, devolve o `path` para o modelo **ver a imagem** com a tool `read`; senão devolve `source_url` (Figma/Drive) + descrição. Ver `design/design-system/assets/README.md` para curar.
