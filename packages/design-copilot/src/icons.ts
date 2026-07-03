@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { type DesignSystem, dsConfig, resolveIconsManifest } from "./ds.js";
 
 interface IconEntry {
   name: string;
@@ -12,6 +12,7 @@ interface IconEntry {
 interface IconManifest {
   count: number;
   importPath: string;
+  usage?: string;
   icons: IconEntry[];
 }
 
@@ -21,32 +22,16 @@ interface FindIconDetails {
   top?: string;
 }
 
-const MANIFEST_REL = "design/design-system/icons.manifest.json";
+const cache: Partial<Record<DesignSystem, IconManifest>> = {};
 
-let cache: IconManifest | null = null;
-
-function resolveManifestPath(cwd: string): string | null {
-  const override = process.env.ARVORE_ICONS_MANIFEST;
-  if (override && existsSync(override)) return override;
-
-  let dir = resolve(cwd);
-  for (let i = 0; i < 8; i++) {
-    const candidate = join(dir, MANIFEST_REL);
-    if (existsSync(candidate)) return candidate;
-    const parent = resolve(dir, "..");
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
-}
-
-function loadManifest(cwd: string): IconManifest | null {
-  if (cache) return cache;
-  const path = resolveManifestPath(cwd);
+function loadManifest(ds: DesignSystem, cwd: string): IconManifest | null {
+  if (cache[ds]) return cache[ds] ?? null;
+  const path = resolveIconsManifest(ds, cwd);
   if (!path) return null;
   try {
-    cache = JSON.parse(readFileSync(path, "utf-8")) as IconManifest;
-    return cache;
+    const parsed = JSON.parse(readFileSync(path, "utf-8")) as IconManifest;
+    cache[ds] = parsed;
+    return parsed;
   } catch {
     return null;
   }
@@ -88,16 +73,20 @@ function scoreIcon(icon: IconEntry, terms: string[]): number {
 export function registerIconTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "find_icon",
-    label: "Find Bonsai Icon",
+    label: "Find Icon",
     description:
-      "Search the Árvore custom icon set (~966 icons in frontend-arvore-nextjs/src/components/icons) by concept in PT or EN. Returns the matching icon component names and a ready-to-paste import. ALWAYS use this to pick an icon instead of guessing a name or using lucide-react/react-icons.",
+      "Search a design system's icon set by concept in PT or EN and get the exact icon name + ready-to-use usage snippet. designSystem is REQUIRED: 'bonsai' = Árvore/Bonsai React icons (frontend-arvore-nextjs), 'superautor' = SuperAutor Rails SVG icons (superautor-sistema). ALWAYS use this to pick an icon instead of guessing a name or using lucide-react/react-icons. NEVER mix icons across design systems.",
     promptSnippet:
-      "find_icon — search the Árvore custom icon set by concept and get the exact component name + import line.",
+      "find_icon — search a design system's icon set (designSystem: 'bonsai' | 'superautor') and get the exact name + usage snippet.",
     promptGuidelines: [
-      "When you need an icon in any Árvore frontend, call find_icon with the concept (e.g. 'delete', 'aluno', 'livro') and use one of the returned components — never guess an icon name and never import lucide-react or react-icons.",
-      "Icons come from '@/components/icons'. Never use emojis in generated UI; use a system icon instead.",
+      "When you need an icon, call find_icon with the correct designSystem for the project you are in ('bonsai' for Árvore/frontend-arvore-nextjs, 'superautor' for SuperAutor/superautor-sistema) and use one of the returned icons — never guess a name and never import lucide-react or react-icons.",
+      "Never mix design systems: a Bonsai screen uses only bonsai icons, a SuperAutor screen uses only superautor icons. Never use emojis in generated UI; use a system icon instead.",
     ],
     parameters: Type.Object({
+      designSystem: Type.Union([Type.Literal("bonsai"), Type.Literal("superautor")], {
+        description:
+          "Which design system's icons to search. 'bonsai' = Árvore (React, @/components/icons). 'superautor' = SuperAutor (Rails SVG, icones/). REQUIRED.",
+      }),
       concept: Type.String({
         description: "What the icon should represent, in PT or EN (e.g. 'adicionar aluno', 'trash', 'livro').",
       }),
@@ -107,14 +96,16 @@ export function registerIconTool(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const cwd = (ctx as { cwd?: string } | undefined)?.cwd ?? process.cwd();
-      const manifest = loadManifest(cwd);
+      const ds = params.designSystem as DesignSystem;
+      const cfg = dsConfig(ds);
+      const manifest = loadManifest(ds, cwd);
       if (!manifest) {
         const details: FindIconDetails = { error: "manifest_missing" };
         return {
           content: [
             {
               type: "text",
-              text: "Icon manifest not found. Set ARVORE_ICONS_MANIFEST to the icons.manifest.json path, or run it from a workspace that contains design/design-system/icons.manifest.json (generated in arvore-hub via scripts/build-icon-manifest.mjs).",
+              text: `Icon manifest for ${cfg.label} not found. Set ${cfg.iconsEnv} to the icons.manifest.json path, or run from a workspace that contains ${cfg.iconsManifestRel} (generated in arvore-hub).`,
             },
           ],
           details,
@@ -154,17 +145,25 @@ export function registerIconTool(pi: ExtensionAPI): void {
       }
 
       const names = ranked.map((r) => r.icon.name);
-      const importLine = `import { ${names.join(", ")} } from '${manifest.importPath}'`;
       const list = ranked
         .map((r) => `- ${r.icon.name}  (file: ${r.icon.file})`)
         .join("\n");
+
+      let usage: string;
+      if (ds === "superautor") {
+        const use = manifest.usage ?? "Rails: <%= render_svg 'icones/<file>' %>";
+        usage = `Uso (${cfg.label}): ${use}\nEx: <%= render_svg '${manifest.importPath}${ranked[0].icon.file}' %>`;
+      } else {
+        const importLine = `import { ${names.join(", ")} } from '${manifest.importPath}'`;
+        usage = `Import:\n${importLine}\n\nUsage: <${names[0]} className="size-5" />`;
+      }
 
       const details: FindIconDetails = { count: ranked.length, top: names[0] };
       return {
         content: [
           {
             type: "text",
-            text: `Matches for "${params.concept}":\n${list}\n\nImport:\n${importLine}\n\nUsage: <${names[0]} className="size-5" />`,
+            text: `Matches for "${params.concept}" in ${cfg.label}:\n${list}\n\n${usage}`,
           },
         ],
         details,

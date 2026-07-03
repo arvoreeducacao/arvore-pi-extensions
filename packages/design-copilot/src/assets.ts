@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { type DesignSystem, dsConfig, resolveAssetsManifest } from "./ds.js";
 
 interface AssetEntry {
   id: string;
@@ -28,8 +29,6 @@ interface FindAssetDetails {
   viewable?: number;
 }
 
-const MANIFEST_REL = "design/design-system/assets/assets.manifest.json";
-
 function normalize(s: string): string {
   return s
     .toLowerCase()
@@ -38,23 +37,18 @@ function normalize(s: string): string {
     .trim();
 }
 
-function findManifest(cwd: string): { dir: string; manifest: AssetManifest } | null {
-  let dir = resolve(cwd);
-  for (let i = 0; i < 8; i++) {
-    const candidate = join(dir, MANIFEST_REL);
-    if (existsSync(candidate)) {
-      try {
-        const manifest = JSON.parse(readFileSync(candidate, "utf-8")) as AssetManifest;
-        return { dir: join(dir, "design/design-system/assets"), manifest };
-      } catch {
-        return null;
-      }
-    }
-    const parent = resolve(dir, "..");
-    if (parent === dir) break;
-    dir = parent;
+function findManifest(
+  ds: DesignSystem,
+  cwd: string,
+): { dir: string; manifest: AssetManifest } | null {
+  const resolved = resolveAssetsManifest(ds, cwd);
+  if (!resolved) return null;
+  try {
+    const manifest = JSON.parse(readFileSync(resolved.manifestPath, "utf-8")) as AssetManifest;
+    return { dir: resolved.assetsDir, manifest };
+  } catch {
+    return null;
   }
-  return null;
 }
 
 function scoreAsset(asset: AssetEntry, terms: string[]): number {
@@ -83,30 +77,36 @@ export function registerAssetTool(pi: ExtensionAPI): void {
     name: "find_asset",
     label: "Find Brand Asset",
     description:
-      "Search the Árvore curated brand/marketing asset registry (Otto mascot, illustrations, empty-state art, campaign assets). Returns the best matches with usage rules and, when a local thumbnail exists, its path so you can view it with the read tool before choosing. Use before adding any illustration or mascot to generated UI.",
+      "Search a design system's curated brand/asset registry (illustrations, mascots, stickers, logos, campaign art) and get usage rules plus, when a local thumbnail exists, its path to view with the read tool. designSystem is REQUIRED: 'bonsai' = Árvore (Otto, ilustrações, empty states), 'superautor' = SuperAutor (stickers, campeões, personagens). Use before adding any illustration/mascot/sticker to generated UI. NEVER mix assets across design systems.",
     promptSnippet:
-      "find_asset — search Árvore's curated brand asset registry (Otto, illustrations, empty states) with usage rules and viewable thumbnails.",
+      "find_asset — search a design system's asset registry (designSystem: 'bonsai' | 'superautor') with usage rules and viewable thumbnails.",
     promptGuidelines: [
-      "Before adding any illustration, mascot (Otto), or campaign art to generated UI, call find_asset and reuse an existing asset instead of inventing new art.",
-      "When a returned asset has a local `path`, read it with the read tool to actually see the image before using it. Respect the asset's `persona` and `quando_usar` rules.",
+      "Before adding any illustration, mascot, sticker or campaign art to generated UI, call find_asset with the correct designSystem for the project ('bonsai' for Árvore, 'superautor' for SuperAutor) and reuse an existing asset instead of inventing new art.",
+      "Never mix design systems: a Bonsai screen uses only bonsai assets, a SuperAutor screen uses only superautor assets. When a returned asset has a local `path`, read it with the read tool to actually see the image before using it. Respect the asset's `persona` and `quando_usar` rules.",
     ],
     parameters: Type.Object({
+      designSystem: Type.Union([Type.Literal("bonsai"), Type.Literal("superautor")], {
+        description:
+          "Which design system's assets to search. 'bonsai' = Árvore. 'superautor' = SuperAutor. REQUIRED.",
+      }),
       intent: Type.String({
         description:
-          "What you need the asset for, in PT or EN (e.g. 'empty state de aluno', 'celebração', 'otto onboarding').",
+          "What you need the asset for, in PT or EN (e.g. 'empty state de aluno', 'celebração', 'sticker campeão').",
       }),
       limit: Type.Optional(Type.Number({ description: "Max results (default 5)." })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const cwd = (ctx as { cwd?: string } | undefined)?.cwd ?? process.cwd();
-      const found = findManifest(cwd);
+      const ds = params.designSystem as DesignSystem;
+      const cfg = dsConfig(ds);
+      const found = findManifest(ds, cwd);
       if (!found) {
         const details: FindAssetDetails = { error: "manifest_missing" };
         return {
           content: [
             {
               type: "text",
-              text: `Asset manifest not found (looked for ${MANIFEST_REL} up the tree from ${cwd}). Make sure the arvore-hub design-system folder is present.`,
+              text: `Asset manifest for ${cfg.label} not found (looked for ${cfg.assetsManifestRel} up the tree from ${cwd}, or set ${cfg.assetsEnv}). Make sure the arvore-hub design-system folder is present.`,
             },
           ],
           details,
@@ -127,7 +127,7 @@ export function registerAssetTool(pi: ExtensionAPI): void {
           content: [
             {
               type: "text",
-              text: `No asset matched "${params.intent}". Registry has ${found.manifest.assets.length} entries. You can add one via ${MANIFEST_REL}.`,
+              text: `No ${cfg.label} asset matched "${params.intent}". Registry has ${found.manifest.assets.length} entries.`,
             },
           ],
           details,
