@@ -1,8 +1,8 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { UI_FILE_RE } from "./shared.js";
 
-const UI_FILE_RE = /\.(tsx|jsx|css|scss|vue)$/i;
 const UI_TOOLS = new Set(["edit", "write"]);
 
 const BRIEF_INSTRUCTION = `[DESIGN COPILOT — BRIEF ANTES DE GERAR UI]
@@ -24,6 +24,10 @@ interface BriefState {
   summary: string;
 }
 
+function initialBriefState(): BriefState {
+  return { done: false, skipped: false, summary: "" };
+}
+
 interface SubmitBriefDetails {
   accepted: boolean;
   missing?: string[];
@@ -38,7 +42,7 @@ function pathFromInput(input: unknown): string | undefined {
 }
 
 export function registerBriefGate(pi: ExtensionAPI): void {
-  const state: BriefState = { done: false, skipped: false, summary: "" };
+  let state: BriefState = initialBriefState();
 
   function updateStatus(ctx: ExtensionContext): void {
     if (state.done) {
@@ -174,7 +178,6 @@ export function registerBriefGate(pi: ExtensionAPI): void {
   });
 
   pi.on("context", async (event) => {
-    if (!state.done && !state.skipped) return;
     return {
       messages: event.messages.filter((m) => {
         const msg = m as AgentMessage & { customType?: string };
@@ -184,6 +187,7 @@ export function registerBriefGate(pi: ExtensionAPI): void {
   });
 
   pi.on("session_start", async (_event, ctx) => {
+    state = initialBriefState();
     updateStatus(ctx);
   });
 }

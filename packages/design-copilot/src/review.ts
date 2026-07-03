@@ -1,4 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { UI_FILE_RE } from "./shared.js";
 
 const REVIEW_PROMPT = `[DESIGN REVIEW — GATE DE HEURÍSTICAS]
 Faça uma auditoria da UI que acabou de ser criada/alterada nesta sessão contra o design system da Árvore. Prefira delegar a um sub-agent de contexto fresco (tool subagent, context: "fresh") para não poluir este contexto; se não houver subagent disponível, faça você mesmo.
@@ -35,12 +36,16 @@ export function registerReviewGate(pi: ExtensionAPI): void {
   });
 
   pi.on("tool_call", async (event) => {
-    if ((event.toolName === "edit" || event.toolName === "write")) {
+    if (event.toolName === "edit" || event.toolName === "write") {
       const path = (event.input as { path?: string } | undefined)?.path;
-      if (path && /\.(tsx|jsx|css|scss|vue)$/i.test(path)) {
+      if (path && UI_FILE_RE.test(path)) {
         uiTouchedThisSession = true;
       }
     }
+  });
+
+  pi.on("session_start", async () => {
+    uiTouchedThisSession = false;
   });
 
   pi.on("agent_end", async (_event, ctx) => {

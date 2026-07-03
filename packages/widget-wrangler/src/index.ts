@@ -162,6 +162,10 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
       key: string,
       text: string | undefined,
     ) => {
+      if (registry.has(key)) {
+        originalSetStatus?.(key, text);
+        return;
+      }
       if (text === undefined) {
         statusRegistry.delete(key);
         originalSetStatus?.(key, undefined);
