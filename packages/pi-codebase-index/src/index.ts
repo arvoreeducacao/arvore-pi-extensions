@@ -82,6 +82,14 @@ function login(): Promise<{
   });
 }
 
+function safeSetStatus(ctx: { ui: { setStatus: (key: string, text: string) => void } }, text: string): void {
+  try {
+    ctx.ui.setStatus("codebase", text);
+  } catch {
+    // ctx went stale after a session resume/replace/reload; ignore.
+  }
+}
+
 function restoreHiddenState(entries: unknown[]): void {
   for (const entry of entries) {
     const typed = entry as { type?: string; customType?: string; data?: { hidden?: boolean } };
@@ -120,14 +128,14 @@ export default function piCodebaseIndexExtension(pi: ExtensionAPI): void {
 
     const creds = await getCredentials();
     if (!hidden) {
-      ctx.ui.setStatus(
-        "codebase",
+      safeSetStatus(
+        ctx,
         creds ? "codebase: starting sync…" : "codebase: not logged in"
       );
     }
 
     if (creds) {
-      void triggerSync(pi, ctx.cwd, (text) => ctx.ui.setStatus("codebase", text));
+      void triggerSync(pi, ctx.cwd, (text) => safeSetStatus(ctx, text));
     }
   });
 
@@ -144,7 +152,7 @@ export default function piCodebaseIndexExtension(pi: ExtensionAPI): void {
         });
         ctx.ui.setStatus("codebase", `codebase: ${result.username}`);
         ctx.ui.notify(`Logged in as ${result.username}`, "info");
-        void triggerSync(pi, ctx.cwd, (text) => ctx.ui.setStatus("codebase", text));
+        void triggerSync(pi, ctx.cwd, (text) => safeSetStatus(ctx, text));
       } catch (error) {
         ctx.ui.notify(
           `Login failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -194,7 +202,7 @@ export default function piCodebaseIndexExtension(pi: ExtensionAPI): void {
     description: "Force a fresh sync of the workspace into the codebase index",
     handler: async (_args, ctx) => {
       ctx.ui.notify("Re-syncing codebase index…", "info");
-      await triggerSync(pi, ctx.cwd, (text) => ctx.ui.setStatus("codebase", text));
+      await triggerSync(pi, ctx.cwd, (text) => safeSetStatus(ctx, text));
     },
   });
 
