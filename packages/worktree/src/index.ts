@@ -990,7 +990,7 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
           const paths = [...activeWorktreePaths.values()];
 
           if (inHerdr) {
-            const sourcePane = process.env.HERDR_PANE_ID;
+            let sourcePane = process.env.HERDR_PANE_ID;
             for (let i = 0; i < paths.length; i++) {
               const args = ["pane", "split", "--direction", i === 0 ? "right" : "down", "--cwd", paths[i], "--no-focus"];
               if (sourcePane) args.splice(2, 0, sourcePane);
@@ -998,6 +998,14 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
               if (result.status !== 0) {
                 ctx.ui.notify(`herdr pane split failed: ${result.stderr?.trim() || result.error?.message || "unknown error"}`, "error");
                 return;
+              }
+              if (i > 0) {
+                try {
+                  const parsed = JSON.parse(result.stdout || "");
+                  const newPaneId = parsed?.result?.pane?.pane_id;
+                  if (newPaneId) sourcePane = newPaneId;
+                } catch {
+                }
               }
             }
           } else {
