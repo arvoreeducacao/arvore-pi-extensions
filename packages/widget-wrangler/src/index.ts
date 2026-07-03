@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 
 const CUSTOM_TYPE = "widget-wrangler-config";
 const OWN_WIDGET_KEY = "widget-wrangler";
+const STATUS_PREFIX = "status:";
 
 function configPath(): string {
   return join(getAgentDir(), "widget-wrangler.json");
@@ -48,14 +49,21 @@ interface WidgetRecord {
   rendered: boolean;
 }
 
+interface StatusRecord {
+  text: string | undefined;
+  rendered: boolean;
+}
+
 interface WranglerState {
   disabled: string[];
 }
 
 export default function widgetWranglerExtension(pi: ExtensionAPI) {
   const registry = new Map<string, WidgetRecord>();
+  const statusRegistry = new Map<string, StatusRecord>();
   const disabled = new Set<string>();
   let originalSetWidget: ExtensionUIContext["setWidget"] | null = null;
+  let originalSetStatus: ExtensionUIContext["setStatus"] | null = null;
   let patchedUi: ExtensionUIContext | null = null;
 
   function persist(): boolean {
@@ -102,6 +110,23 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     }
   }
 
+  function statusToggleKey(key: string): string {
+    return `${STATUS_PREFIX}${key}`;
+  }
+
+  function applyStatus(key: string) {
+    if (!originalSetStatus) return;
+    const record = statusRegistry.get(key);
+    if (!record) return;
+    if (isEnabled(statusToggleKey(key)) && record.text !== undefined) {
+      originalSetStatus(key, record.text);
+      record.rendered = true;
+    } else if (record.rendered) {
+      originalSetStatus(key, undefined);
+      record.rendered = false;
+    }
+  }
+
   function patchSetWidget(ui: ExtensionUIContext) {
     if (patchedUi === ui && originalSetWidget) return;
     originalSetWidget = ui.setWidget.bind(ui);
@@ -131,6 +156,27 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     }) as ExtensionUIContext["setWidget"];
 
     (ui as { setWidget: ExtensionUIContext["setWidget"] }).setWidget = wrapped;
+
+    originalSetStatus = ui.setStatus.bind(ui);
+    const wrappedStatus: ExtensionUIContext["setStatus"] = ((
+      key: string,
+      text: string | undefined,
+    ) => {
+      if (registry.has(key)) {
+        originalSetStatus?.(key, text);
+        return;
+      }
+      if (text === undefined) {
+        statusRegistry.delete(key);
+        originalSetStatus?.(key, undefined);
+        return;
+      }
+      const existing = statusRegistry.get(key);
+      statusRegistry.set(key, { text, rendered: existing?.rendered ?? false });
+      applyStatus(key);
+    }) as ExtensionUIContext["setStatus"];
+
+    (ui as { setStatus: ExtensionUIContext["setStatus"] }).setStatus = wrappedStatus;
   }
 
   function placementLabel(placement: WidgetPlacement | undefined): string {
@@ -138,24 +184,46 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
   }
 
   function buildItems(): SettingItem[] {
-    const keys = Array.from(registry.keys()).sort((a, b) => a.localeCompare(b));
-    return keys.map((key) => {
-      const record = registry.get(key);
-      const enabled = isEnabled(key);
-      return {
-        id: key,
-        label: key,
-        description: `${placementLabel(record?.options?.placement)} editor${record?.content === undefined ? " · idle" : ""}`,
-        currentValue: enabled ? "shown" : "hidden",
-        values: ["shown", "hidden"],
-      };
-    });
+    const widgetItems: SettingItem[] = Array.from(registry.keys())
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => {
+        const record = registry.get(key);
+        const enabled = isEnabled(key);
+        return {
+          id: key,
+          label: key,
+          description: `widget · ${placementLabel(record?.options?.placement)} editor${record?.content === undefined ? " · idle" : ""}`,
+          currentValue: enabled ? "shown" : "hidden",
+          values: ["shown", "hidden"],
+        };
+      });
+
+    const statusItems: SettingItem[] = Array.from(statusRegistry.keys())
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => {
+        const toggleKey = statusToggleKey(key);
+        const record = statusRegistry.get(key);
+        const enabled = isEnabled(toggleKey);
+        return {
+          id: toggleKey,
+          label: `${key} (status)`,
+          description: `footer status${record?.text === undefined ? " · idle" : ` · "${record?.text}"`}`,
+          currentValue: enabled ? "shown" : "hidden",
+          values: ["shown", "hidden"],
+        };
+      });
+
+    return [...widgetItems, ...statusItems];
   }
 
   function setHidden(key: string, hidden: boolean, ui?: ExtensionUIContext) {
     if (hidden) disabled.add(key);
     else disabled.delete(key);
-    applyWidget(key);
+    if (key.startsWith(STATUS_PREFIX)) {
+      applyStatus(key.slice(STATUS_PREFIX.length));
+    } else {
+      applyWidget(key);
+    }
     if (!persist()) {
       ui?.notify(`Failed to save widget-wrangler config to ${configPath()} 🤠`, "error");
     }
@@ -208,7 +276,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
   }
 
   pi.registerCommand("wrangle", {
-    description: "🤠 Wrangle the widget herd — show/hide widgets from any extension",
+    description: "🤠 Wrangle the herd — show/hide widgets and footer statuses from any extension",
     handler: async (_args, ctx) => {
       await openPanel(ctx);
     },
@@ -235,6 +303,7 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     patchSetWidget(ctx.ui);
     restoreConfig(ctx);
     for (const key of registry.keys()) applyWidget(key);
+    for (const key of statusRegistry.keys()) applyStatus(key);
   });
 
   pi.on("session_tree", (_event, ctx) => {
@@ -242,5 +311,6 @@ export default function widgetWranglerExtension(pi: ExtensionAPI) {
     patchSetWidget(ctx.ui);
     restoreConfig(ctx);
     for (const key of registry.keys()) applyWidget(key);
+    for (const key of statusRegistry.keys()) applyStatus(key);
   });
 }
