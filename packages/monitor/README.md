@@ -22,7 +22,11 @@ The agent keeps working and is interrupted only when a matching line arrives. Mo
 
 ## Command
 
-- `/monitors` — list running monitors.
+- `/monitors` — abre o painel de logs (monitores ativos + eventos recentes). Esc fecha.
+
+## Footer
+
+Enquanto houver monitores rodando, um item aparece no rodapé (`1 monitor ativo · /monitors p/ logs`). Ele some sozinho quando o último monitor termina, e pode ser escondido pela extensão `widget-wrangler` (`/wrangle`).
 
 ## Notes vs Claude Code Monitor
 

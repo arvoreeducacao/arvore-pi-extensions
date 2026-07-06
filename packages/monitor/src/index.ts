@@ -1,5 +1,6 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@earendil-works/pi-ai";
+import { Container, Text } from "@earendil-works/pi-tui";
 import {
   listMonitors,
   safeRegExp,
@@ -11,23 +12,125 @@ import {
 
 const DEFAULT_MAX_EVENTS = 40;
 const DEFAULT_WINDOW_MS = 60_000;
+const STATUS_KEY = "monitor";
+const MAX_LOG_LINES = 200;
+
+type UIRef = {
+  setStatus: (key: string, text: string | undefined) => void;
+};
+
+function kindTag(kind: MonitorEvent["kind"]): string {
+  switch (kind) {
+    case "exit":
+      return "exit";
+    case "flood":
+      return "flood";
+    case "stderr":
+      return "err";
+    default:
+      return "out";
+  }
+}
 
 function formatEvent(event: MonitorEvent): string {
-  const tag =
-    event.kind === "exit"
-      ? "🏁"
-      : event.kind === "flood"
-        ? "🚱"
-        : event.kind === "stderr"
-          ? "⚠️"
-          : "📡";
-  return `${tag} [monitor:${event.monitorId}] ${event.line}`;
+  return `[monitor:${event.monitorId}] (${kindTag(event.kind)}) ${event.line}`;
 }
 
 export default function extension(pi: ExtensionAPI): void {
+  let ui: UIRef | undefined;
+  const logBuffer: MonitorEvent[] = [];
+
+  const refreshStatus = () => {
+    if (!ui) return;
+    const active = listMonitors().length;
+    if (active === 0) {
+      ui.setStatus(STATUS_KEY, undefined);
+      return;
+    }
+    const label = active === 1 ? "1 monitor ativo" : `${active} monitores ativos`;
+    ui.setStatus(STATUS_KEY, `${label} · /monitors p/ logs`);
+  };
+
+  const recordEvent = (event: MonitorEvent) => {
+    logBuffer.push(event);
+    while (logBuffer.length > MAX_LOG_LINES) logBuffer.shift();
+    refreshStatus();
+  };
+
   const pushEvent = (event: MonitorEvent, deliverAs: "steer" | "followUp") => {
+    recordEvent(event);
     pi.sendUserMessage(formatEvent(event), { deliverAs });
   };
+
+  const captureUI = (ctx: { ui?: UIRef }) => {
+    if (ctx.ui) ui = ctx.ui;
+  };
+
+  const openLogPanel = async (ctx: ExtensionContext) => {
+    if (ctx.mode !== "tui") {
+      ctx.ui.notify("O painel de logs precisa do modo TUI.", "error");
+      return;
+    }
+    const running = listMonitors();
+    if (running.length === 0 && logBuffer.length === 0) {
+      ctx.ui.notify("Nenhum monitor ativo e nenhum log recente.", "info");
+      return;
+    }
+
+    await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+      const container = new Container();
+      const activeLabel =
+        running.length === 0
+          ? "sem monitores ativos"
+          : running.map((m) => m.id).join(", ");
+      container.addChild(
+        new Text(
+          `${theme.fg("accent", theme.bold("monitor logs"))}  ${theme.fg("muted", `${activeLabel} · esc fecha`)}`,
+          1,
+          1,
+        ),
+      );
+      const recent = logBuffer.slice(-40);
+      if (recent.length === 0) {
+        container.addChild(new Text(theme.fg("muted", "  (sem eventos ainda)"), 0, 1));
+      }
+      for (const e of recent) {
+        const prefix = theme.fg("muted", `[${e.monitorId}] `);
+        const body = e.line;
+        let line: string;
+        if (e.kind === "stderr" || e.kind === "flood") {
+          line = prefix + theme.fg("warning", body);
+        } else if (e.kind === "exit") {
+          line = prefix + theme.fg("success", body);
+        } else {
+          line = prefix + body;
+        }
+        container.addChild(new Text(line, 0, 0));
+      }
+
+      return {
+        render: (width: number) => container.render(width),
+        invalidate: () => container.invalidate(),
+        handleInput: (data: string) => {
+          if (data === "\x1b" || data === "q") {
+            done(undefined);
+            return;
+          }
+          tui.requestRender();
+        },
+      };
+    }, { overlay: true });
+  };
+
+  pi.on("session_start", async (_event, ctx) => {
+    captureUI(ctx as unknown as { ui?: UIRef });
+    refreshStatus();
+  });
+
+  pi.on("session_tree", async (_event, ctx) => {
+    captureUI(ctx as unknown as { ui?: UIRef });
+    refreshStatus();
+  });
 
   pi.registerTool({
     name: "monitor_start",
@@ -81,7 +184,8 @@ export default function extension(pi: ExtensionAPI): void {
         }),
       ),
     }),
-    async execute(_toolCallId, params) {
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      captureUI(ctx as unknown as { ui?: UIRef });
       const deliverAs = params.deliverAs ?? "steer";
       try {
         const handle = startMonitor(
@@ -98,6 +202,7 @@ export default function extension(pi: ExtensionAPI): void {
           },
           (event) => pushEvent(event, deliverAs),
         );
+        refreshStatus();
         return {
           content: [
             {
@@ -130,6 +235,7 @@ export default function extension(pi: ExtensionAPI): void {
     async execute(_toolCallId, params) {
       if (params.all) {
         const count = stopAllMonitors();
+        refreshStatus();
         return {
           content: [{ type: "text", text: `Stopped ${count} monitor(s).` }],
           details: { stopped: count } as Record<string, unknown>,
@@ -142,6 +248,7 @@ export default function extension(pi: ExtensionAPI): void {
         };
       }
       const ok = stopMonitor(params.id, "manual");
+      refreshStatus();
       return {
         content: [
           { type: "text", text: ok ? `Stopped monitor "${params.id}".` : `No monitor "${params.id}" running.` },
@@ -172,21 +279,16 @@ export default function extension(pi: ExtensionAPI): void {
   });
 
   pi.registerCommand("monitors", {
-    description: "List running background monitors.",
+    description: "Open the monitor log panel (running monitors + recent events). Esc to close.",
     handler: async (_args, ctx) => {
-      const running = listMonitors();
-      if (running.length === 0) {
-        ctx.ui.notify("No monitors running.", "info");
-        return;
-      }
-      ctx.ui.notify(
-        running.map((m) => `${m.id}: ${m.command} (${m.eventCount} events)`).join("\n"),
-        "info",
-      );
+      captureUI(ctx as unknown as { ui?: UIRef });
+      await openLogPanel(ctx);
     },
   });
 
   pi.on("session_shutdown", async () => {
     stopAllMonitors();
+    logBuffer.length = 0;
+    ui?.setStatus(STATUS_KEY, undefined);
   });
 }
