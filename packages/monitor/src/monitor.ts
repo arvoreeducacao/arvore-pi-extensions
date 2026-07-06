@@ -57,7 +57,11 @@ export function startMonitor(config: MonitorConfig, emit: Emit): MonitorHandle {
     cwd: config.cwd,
     shell: true,
     env: process.env,
+    detached: process.platform !== "win32",
   }) as ChildProcessWithoutNullStreams;
+
+  const maxEventsPerWindow =
+    config.maxEventsPerWindow > 0 ? config.maxEventsPerWindow : 1;
 
   const handle: RunningMonitor = {
     config,
@@ -86,12 +90,12 @@ export function startMonitor(config: MonitorConfig, emit: Emit): MonitorHandle {
     }
     handle.windowCount += 1;
 
-    if (handle.windowCount > config.maxEventsPerWindow) {
+    if (handle.windowCount > maxEventsPerWindow) {
       emit({
         monitorId: config.id,
         command: config.command,
         kind: "flood",
-        line: `Monitor "${config.id}" exceeded ${config.maxEventsPerWindow} events in ${Math.round(config.windowMs / 1000)}s and was auto-stopped. Restart it with a tighter include/exclude filter.`,
+        line: `Monitor "${config.id}" exceeded ${maxEventsPerWindow} events in ${Math.round(config.windowMs / 1000)}s and was auto-stopped. Restart it with a tighter include/exclude filter.`,
       });
       stopMonitor(config.id, "flood");
       return;
@@ -106,6 +110,8 @@ export function startMonitor(config: MonitorConfig, emit: Emit): MonitorHandle {
   if (config.captureStderr) {
     handle.stderrReader = createInterface({ input: child.stderr });
     handle.stderrReader.on("line", onLine("stderr"));
+  } else {
+    child.stderr.resume();
   }
 
   child.on("exit", (code, signal) => {
@@ -128,6 +134,8 @@ export function startMonitor(config: MonitorConfig, emit: Emit): MonitorHandle {
   child.on("error", (err) => {
     if (handle.stopped) return;
     handle.stopped = true;
+    handle.stdoutReader.close();
+    handle.stderrReader?.close();
     monitors.delete(config.id);
     emit({
       monitorId: config.id,
@@ -147,13 +155,27 @@ export function stopMonitor(id: string, _reason: string): boolean {
   handle.stopped = true;
   handle.stdoutReader.close();
   handle.stderrReader?.close();
-  try {
-    handle.child.kill("SIGTERM");
-  } catch {
-    // process already gone
-  }
+  killProcessTree(handle.child);
   monitors.delete(id);
   return true;
+}
+
+function killProcessTree(child: ChildProcessWithoutNullStreams): void {
+  const pid = child.pid;
+  if (pid === undefined) return;
+  try {
+    if (process.platform !== "win32") {
+      process.kill(-pid, "SIGTERM");
+    } else {
+      child.kill("SIGTERM");
+    }
+  } catch {
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      // process already gone
+    }
+  }
 }
 
 export function listMonitors(): Array<{
