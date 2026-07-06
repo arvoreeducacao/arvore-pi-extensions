@@ -1,0 +1,46 @@
+{
+  "name": "@arvoretech/pi-monitor",
+  "version": "1.0.0",
+  "description": "PI extension that watches a background process and pushes matching output lines to the agent as notifications (no polling)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-tui": "latest",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "monitor",
+    "background-process",
+    "streaming"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/monitor"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
