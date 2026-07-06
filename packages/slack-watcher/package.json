@@ -1,0 +1,50 @@
+{
+  "name": "@arvoretech/pi-slack-watcher",
+  "version": "1.0.0",
+  "description": "PI extension that lets the agent watch a Slack thread, channel or DM by polling and pushes each new message to the agent to judge and act on",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.74.0 <1.0.0"
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "^0.80.3"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.80.3",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "slack",
+    "watch",
+    "monitor"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/slack-watcher"
+  },
+  "author": "Arvore",
+  "license": "MIT"
+}
