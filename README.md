@@ -18,6 +18,7 @@ Monorepo for custom PI extensions used across Arvore projects.
 | `@arvoretech/pi-team-memory` | Team memory with proactive capture hooks |
 | `@arvoretech/pi-memory` | Cloud-based memory with RAG (Qdrant + GitHub OAuth) |
 | `@arvoretech/pi-monitor` | Watches a background process and pushes matching output lines to the agent as notifications (no polling) |
+| `@arvoretech/pi-recap` | Drafts a one-line recap of where you left off — on demand with `/recap` and automatically when you return to an idle session |
 | `@arvoretech/pi-warp-tab-title` | Renames Warp terminal tab to reflect current task focus |
 | `@arvoretech/pi-worktree` | Manages git worktrees across multi-repo workspaces with tree-themed names |
 
