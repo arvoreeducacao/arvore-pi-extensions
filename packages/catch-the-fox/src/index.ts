@@ -37,43 +37,44 @@ const ANIMS: Record<FoxState, Anim> = {
     label: "esperando você…",
     intervalMs: 700,
     grids: [
-      [".O.......O.G.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".O.......OG..", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["............................", "............................", "............................", "......................G.....", "....................G.......", "....NN......NNNNNN..........", "...NWON...NNDDDDDDNN........", "...NODON.NDDOOOOOOODN.......", "..NOOOOONDOOOOOOOOOODN......", "..NOOOOODOOOOOOOOOOOODN.....", "..NOONNOOOOOOOOOOOOOOON.....", "..NOOOOOOOOOOOOOOOOWWWN.....", "...NWWWWNOOOOOOOOOWWWNN.....", "....NNNNNNNNNNNNNNNNN.......", "............................", "............................"],
+      ["............................", "............................", ".......................G....", ".....................G......", "............................", "....NN......NNNNNN..........", "...NWON...NNDDDDDDNN........", "...NODON.NDDOOOOOOODN.......", "..NOOOOONDOOOOOOOOOODN......", "..NOOOOODOOOOOOOOOOOODN.....", "..NOONNOOOOOOOOOOOOOOON.....", "..NOOOOOOOOOOOOOOOOWWWN.....", "...NWWWWNOOOOOOOOOWWWNN.....", "....NNNNNNNNNNNNNNNNN.......", "............................", "............................"],
+      [".........................G..", "........................G...", "......................G.....", "............................", "............................", "....NN......NNNNNN..........", "...NWON...NNDDDDDDNN........", "...NODON.NDDOOOOOOODN.......", "..NOOOOONDOOOOOOOOOODN......", "..NOOOOODOOOOOOOOOOOODN.....", "..NOONNOOOOOOOOOOOOOOON.....", "..NOOOOOOOOOOOOOOOOWWWN.....", "...NWWWWNOOOOOOOOOWWWNN.....", "....NNNNNNNNNNNNNNNNN.......", "............................", "............................"],
     ],
   },
   sniff: {
     label: "farejando o código",
     intervalMs: 280,
     grids: [
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWG..", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWGG.", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWWGGG", ".OWWWWWWWO...", "..BOOOOOB...."],
+      [".................N.....N....", "................NWN...NWN...", "................NWON..NWON..", "...............NOOONNNOOON..", "...............NDOOOOOOOON..", "..............NDOOOONOOOOONG", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", "..NNOOOOOOOOOOOOOOOOWWWN....", "....NNNOONDNNNNDOONWWWNN....", "......NON.NON..NON.NON......", "......NBN.NBN..NBN.NBN......", ".......N...N....N...N......."],
+      [".................N.....N....", "................NWN...NWN...", "................NWON..NWON..", "...............NOOONNNOOON..", "...............NDOOOOOOOONG.", "..............NDOOOONOOOOONG", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", "..NNOOOOOOOOOOOOOOOOWWWN....", "....NNNOONDNNNNDOONWWWNN....", "......NON.NON..NON.NON......", "......NBN.NBN..NBN.NBN......", ".......N...N....N...N......."],
+      [".................N.....N....", "................NWN...NWN...", "................NWON..NWONG.", "...............NOOONNNOOON.G", "...............NDOOOOOOOONG.", "..............NDOOOONOOOOON.", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", "..NNOOOOOOOOOOOOOOOOWWWN....", "....NNNOONDNNNNDOONWWWNN....", "......NON.NON..NON.NON......", "......NBN.NBN..NBN.NBN......", ".......N...N....N...N......."],
     ],
   },
   dig: {
     label: "cavando na base",
     intervalMs: 220,
     grids: [
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO.D.", "..BOOOOOBD..."],
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", "D.OWWWWWWWO..", ".DBOOOOOB...."],
+      ["..NNN.......................", ".NWWDN......NN..............", ".NWWDDN....NDDN.............", "..NOODN...NDDOON..N.....N...", "...NOODN.NDOOOOONNWN...NWN..", "....NOODNDOOOOOONWON..NWON..", ".....NODDOOOOOONOOONNNOOON..", "......NDOOOOOONDOOOOOOOON...", "......NOOOOOONDOOOONOOOOON..", ".......NOOOONOOOOOOOOOOOOON.", ".......NOONNOOOOOOOOOOOOONN.", ".......NOON.NNOOOOOOWWWWWNN.", ".......NBBN...NOOONWWWWWNN..", ".......NBBN.D.NBBN.NNNNN....", "........NN.D...NN...........", "............................"],
+      ["..NNN.......................", ".NWWDN......NN..............", ".NWWDDN....NDDN.............", "..NOODN...NDDOON..N.....N...", "...NOODN.NDOOOOONNWN...NWN..", "....NOODNDOOOOOONWON..NWON..", ".....NODDOOOOOONOOONNNOOON..", "......NDOOOOOONDOOOOOOOON...", "......NOOOOOONDOOOONOOOOON..", ".......NOOOONOOOOOOOOOOOOON.", ".......NOONNOOOOOOOOOOOOONN.", ".......NOONDNNOOOOOOWWWWWNN.", ".......NBBN.D.NOOONWWWWWNN..", ".......NBBN...NBBN.NNNNN....", "........NN...D.NN...........", "............................"],
+      ["..NNN.......................", ".NWWDN......NN..............", ".NWWDDN....NDDN.............", "..NOODN...NDDOON..N.....N...", "...NOODN.NDOOOOONNWN...NWN..", "....NOODNDOOOOOONWON..NWON..", ".....NODDOOOOOONOOONNNOOON..", "......NDOOOOOONDOOOOOOOON...", "......NOOOOOONDOOOONOOOOON..", ".......NOOOONOOOOOOOOOOOOON.", ".......NOONNOOOOOOOOOOOOONN.", ".......NOON.NNOOOOOOWWWWWNN.", ".......NBBN..DNOOONWWWWWNN..", ".......NBBND..NBBNDNNNNN....", "........NN..D..NN...........", "............................"],
     ],
   },
   run: {
     label: "correndo atrás",
     intervalMs: 130,
     grids: [
-      ["...O.......O.", "...OO.....OO.", "...OPO...OPO.", "...OOOOOOOOO.", "...OONOOONOO.", "G..WWOWBWOWW.", "GG.OWWWWWWWO.", "...BOOOOOB..."],
-      ["..O.......O..", "..OO.....OO..", "..OPO...OPO..", "..OOOOOOOOO..", "..OONOOONOO..", "GG.WWOWBWOWW.", "G..OWWWWWWWO.", "...BOOOOOB..."],
+      [".................N.....N....", "................NWN...NWN...", "................NWON..NWON..", "...............NOOONNNOOON..", "...............NDOOOOOOOON..", "..............NDOOOONOOOOON.", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", "..NNOOOOOOOOOOOOOOOOWWWN....", ".G..NNNNNONNNNNNONNNNNNN....", "..G.....NON....NON..........", "........NBN....NBN..........", ".........N......N..........."],
+      [".................N.....N....", "................NWN...NWN...", "................NWON..NWON..", "...............NOOONNNOOON..", "...............NDOOOOOOOON..", "..............NDOOOONOOOOON.", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", ".GNNOOOOOOOOOOOOOOOOWWWN....", "G...NNNONNNNNNNNNNNONNNN....", "...G..NON.........NON.......", ".....NBN...........NBN......", "......N.............N......."],
     ],
   },
   jump: {
     label: "pulando de alegria!",
     intervalMs: 160,
     grids: [
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      ["YO.......O.Y.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".O..Y..Y.O...", "YOO.....OO.Y.", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      ["YO.......O.Y.", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["....Y.......................", "..........NNNNNN....Y.......", "..NNN...NNDDDDDDNN......Y...", ".NWWDN.NDDOOOOOOODNN........", ".NWWDDNDOOOOOOOOOOODNN.N..N.", "..NOODDOOOOOOOOOOOOOONNWNNWN", "...NOODOOODNNNNNNNOOOOOOOOON", "....NNODDNN.....NOOOOOOOOOON", "..Y...NNN.......NOOOONOOOOON", ".......NBN......NNOOOOOOOONN", "........NN.......NOOOOWWWWN.", "..................NNOWWWWN..", "....................NWWWN...", ".....................NNN....", "............................", "............................"],
+      [".................Y..........", "......Y...NNNNNN............", "..NNN...NNDDDDDDNN....Y.....", ".NWWDN.NDDOOOOOOODNN........", ".NWWDDNDOOOOOOOOOOODNN.N..N.", "..NOODDOOOOOOOOOOOOOONNWNNWN", "...NOODOOODNNNNNNNOOOOOOOOON", "Y...NNODDNN.....NOOOOOOOOOON", "......NNN.......NOOOONOOOOON", ".......NBN......NNOOOOOOOONN", "........NN.......NOOOOWWWWN.", "..................NNOWWWWN..", "....................NWWWN...", ".....................NNN....", "............................", "............................"],
+      ["........Y...................", "..........NNNNNN...Y........", "..NNN...NNDDDDDDNN........Y.", ".NWWDN.NDDOOOOOOODNN........", ".NWWDDNDOOOOOOOOOOODNN.N..N.", "..NOODDOOOOOOOOOOOOOONNWNNWN", "Y..NOODOOODNNNNNNNOOOOOOOOON", "....NNODDNN.....NOOOOOOOOOON", "......NNN...Y...NOOOONOOOOON", ".......NBN......NNOOOOOOOONN", "........NN.......NOOOOWWWWN.", "..................NNOWWWWN..", "....................NWWWN...", ".....................NNN....", "............................", "............................"],
     ],
   },
   caught: {
@@ -81,8 +82,8 @@ const ANIMS: Record<FoxState, Anim> = {
     intervalMs: 170,
     once: { durationMs: 1600, then: "sleep" },
     grids: [
-      ["YO.......O.Y.", ".OO.....OO...", "Y.PO...OPO.Y.", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".O..Y.Y..O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", "Y.ONOOONOO.Y.", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["........Y..N.....N..........", "..........NWN...NWN.........", "..........NWON..NWON.Y......", ".........NOOONNNOOON........", ".........NDOOOOOOOON........", ".........NDOOONOOOOON.......", "......Y..NOOOOOOOOOOONN.....", ".........NOOOOOOWWWWWNN.Y...", "........NOOOOOWWWWWNNN......", "..NNN...NDOOOWWWWWON........", ".NDDDN..NOOOWWWWWWON........", "NWWDDDN.NOOWWWWWWWON........", "NWWODDDNNOOWWWWWWON.........", ".NOOODDDOOOWWWWWWON.........", "..NNNOOOOOOWWWWOOON.........", "....NNNNNNNNNNNNNNN........."],
+      ["...........N.....N..Y.......", ".......Y..NWN...NWN.........", "..........NWON..NWON........", ".........NOOONNNOOON........", ".........NDOOOOOOOON...Y....", ".........NDOOONOOOOON.......", ".........NOOOOOOOOOOONN.....", "...Y.....NOOOOOOWWWWWNN.....", "........NOOOOOWWWWWNNN......", "..NNN...NDOOOWWWWWON........", ".NDDDN..NOOOWWWWWWON........", "NWWDDDN.NOOWWWWWWWON........", "NWWODDDNNOOWWWWWWON.........", ".NOOODDDOOOWWWWWWON.........", "..NNNOOOOOOWWWWOOON.........", "....NNNNNNNNNNNNNNN........."],
     ],
   },
   error: {
@@ -90,16 +91,16 @@ const ANIMS: Record<FoxState, Anim> = {
     intervalMs: 190,
     once: { durationMs: 1200, then: "sleep" },
     grids: [
-      [".O.......O.R.", ".OO.....OO.R.", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".O.......O...", ".OO.....OO...", ".OPO...OPO...", ".OOOOOOOOO...", ".OONOOONOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["...........RR....N.....N....", "...........RR...NWN...NWN...", "...........RR...NWON..NWON..", "...............NOOONNNOOON..", "...........RR..NDOOOOOOOON..", "..............NDOOOONOOOOON.", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", "..NNOOOOOOOOOOOOOOOOWWWN....", "....NNNOONDNNNNDOONWWWNN....", "......NON.NON..NON.NON......", "......NBN.NBN..NBN.NBN......", ".......N...N....N...N......."],
+      [".................N.....N....", "................NWN...NWN...", "................NWON..NWON..", "...............NOOONNNOOON..", "...............NDOOOOOOOON..", "..............NDOOOONOOOOON.", "..............NOOOOOOOOOOONN", ".NNNN.........NOOOOOOOWWWWNN", "NDDDDN..NNNNNNOOOOOOOWWWWNN.", "NWWDDDNNDDDDDOOOOOOOOOWNNN..", ".NWWOODDOOOOOOOOOOOOOWWN....", "..NNOOOOOOOOOOOOOOOOWWWN....", "....NNNOONDNNNNDOONWWWNN....", "......NON.NON..NON.NON......", "......NBN.NBN..NBN.NBN......", ".......N...N....N...N......."],
     ],
   },
   sad: {
     label: "tá difícil hoje…",
     intervalMs: 580,
     grids: [
-      [".............", "OO.......OO..", ".OO.....OO...", ".OOOOOOOOO...", ".OOCOOOCOO...", ".WWOWBWOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
-      [".............", "OO.......OO..", ".OO.....OO...", ".OOOOOOOOO...", ".OOCOOOCOO...", ".WWOCBCOWW...", ".OWWWWWWWO...", "..BOOOOOB...."],
+      ["............................", "............................", "........NN........NN........", ".......NOONNNNNNNNOON.......", ".......NDNDOOOOOOONDN.......", ".......NNNDOOONOOOOON.......", ".........NOOOOCOOOOOONN.....", ".........NOOOOOOWWWWWNN.....", "........NOOOOOWWWWWNNN......", "..NNN...NDOOOWWWWWON........", ".NDDDN..NOOOWWWWWWON........", "NWWDDDN.NOOWWWWWWWON........", "NWWODDDNNOOWWWWWWON.........", ".NOOODDDOOOWWWWWWON.........", "..NNNOOOOOOWWWWOOON.........", "....NNNNNNNNNNNNNNN........."],
+      ["............................", "............................", "........NN........NN........", ".......NOONNNNNNNNOON.......", ".......NDNDOOOOOOONDN.......", ".......NNNDOOONOOOOON.......", ".........NOOOOOOOOOOONN.....", ".........NOOOOCOWWWWWNN.....", "........NOOOOOWWWWWNNN......", "..NNN...NDOOOWWWWWON........", ".NDDDN..NOOOWWWWWWON........", "NWWDDDN.NOOWWWWWWWON........", "NWWODDDNNOOWWWWWWON.........", ".NOOODDDOOOWWWWWWON.........", "..NNNOOOOOOWWWWOOON.........", "....NNNNNNNNNNNNNNN........."],
     ],
   },
 };
