@@ -490,12 +490,13 @@ importers:
         version: 5.9.3
 
   packages/slack-watcher:
-    devDependencies:
+    dependencies:
       '@earendil-works/pi-ai':
-        specifier: latest
+        specifier: ^0.80.3
         version: 0.80.3(ws@8.20.0)(zod@4.4.3)
+    devDependencies:
       '@earendil-works/pi-coding-agent':
-        specifier: latest
+        specifier: ^0.80.3
         version: 0.80.3(ws@8.20.0)(zod@4.4.3)
       '@types/node':
         specifier: ^20.10.0

@@ -20,6 +20,7 @@ interface SlackApiResponse {
   channel?: { id?: string; name?: string; is_im?: boolean; user?: string };
   user?: { id?: string; name?: string; real_name?: string; profile?: { display_name?: string } };
   channels?: { id: string; name: string }[];
+  members?: RawUser[];
   response_metadata?: { next_cursor?: string };
 }
 
@@ -33,11 +34,26 @@ interface RawMessage {
   subtype?: string;
 }
 
+interface RawUser {
+  id: string;
+  name?: string;
+  real_name?: string;
+  deleted?: boolean;
+  is_bot?: boolean;
+  profile?: { display_name?: string; real_name?: string };
+}
+
 const SLACK_API = "https://slack.com/api";
+const REQUEST_TIMEOUT_MS = 15_000;
+const MAX_RETRIES = 3;
 
 export function loadToken(env: NodeJS.ProcessEnv = process.env): string | undefined {
   const token = (env.SLACK_WATCHER_TOKEN ?? env.SLACK_USER_TOKEN ?? "").trim();
   return token || undefined;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class SlackClient {
@@ -48,17 +64,33 @@ export class SlackClient {
     this.token = token;
   }
 
+  private async request(url: URL): Promise<SlackApiResponse> {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${this.token}` },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get("retry-after") ?? "1");
+        if (attempt < MAX_RETRIES) {
+          await delay((Number.isFinite(retryAfter) ? retryAfter : 1) * 1000);
+          continue;
+        }
+        throw new Error("slack_rate_limited");
+      }
+      const data = (await res.json()) as SlackApiResponse;
+      if (!data.ok) throw new Error(data.error ?? "slack_api_error");
+      return data;
+    }
+    throw new Error("slack_rate_limited");
+  }
+
   private async call(method: string, params: Record<string, string>): Promise<SlackApiResponse> {
     const url = new URL(`${SLACK_API}/${method}`);
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== "") url.searchParams.set(key, value);
     }
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${this.token}` },
-    });
-    const data = (await res.json()) as SlackApiResponse;
-    if (!data.ok) throw new Error(data.error ?? "slack_api_error");
-    return data;
+    return this.request(url);
   }
 
   async resolveTarget(target: string): Promise<ResolvedTarget> {
@@ -70,13 +102,19 @@ export class SlackClient {
       return { ...link, label };
     }
 
-    if (trimmed.startsWith("#") || trimmed.startsWith("@")) {
+    if (trimmed.startsWith("@")) {
+      const channel = await this.openDirectMessage(trimmed);
+      const label = await this.describeChannel(channel);
+      return { channel, label };
+    }
+
+    if (trimmed.startsWith("#")) {
       const channel = await this.resolveName(trimmed);
       const label = await this.describeChannel(channel);
       return { channel, label };
     }
 
-    if (/^[CDGW][A-Z0-9]{6,}$/.test(trimmed)) {
+    if (/^[CDG][A-Z0-9]{6,}$/.test(trimmed)) {
       const label = await this.describeChannel(trimmed);
       return { channel: trimmed, label };
     }
@@ -99,7 +137,7 @@ export class SlackClient {
   }
 
   private async resolveName(name: string): Promise<string> {
-    const clean = name.replace(/^[#@]/, "").toLowerCase();
+    const clean = name.replace(/^#/, "").toLowerCase();
     let cursor = "";
     for (let page = 0; page < 20; page++) {
       const data = await this.call("conversations.list", {
@@ -113,7 +151,34 @@ export class SlackClient {
       cursor = data.response_metadata?.next_cursor ?? "";
       if (!cursor) break;
     }
-    throw new Error(`Canal "${name}" não encontrado (ou o bot/usuário não tem acesso).`);
+    throw new Error(`Canal "${name}" não encontrado (ou o usuário não tem acesso).`);
+  }
+
+  private async openDirectMessage(handle: string): Promise<string> {
+    const userId = await this.findUserId(handle.replace(/^@/, ""));
+    const data = await this.call("conversations.open", { users: userId });
+    const channel = data.channel?.id;
+    if (!channel) throw new Error(`Não consegui abrir DM com "${handle}".`);
+    return channel;
+  }
+
+  private async findUserId(handle: string): Promise<string> {
+    const clean = handle.toLowerCase();
+    let cursor = "";
+    for (let page = 0; page < 40; page++) {
+      const data = await this.call("users.list", { limit: "500", cursor });
+      const member = data.members?.find((u) => {
+        if (u.deleted) return false;
+        const candidates = [u.name, u.real_name, u.profile?.display_name, u.profile?.real_name]
+          .filter((v): v is string => Boolean(v))
+          .map((v) => v.toLowerCase());
+        return candidates.includes(clean);
+      });
+      if (member) return member.id;
+      cursor = data.response_metadata?.next_cursor ?? "";
+      if (!cursor) break;
+    }
+    throw new Error(`Usuário "@${handle}" não encontrado.`);
   }
 
   private async describeChannel(channel: string, threadTs?: string): Promise<string> {
@@ -150,29 +215,36 @@ export class SlackClient {
 
   async authUserId(): Promise<string | undefined> {
     try {
-      const res = await fetch(`${SLACK_API}/auth.test`, {
-        headers: { Authorization: `Bearer ${this.token}` },
-      });
-      const data = (await res.json()) as { ok: boolean; user_id?: string };
-      return data.ok ? data.user_id : undefined;
+      const url = new URL(`${SLACK_API}/auth.test`);
+      const data = (await this.request(url)) as SlackApiResponse & { user_id?: string };
+      return data.user_id;
     } catch {
       return undefined;
     }
   }
 
   async fetchNew(target: ResolvedTarget, afterTs: string): Promise<SlackMessage[]> {
-    const params: Record<string, string> = {
-      channel: target.channel,
-      oldest: afterTs,
-      inclusive: "false",
-      limit: "50",
-    };
     const method = target.threadTs ? "conversations.replies" : "conversations.history";
-    if (target.threadTs) params.ts = target.threadTs;
+    const collected: RawMessage[] = [];
+    let cursor = "";
 
-    const data = await this.call(method, params);
-    const raw = data.messages ?? [];
-    return raw
+    for (let page = 0; page < 10; page++) {
+      const params: Record<string, string> = {
+        channel: target.channel,
+        oldest: afterTs,
+        inclusive: "false",
+        limit: "100",
+        cursor,
+      };
+      if (target.threadTs) params.ts = target.threadTs;
+
+      const data = await this.call(method, params);
+      collected.push(...(data.messages ?? []));
+      cursor = data.response_metadata?.next_cursor ?? "";
+      if (!cursor) break;
+    }
+
+    return collected
       .filter((m) => m.ts && !m.subtype)
       .map((m) => ({
         ts: m.ts as string,
@@ -187,14 +259,27 @@ export class SlackClient {
   }
 
   async latestTs(target: ResolvedTarget): Promise<string> {
-    const params: Record<string, string> = { channel: target.channel, limit: "1" };
-    const method = target.threadTs ? "conversations.replies" : "conversations.history";
-    if (target.threadTs) params.ts = target.threadTs;
-    const data = await this.call(method, params);
-    const messages = data.messages ?? [];
-    let max = target.threadTs ?? "0";
-    for (const m of messages) {
-      if (m.ts && Number(m.ts) > Number(max)) max = m.ts;
+    if (!target.threadTs) {
+      const data = await this.call("conversations.history", { channel: target.channel, limit: "1" });
+      const first = data.messages?.[0];
+      return first?.ts && Number(first.ts) > 0 ? first.ts : "0";
+    }
+
+    let max = target.threadTs;
+    let cursor = "";
+    for (let page = 0; page < 20; page++) {
+      const params: Record<string, string> = {
+        channel: target.channel,
+        ts: target.threadTs,
+        limit: "200",
+        cursor,
+      };
+      const data = await this.call("conversations.replies", params);
+      for (const m of data.messages ?? []) {
+        if (m.ts && Number(m.ts) > Number(max)) max = m.ts;
+      }
+      cursor = data.response_metadata?.next_cursor ?? "";
+      if (!cursor) break;
     }
     return max;
   }

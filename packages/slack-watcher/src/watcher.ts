@@ -53,6 +53,16 @@ const watches = new Map<string, ActiveWatch>();
 let client: SlackClient | undefined;
 let selfUserId: string | undefined;
 
+const TRANSIENT_ERRORS = new Set([
+  "slack_rate_limited",
+  "ratelimited",
+  "fatal_error",
+  "service_unavailable",
+  "internal_error",
+  "request_timeout",
+  "TimeoutError",
+]);
+
 export function initClient(token: string): SlackClient {
   if (!client) client = new SlackClient(token);
   return client;
@@ -68,7 +78,10 @@ export async function startWatch(
   }
 
   const resolved = await client.resolveTarget(config.target);
-  if (selfUserId === undefined) selfUserId = (await client.authUserId()) ?? "";
+  if (!selfUserId) {
+    const resolvedSelf = await client.authUserId();
+    if (resolvedSelf) selfUserId = resolvedSelf;
+  }
 
   const lastTs = await client.latestTs(resolved);
 
@@ -89,27 +102,33 @@ export async function startWatch(
     try {
       const messages = await client!.fetchNew(active.resolved, active.lastTs);
       for (const msg of messages) {
-        active.lastTs = msg.ts;
         active.seen++;
-        if (msg.botId) continue;
-        if (selfUserId && msg.userId === selfUserId) continue;
-        if (!passesFilter(msg, config.filter)) continue;
-        const author = msg.userId
-          ? await client!.resolveUserName(msg.userId)
-          : (msg.username ?? "desconhecido");
-        active.delivered++;
-        onEvent({
-          watchId: config.id,
-          label: resolved.label,
-          author,
-          text: msg.text,
-          ts: msg.ts,
-          channel: resolved.channel,
-          threadTs: msg.threadTs ?? resolved.threadTs,
-        });
+        const skip =
+          Boolean(msg.botId) ||
+          (selfUserId !== undefined && msg.userId === selfUserId) ||
+          !passesFilter(msg, config.filter);
+        if (!skip) {
+          const author = msg.userId
+            ? await client!.resolveUserName(msg.userId)
+            : (msg.username ?? "desconhecido");
+          onEvent({
+            watchId: config.id,
+            label: resolved.label,
+            author,
+            text: msg.text,
+            ts: msg.ts,
+            channel: resolved.channel,
+            threadTs: msg.threadTs ?? resolved.threadTs,
+          });
+          active.delivered++;
+        }
+        active.lastTs = msg.ts;
       }
-    } catch {
-      // erros transitórios de rede/rate-limit: ignora e tenta no próximo ciclo
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!TRANSIENT_ERRORS.has(message)) {
+        console.error(`[slack-watcher] watch "${config.id}" erro: ${message}`);
+      }
     } finally {
       active.polling = false;
     }
