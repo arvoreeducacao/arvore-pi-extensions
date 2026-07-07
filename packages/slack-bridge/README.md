@@ -12,10 +12,12 @@ A extensão roda **dentro** da sua sessão Pi (o terminal é o host). Não é um
 
 | Sentido | Gatilho | Ação |
 |---|---|---|
-| Pi → Slack | `input` (terminal) | posta a mensagem do usuário na thread |
-| Pi → Slack | `turn_start` / `tool_execution_*` | atualiza o status nativo da thread (`assistant.threads.setStatus`) com o passo atual |
-| Pi → Slack | `turn_end` | posta a resposta final na thread e limpa o status |
-| Slack → Pi | mensagem na thread vinculada | `pi.sendUserMessage()` (steer se ocupado, normal se ocioso) |
+| Pi → Slack | `input` (terminal) | posta a mensagem do usuário na thread (convertida para mrkdwn do Slack) |
+| Pi → Slack | `turn_start` | atualiza o status nativo da thread (`assistant.threads.setStatus`) |
+| Pi → Slack | `tool_execution_start` | posta cada chamada de tool como uma linha na thread (ex: `:computer: \`bash\` pnpm test`) e atualiza o status |
+| Pi → Slack | `tool_execution_start` (tool de pergunta) | detecta `ask_user_question`/`questionnaire` e posta o enunciado com as opções numeradas na thread |
+| Pi → Slack | `turn_end` | posta a resposta final na thread (convertida para mrkdwn) e limpa o status |
+| Slack → Pi | mensagem na thread vinculada | `pi.sendUserMessage()` (steer se ocupado, normal se ocioso). Se havia pergunta pendente, o número escolhido é resolvido para o rótulo da opção |
 
 ### Quem inicia a thread
 
@@ -29,6 +31,15 @@ O que vier primeiro define a thread. A partir daí o vínculo é fixo: só mensa
 ### Status nativo (animação)
 
 Durante um turno a extensão usa o status nativo de Assistant do Slack (`assistant.threads.setStatus`) — a animação "is typing…" com o passo atual (ex: `:wrench: bash: pnpm test`). Ao postar a resposta final, o status é limpo. Requer um app com scope `assistant:write`.
+
+### Markdown
+
+Toda mensagem do agente e do terminal passa por [`slackify-markdown`](https://www.npmjs.com/package/slackify-markdown) antes de ser postada, convertendo Markdown/GFM (headings, `**negrito**`, listas, links `[texto](url)`, blocos de código) para o mrkdwn do Slack (`*negrito*`, `<url|texto>`, `•`). Prefixos decorativos da própria bridge (ex: `:bust_in_silhouette: *terminal*`) já são mrkdwn e não são convertidos.
+
+### Tool calls e perguntas
+
+- Cada chamada de tool vira uma linha na thread com emoji + nome + um resumo do argumento principal, além de atualizar o status nativo.
+- Quando o agente chama uma tool de pergunta (`ask_user_question` ou `questionnaire`), a bridge posta o enunciado com as opções numeradas e fica aguardando. Você responde pela thread com o número (`1`) ou texto livre; para uma única pergunta o número é resolvido para o rótulo da opção antes de voltar ao agente. Perguntas com múltiplos itens mandam o texto cru (ex: `1.2`) para o agente interpretar.
 
 ## Setup
 

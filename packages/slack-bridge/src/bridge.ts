@@ -1,6 +1,14 @@
 import type { ExtensionAPI, ExtensionContext, CustomEntry } from "@earendil-works/pi-coding-agent";
 import type { SlackBridgeConfig } from "./config.js";
 import { SlackGateway, type InboundHandler, type InboundMessage } from "./slack.js";
+import {
+  isQuestionTool,
+  parseQuestions,
+  renderQuestions,
+  resolveAnswer,
+  toSlackMarkdown,
+  type NormalizedQuestion,
+} from "./format.js";
 
 export interface SlackTransport {
   start(): Promise<void>;
@@ -48,17 +56,28 @@ function truncate(value: string, max: number): string {
   return clean.length > max ? `${clean.slice(0, max)}\u2026` : clean;
 }
 
-const TOOL_HINT_FIELDS = ["command", "path", "pattern", "query", "url"] as const;
+const TOOL_HINT_FIELDS = ["command", "path", "pattern", "query", "url", "content", "prompt", "objective"] as const;
+
+const TOOL_EMOJI: Record<string, string> = {
+  bash: ":computer:",
+  read: ":page_facing_up:",
+  edit: ":pencil2:",
+  write: ":memo:",
+  ffgrep: ":mag:",
+  fffind: ":mag_right:",
+  search_codebase: ":mag:",
+};
 
 function summarizeTool(toolName: string, args: unknown): string {
+  const emoji = TOOL_EMOJI[toolName] ?? ":wrench:";
   const a = (args ?? {}) as Record<string, unknown>;
   for (const field of TOOL_HINT_FIELDS) {
     const value = a[field];
     if (typeof value === "string" && value) {
-      return `${toolName}: ${truncate(value, 80)}`;
+      return `${emoji} \`${toolName}\` ${truncate(value, 100)}`;
     }
   }
-  return toolName;
+  return `${emoji} \`${toolName}\``;
 }
 
 export class SlackBridge {
@@ -72,6 +91,7 @@ export class SlackBridge {
   private getContext: (() => ExtensionContext | undefined) | undefined;
   private statusPromise: Promise<void> = Promise.resolve();
   private turnActive = false;
+  private pendingQuestions: NormalizedQuestion[] | undefined;
 
   constructor(
     pi: ExtensionAPI,
@@ -133,7 +153,7 @@ export class SlackBridge {
     const existed = this.threadTs !== undefined;
     const thread = await this.ensureThread(trimmed);
     if (!thread || !this.gateway || !existed) return;
-    await this.gateway.postToThread(thread, `:bust_in_silhouette: *terminal*\n${trimmed}`);
+    await this.gateway.postToThread(thread, `:bust_in_silhouette: *terminal*\n${toSlackMarkdown(trimmed)}`);
   }
 
   async beginTurn(): Promise<void> {
@@ -144,8 +164,31 @@ export class SlackBridge {
   }
 
   async recordTool(toolName: string, args: unknown): Promise<void> {
-    if (!this.threadTs) return;
-    this.pushStatus(summarizeTool(toolName, args));
+    if (!this.threadTs || !this.gateway) return;
+    if (isQuestionTool(toolName)) {
+      await this.postQuestions(args);
+      return;
+    }
+    const summary = summarizeTool(toolName, args);
+    this.pushStatus(summary);
+    const thread = this.threadTs;
+    const gateway = this.gateway;
+    this.enqueueStatus(() => gateway.postToThread(thread, summary).then(() => {}));
+  }
+
+  private async postQuestions(args: unknown): Promise<void> {
+    const questions = parseQuestions(args);
+    if (questions.length === 0) return;
+    this.pendingQuestions = questions;
+    const thread = this.threadTs;
+    const gateway = this.gateway;
+    if (!thread || !gateway) return;
+    const body = renderQuestions(questions);
+    this.enqueueStatus(async () => {
+      await gateway.postToThread(thread, body);
+      await gateway.setStatus(thread, ":question: aguardando sua resposta\u2026");
+    });
+    await this.statusPromise;
   }
 
   async finishTurn(message: unknown): Promise<void> {
@@ -154,10 +197,10 @@ export class SlackBridge {
     const thread = await this.ensureThread(text);
     if (!thread || !this.gateway) return;
     const gateway = this.gateway;
-    const body = text || ":white_check_mark: conclu\u00eddo";
+    const body = text ? toSlackMarkdown(text) : ":white_check_mark: conclu\u00eddo";
     this.enqueueStatus(async () => {
       await gateway.postToThread(thread, body);
-      await gateway.clearStatus(thread);
+      if (!this.pendingQuestions) await gateway.clearStatus(thread);
     });
     await this.statusPromise;
   }
@@ -189,11 +232,22 @@ export class SlackBridge {
       this.adoptThread(message.threadTs ?? message.ts);
     }
 
+    let outgoing = text;
+    if (this.pendingQuestions) {
+      outgoing = resolveAnswer(this.pendingQuestions, text);
+      this.pendingQuestions = undefined;
+      const thread = this.threadTs;
+      if (thread && this.gateway) {
+        const gateway = this.gateway;
+        this.enqueueStatus(() => gateway.clearStatus(thread));
+      }
+    }
+
     const ctx = this.getContext?.();
     if (!ctx || ctx.isIdle()) {
-      this.pi.sendUserMessage(text);
+      this.pi.sendUserMessage(outgoing);
     } else {
-      this.pi.sendUserMessage(text, { deliverAs: "steer" });
+      this.pi.sendUserMessage(outgoing, { deliverAs: "steer" });
     }
   }
 
