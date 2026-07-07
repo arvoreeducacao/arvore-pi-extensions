@@ -9,13 +9,15 @@ import {
 } from "./slack.js";
 import {
   buildQuestionBlocks,
-  consolidateAnswers,
-  isQuestionTool,
   parseActionId,
-  parseQuestions,
+  questionsFromPromptEvent,
   toSlackMarkdown,
   type NormalizedQuestion,
 } from "./format.js";
+import { buildDiffShot } from "./codeshot.js";
+
+export const ASK_USER_PROMPT_EVENT = "arvore:ask-user:prompt";
+export const ASK_USER_ANSWER_EVENT = "arvore:ask-user:answer";
 
 export interface SlackTransport {
   start(): Promise<void>;
@@ -25,6 +27,7 @@ export interface SlackTransport {
   postBlocks(threadTs: string, text: string, blocks: unknown[]): Promise<string | undefined>;
   updateBlocks(ts: string, text: string, blocks: unknown[]): Promise<void>;
   updateText(ts: string, text: string): Promise<void>;
+  uploadImage(threadTs: string, png: Buffer, title: string, comment?: string): Promise<void>;
   setStatus(threadTs: string, status: string): Promise<void>;
   clearStatus(threadTs: string): Promise<void>;
   resolveBotUserId(): Promise<string | undefined>;
@@ -129,6 +132,7 @@ export class SlackBridge {
   private pendingQuestions: NormalizedQuestion[] | undefined;
   private questionAnswers = new Map<number, string>();
   private questionMessageTs: string | undefined;
+  private questionPromptId: string | undefined;
   private readonly toolMessages = new Map<string, { ts: string; summary: string }>();
 
   constructor(
@@ -207,14 +211,26 @@ export class SlackBridge {
 
   async recordTool(toolCallId: string, toolName: string, args: unknown): Promise<void> {
     if (!this.threadTs || !this.gateway) return;
-    if (isQuestionTool(toolName)) {
-      await this.postQuestions(args);
-      return;
-    }
     const summary = formatToolCall(toolName, args);
     this.pushStatus(summary);
     const thread = this.threadTs;
     const gateway = this.gateway;
+
+    const shot = buildDiffShot(toolName, args);
+    if (shot) {
+      this.enqueueStatus(async () => {
+        try {
+          const { renderCodeshot } = await import("./codeshot.js");
+          const png = await renderCodeshot(shot.title, shot.diff);
+          await gateway.uploadImage(thread, png, shot.title, summary);
+        } catch (err) {
+          console.warn(`slack-bridge: codeshot upload failed \u2014 ${(err as Error).message}`);
+          await gateway.postToThread(thread, summary).catch(() => {});
+        }
+      });
+      return;
+    }
+
     this.enqueueStatus(async () => {
       const ts = await gateway.postToThread(thread, summary);
       if (ts) this.toolMessages.set(toolCallId, { ts, summary });
@@ -234,15 +250,21 @@ export class SlackBridge {
     this.enqueueStatus(() => gateway.updateText(entry.ts, body));
   }
 
-  private async postQuestions(args: unknown): Promise<void> {
-    const questions = parseQuestions(args);
+  async handlePromptEvent(payload: unknown): Promise<void> {
+    const data = (payload ?? {}) as { promptId?: unknown };
+    const promptId = typeof data.promptId === "string" ? data.promptId : undefined;
+    if (!promptId) return;
+    const questions = questionsFromPromptEvent(payload as never);
     if (questions.length === 0) return;
+    const thread = await this.ensureThread();
+    const gateway = this.gateway;
+    if (!thread || !gateway) return;
+
     this.pendingQuestions = questions;
     this.questionAnswers = new Map();
     this.questionMessageTs = undefined;
-    const thread = this.threadTs;
-    const gateway = this.gateway;
-    if (!thread || !gateway) return;
+    this.questionPromptId = promptId;
+
     const { text, blocks } = buildQuestionBlocks(questions, this.questionAnswers);
     this.enqueueStatus(async () => {
       const ts = await gateway.postBlocks(thread, text, blocks);
@@ -250,6 +272,11 @@ export class SlackBridge {
       await gateway.setStatus(thread, "aguardando sua resposta\u2026");
     });
     await this.statusPromise;
+  }
+
+  private emitAnswer(payload: { cancelled?: boolean; answers?: unknown[] }): void {
+    if (!this.questionPromptId) return;
+    this.pi.events.emit(ASK_USER_ANSWER_EVENT, { promptId: this.questionPromptId, ...payload });
   }
 
   private async handleAction(action: BlockAction): Promise<void> {
@@ -275,14 +302,16 @@ export class SlackBridge {
     const allAnswered = questions.every((_, i) => answers.has(i));
     if (!allAnswered) return;
 
-    const outgoing = consolidateAnswers(questions, answers);
+    this.emitAnswer({
+      answers: questions.map((_, i) => ({ questionIndex: i, label: answers.get(i) })),
+    });
     this.finalizeQuestions();
-    this.dispatch(outgoing);
   }
 
   private finalizeQuestions(): void {
     this.pendingQuestions = undefined;
     this.questionMessageTs = undefined;
+    this.questionPromptId = undefined;
     this.questionAnswers = new Map();
     const thread = this.threadTs;
     if (thread && this.gateway) {
@@ -300,15 +329,24 @@ export class SlackBridge {
     }
   }
 
-  async finishTurn(message: unknown): Promise<void> {
-    this.turnActive = false;
+  async recordAssistantMessage(message: unknown): Promise<void> {
+    const msg = message as MessageLike;
+    if (msg?.role !== "assistant") return;
     const text = extractText(message);
+    if (!text) return;
     const thread = await this.ensureThread(text);
     if (!thread || !this.gateway) return;
     const gateway = this.gateway;
-    const body = text ? toSlackMarkdown(text) : "conclu\u00eddo";
+    const body = toSlackMarkdown(text);
+    this.enqueueStatus(() => gateway.postToThread(thread, body).then(() => {}));
+  }
+
+  async finishTurn(_message: unknown): Promise<void> {
+    this.turnActive = false;
+    const thread = this.threadTs;
+    if (!thread || !this.gateway) return;
+    const gateway = this.gateway;
     this.enqueueStatus(async () => {
-      await gateway.postToThread(thread, body);
       if (!this.pendingQuestions) await gateway.clearStatus(thread);
     });
     await this.statusPromise;
@@ -341,7 +379,11 @@ export class SlackBridge {
       this.adoptThread(message.threadTs ?? message.ts);
     }
 
-    if (this.pendingQuestions) this.finalizeQuestions();
+    if (this.pendingQuestions) {
+      this.emitAnswer({ answers: [{ questionIndex: 0, text }] });
+      this.finalizeQuestions();
+      return;
+    }
 
     this.dispatch(text);
   }

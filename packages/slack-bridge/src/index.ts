@@ -73,10 +73,21 @@ export default function (pi: ExtensionAPI): void {
     await bridge.recordToolResult(event.toolCallId, event.result, event.isError).catch(() => {});
   });
 
+  pi.on("message_end", async (event, ctx) => {
+    captureContext(ctx);
+    if (!bridge) return;
+    await bridge.recordAssistantMessage(event.message).catch(() => {});
+  });
+
   pi.on("turn_end", async (event, ctx) => {
     captureContext(ctx);
     if (!bridge) return;
     await bridge.finishTurn(event.message).catch(() => {});
+  });
+
+  pi.events.on("arvore:ask-user:prompt", (payload) => {
+    if (!bridge) return;
+    void bridge.handlePromptEvent(payload).catch(() => {});
   });
 
   pi.on("session_shutdown", async () => {

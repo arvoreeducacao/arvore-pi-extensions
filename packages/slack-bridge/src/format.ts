@@ -66,6 +66,37 @@ export function parseQuestions(args: unknown): NormalizedQuestion[] {
   return questions;
 }
 
+export interface PromptEventLike {
+  questions?: ReadonlyArray<{
+    question?: string;
+    header?: string;
+    multiSelect?: boolean;
+    options?: ReadonlyArray<{ label?: string; description?: string }>;
+  }>;
+}
+
+export function questionsFromPromptEvent(payload: PromptEventLike): NormalizedQuestion[] {
+  const rawQuestions = Array.isArray(payload?.questions) ? payload.questions : [];
+  const questions: NormalizedQuestion[] = [];
+  for (const q of rawQuestions) {
+    const prompt = asString(q?.question);
+    if (!prompt) continue;
+    const rawOptions: unknown[] = Array.isArray(q?.options) ? (q.options as unknown[]) : [];
+    const options: NormalizedOption[] = [];
+    for (const raw of rawOptions) {
+      const opt = normalizeOption(raw);
+      if (opt) options.push(opt);
+    }
+    questions.push({
+      prompt,
+      header: asString(q?.header) || undefined,
+      options,
+      multiSelect: q?.multiSelect === true,
+    });
+  }
+  return questions;
+}
+
 export const QUESTION_ACTION_PREFIX = "sbq";
 
 export function buildActionId(questionIndex: number, optionIndex: number): string {

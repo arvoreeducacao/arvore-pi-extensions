@@ -1,0 +1,56 @@
+{
+  "name": "@arvoretech/pi-ask-user-question",
+  "version": "1.0.0",
+  "description": "PI extension. A structured questionnaire the model can put to the user, answerable from the terminal overlay OR externally (e.g. Slack buttons) via an event channel. Fork of @juicesharp/rpiv-ask-user-question (MIT) with an external-answer race.",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./events": "./events.ts"
+  },
+  "license": "MIT",
+  "author": "Arvore",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "files": [
+    "ask-user-question.ts",
+    "config.ts",
+    "events.ts",
+    "index.ts",
+    "LICENSE",
+    "locales/",
+    "README.md",
+    "state/",
+    "tool/",
+    "view/"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "^1.2.6"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@earendil-works/pi-tui": "latest",
+    "@types/node": "^20.10.0",
+    "typebox": "^1.2.6",
+    "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "ask-user-question",
+    "questionnaire"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arvoreeducacao/arvore-pi-extensions.git",
+    "directory": "packages/ask-user-question"
+  }
+}
