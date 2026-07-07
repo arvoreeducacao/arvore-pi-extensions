@@ -62,30 +62,42 @@ function extractText(message: unknown): string {
     .trim();
 }
 
-function truncate(value: string, max: number): string {
-  const clean = value.replace(/\s+/g, " ").trim();
-  return clean.length > max ? `${clean.slice(0, max)}\u2026` : clean;
+function truncateBlock(value: string, max: number): string {
+  const clean = value.replace(/\s+$/g, "");
+  return clean.length > max ? `${clean.slice(0, max).replace(/\s+$/g, "")}\n\u2026` : clean;
+}
+
+function codeBlock(content: string): string {
+  const safe = content.replace(/```/g, "\u02bc\u02bc\u02bc");
+  return "```\n" + safe + "\n```";
 }
 
 const TOOL_HINT_FIELDS = ["command", "path", "pattern", "query", "url", "content", "prompt", "objective"] as const;
 
-function summarizeTool(toolName: string, args: unknown): string {
+function toolArgValue(args: unknown): string | undefined {
   const a = (args ?? {}) as Record<string, unknown>;
   for (const field of TOOL_HINT_FIELDS) {
     const value = a[field];
-    if (typeof value === "string" && value) {
-      return `\`${toolName}\` ${truncate(value, 120)}`;
-    }
+    if (typeof value === "string" && value) return value;
   }
-  return `\`${toolName}\``;
+  return undefined;
 }
 
-function summarizeResult(result: unknown): string {
+function formatToolCall(toolName: string, args: unknown): string {
+  const arg = toolArgValue(args);
+  if (!arg) return `*${toolName}*`;
+  if (arg.includes("\n") || arg.length > 80) {
+    return `*${toolName}*\n${codeBlock(truncateBlock(arg, 800))}`;
+  }
+  return `*${toolName}* \`${arg}\``;
+}
+
+function extractResultText(result: unknown): string {
   if (result == null) return "";
-  if (typeof result === "string") return truncate(result, 160);
+  if (typeof result === "string") return result;
   const r = result as Record<string, unknown>;
   const candidate = r.output ?? r.content ?? r.text ?? r.message ?? r.stdout;
-  if (typeof candidate === "string") return truncate(candidate, 160);
+  if (typeof candidate === "string") return candidate;
   if (Array.isArray(candidate)) {
     const joined = candidate
       .map((block) => {
@@ -93,11 +105,11 @@ function summarizeResult(result: unknown): string {
         const b = block as { text?: unknown };
         return typeof b?.text === "string" ? b.text : "";
       })
-      .join(" ");
-    if (joined.trim()) return truncate(joined, 160);
+      .join("\n");
+    if (joined.trim()) return joined;
   }
   try {
-    return truncate(JSON.stringify(result), 160);
+    return JSON.stringify(result, null, 2);
   } catch {
     return "";
   }
@@ -199,7 +211,7 @@ export class SlackBridge {
       await this.postQuestions(args);
       return;
     }
-    const summary = summarizeTool(toolName, args);
+    const summary = formatToolCall(toolName, args);
     this.pushStatus(summary);
     const thread = this.threadTs;
     const gateway = this.gateway;
@@ -214,10 +226,10 @@ export class SlackBridge {
     if (!entry || !this.gateway) return;
     this.toolMessages.delete(toolCallId);
     const gateway = this.gateway;
-    const preview = summarizeResult(result);
+    const raw = extractResultText(result).trim();
     const status = isError ? "erro" : "ok";
-    const body = preview
-      ? `${entry.summary}\n> ${status}: ${preview}`
+    const body = raw
+      ? `${entry.summary}\n> ${status}\n${codeBlock(truncateBlock(raw, 1200))}`
       : `${entry.summary}\n> ${status}`;
     this.enqueueStatus(() => gateway.updateText(entry.ts, body));
   }
