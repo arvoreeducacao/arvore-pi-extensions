@@ -1,4 +1,7 @@
 import { platform } from "node:os";
+import { tmpdir } from "node:os";
+import { writeFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { WebSocket } from "ws";
 import {
@@ -16,6 +19,30 @@ import {
 const PORT_RANGE_START = 9890;
 const PORT_RANGE_END = 9899;
 
+const DISCOVERY_FILE = join(tmpdir(), `pi-git-review-${process.pid}.json`);
+
+function publishServerInfo(srv: { url: string; token: string; port: number }): void {
+  try {
+    writeFileSync(
+      DISCOVERY_FILE,
+      JSON.stringify({
+        pid: process.pid,
+        port: srv.port,
+        token: srv.token,
+        baseUrl: `http://127.0.0.1:${srv.port}`,
+        url: srv.url,
+        ts: Date.now(),
+      }),
+    );
+  } catch {}
+}
+
+function unpublishServerInfo(): void {
+  try {
+    unlinkSync(DISCOVERY_FILE);
+  } catch {}
+}
+
 function openBrowser(pi: ExtensionAPI, url: string): void {
   const opener =
     platform() === "darwin" ? "open" : platform() === "win32" ? "cmd" : "xdg-open";
@@ -24,12 +51,13 @@ function openBrowser(pi: ExtensionAPI, url: string): void {
 }
 
 const VALID_SCOPES = ["working", "staged", "branch"] as const;
-const USAGE = "Usage: /review [working|staged|branch [base] | prs]";
+const USAGE = "Usage: /review [<pr-number> | working|staged|branch [base] | prs]";
 
 function parseScopeArgs(args: string): {
   mode: "diff" | "prs";
   scope: DiffScope;
   base: string;
+  prNumber?: number;
   error?: string;
 } {
   const parts = args.trim().split(/\s+/).filter(Boolean);
@@ -37,6 +65,9 @@ function parseScopeArgs(args: string): {
   const first = parts[0].toLowerCase();
   if (first === "prs" || first === "pr") {
     return { mode: "prs", scope: "working", base: "main" };
+  }
+  if (/^#?\d+$/.test(first)) {
+    return { mode: "prs", scope: "working", base: "main", prNumber: Number(first.replace(/^#/, "")) };
   }
   const scopeArg = first as DiffScope;
   if (!(VALID_SCOPES as readonly string[]).includes(scopeArg)) {
@@ -202,6 +233,7 @@ export default function (pi: ExtensionAPI) {
     for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
       try {
         server = await startGitReviewServer(port, pi, clients, handleMessage);
+        publishServerInfo(server);
         return server;
       } catch {}
     }
@@ -211,7 +243,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("review", {
     description:
-      "Open a browser-based git diff & PR reviewer. Usage: /review [working|staged|branch [base] | prs]",
+      "Open a browser-based git diff & PR reviewer. Usage: /review [<pr-number> | working|staged|branch [base] | prs]",
     handler: async (args, ctx) => {
       isIdle = () => ctx.isIdle();
       if (!ctx.hasUI) {
@@ -219,7 +251,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const { mode, scope, base, error } = parseScopeArgs(args);
+      const { mode, scope, base, prNumber, error } = parseScopeArgs(args);
       if (error) {
         ctx.ui.notify(error, "error");
         return;
@@ -229,7 +261,7 @@ export default function (pi: ExtensionAPI) {
       if (!srv) return;
       const url =
         mode === "prs"
-          ? `${srv.url}&mode=prs`
+          ? `${srv.url}&mode=prs${prNumber ? `&pr=${prNumber}` : ""}`
           : `${srv.url}&scope=${scope}&base=${encodeURIComponent(base)}`;
       openBrowser(pi, url);
       ctx.ui.notify(
@@ -244,6 +276,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", async () => {
+    unpublishServerInfo();
     server?.close();
     server = null;
   });

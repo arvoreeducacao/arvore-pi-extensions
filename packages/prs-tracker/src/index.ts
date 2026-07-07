@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
+import { tmpdir } from "node:os";
 
 type CiState = "PENDING" | "PASS" | "FAIL" | "NONE";
 type DeployState = "QUEUED" | "IN_PROGRESS" | "SUCCESS" | "FAILURE" | "SKIPPED" | "NONE";
@@ -87,6 +88,34 @@ function findHubRoot(cwd: string): string | null {
 function getStatePath(cwd: string): string | null {
   const root = findHubRoot(cwd);
   return root ? join(root, STATE_DIR, `${sessionId}.json`) : null;
+}
+
+interface GitReviewInfo {
+  baseUrl: string;
+  token: string;
+  port: number;
+}
+
+function readGitReviewInfo(): GitReviewInfo | null {
+  const path = join(tmpdir(), `pi-git-review-${process.pid}.json`);
+  if (!existsSync(path)) return null;
+  try {
+    const info = JSON.parse(readFileSync(path, "utf-8")) as {
+      baseUrl?: string;
+      token?: string;
+      port?: number;
+    };
+    if (!info.baseUrl || !info.token) return null;
+    return { baseUrl: info.baseUrl, token: info.token, port: info.port ?? 0 };
+  } catch {
+    return null;
+  }
+}
+
+function gitReviewUrlFor(pr: TrackedPr): string | null {
+  const info = readGitReviewInfo();
+  if (!info) return null;
+  return `${info.baseUrl}/?token=${info.token}&mode=prs&pr=${pr.number}`;
 }
 
 function saveState(cwd: string): void {
@@ -506,7 +535,8 @@ function renderWidget(width: number, theme: any): string[] {
     const deploy = deployLine(pr, fg);
     const status = [ci, deploy].filter(Boolean).join(fg("dim", "  ·  "));
     if (status) lines.push(`      ${status}`);
-    lines.push(`      ${fg("mdLinkUrl", trunc(pr.url))}`);
+    const reviewUrl = gitReviewUrlFor(pr);
+    lines.push(`      ${fg("mdLinkUrl", trunc(reviewUrl ?? pr.url))}`);
   }
   if (prs.length > max) lines.push(fg("dim", `   +${prs.length - max} more`));
   return lines;
