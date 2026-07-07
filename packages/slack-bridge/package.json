@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-slack-bridge",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "PI extension that bridges the active Pi session to a Slack thread: mirrors messages both ways, one Slack thread per Pi session",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
