@@ -220,6 +220,75 @@
       .pr-banner a:hover {
         text-decoration: underline;
       }
+      .merge-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      .merge-dialog {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        width: 380px;
+        max-width: calc(100vw - 32px);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .merge-title {
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .merge-sub {
+        font-size: 12px;
+        color: var(--fg-dim);
+        margin-top: -8px;
+      }
+      .merge-status {
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+      }
+      .merge-status.ok {
+        color: var(--fg);
+        border-color: var(--accent);
+      }
+      .merge-status.warn {
+        color: var(--fg);
+        border-color: #b8860b;
+      }
+      .merge-status.err {
+        color: var(--fg);
+        border-color: var(--error);
+      }
+      .merge-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--fg-dim);
+      }
+      .merge-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .merge-check.hidden {
+        display: none;
+      }
+      .merge-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
       .status {
         font-size: 12px;
         color: var(--fg-dim);
@@ -1028,6 +1097,41 @@
         }
       }
 
+      async function openPrByNumber(number) {
+        appMode = "prs";
+        tabDiff.classList.toggle("active", false);
+        tabPrs.classList.toggle("active", true);
+        diffControls.style.display = "none";
+        content.innerHTML = `<div class="empty">Loading PR #${number}…</div>`;
+        try {
+          const res = await fetch(`/api/prs?token=${TOKEN}`);
+          const data = await res.json();
+          if (appMode !== "prs") return;
+          const groups = data.groups || [];
+          const matches = [];
+          for (const group of groups) {
+            const found = (group.prs || []).find((pr) => pr.number === number);
+            if (found) {
+              matches.push(found);
+            }
+          }
+          if (matches.length > 1) {
+            content.innerHTML = `<div class="empty">PR #${number} exists in multiple repos.<br/>Showing all open PRs instead.</div>`;
+            setMode("prs");
+            return;
+          }
+          const match = matches[0];
+          if (!match) {
+            content.innerHTML = `<div class="empty">PR #${number} not found among open PRs.<br/>Showing all open PRs instead.</div>`;
+            setMode("prs");
+            return;
+          }
+          openPr(match);
+        } catch (err) {
+          content.innerHTML = `<div class="empty">Failed to load PR #${number}: ${escapeHtml(String(err))}</div>`;
+        }
+      }
+
       function renderPrList(groups) {
         if (!groups.length) {
           content.innerHTML =
@@ -1126,6 +1230,138 @@
         }
       }
 
+      async function openMergeDialog() {
+        if (!currentPr) return;
+        const existing = document.getElementById("merge-overlay");
+        if (existing) existing.remove();
+
+        const overlay = document.createElement("div");
+        overlay.id = "merge-overlay";
+        overlay.className = "merge-overlay";
+        overlay.innerHTML =
+          `<div class="merge-dialog">` +
+          `<div class="merge-title">Merge PR #${currentPr.number}</div>` +
+          `<div class="merge-sub">${escapeHtml(currentPr.headRefName)} → ${escapeHtml(currentPr.baseRefName)}</div>` +
+          `<div id="merge-status" class="merge-status">Checking merge status…</div>` +
+          `<label class="merge-field"><span>Method</span>` +
+          `<select id="merge-method">` +
+          `<option value="merge">Create a merge commit</option>` +
+          `<option value="squash">Squash and merge</option>` +
+          `<option value="rebase">Rebase and merge</option>` +
+          `</select></label>` +
+          `<label class="merge-check"><input type="checkbox" id="merge-delete" checked /> Delete branch after merge</label>` +
+          `<label class="merge-check merge-admin hidden"><input type="checkbox" id="merge-admin" /> Override with admin privileges</label>` +
+          `<div class="merge-actions">` +
+          `<button id="merge-cancel">Cancel</button>` +
+          `<button id="merge-confirm" class="primary">Merge</button>` +
+          `</div></div>`;
+        document.body.appendChild(overlay);
+
+        const close = () => overlay.remove();
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) close();
+        });
+        overlay.querySelector("#merge-cancel").onclick = close;
+        overlay.querySelector("#merge-confirm").onclick = () => confirmMerge(overlay, close);
+
+        try {
+          const res = await fetch(
+            `/api/pr-merge-status?token=${TOKEN}&repo=${encodeURIComponent(currentPr.repo)}&number=${currentPr.number}`,
+          );
+          const data = await res.json();
+          const statusEl = overlay.querySelector("#merge-status");
+          if (!statusEl) return;
+          if (!res.ok || data.error || !data.status) {
+            statusEl.textContent = `Could not load merge status: ${data.error || res.status}`;
+            return;
+          }
+          renderMergeStatus(overlay, data.status);
+        } catch (err) {
+          const statusEl = overlay.querySelector("#merge-status");
+          if (statusEl) statusEl.textContent = `Could not load merge status: ${err}`;
+        }
+      }
+
+      function renderMergeStatus(overlay, status) {
+        const statusEl = overlay.querySelector("#merge-status");
+        const adminField = overlay.querySelector(".merge-admin");
+        const clean = status.mergeable === "MERGEABLE" && status.mergeStateStatus === "CLEAN";
+        const blocked =
+          status.mergeStateStatus === "BLOCKED" ||
+          status.mergeStateStatus === "BEHIND" ||
+          status.mergeStateStatus === "UNSTABLE";
+        let cls = "ok";
+        let msg = "Ready to merge.";
+        if (status.isDraft) {
+          cls = "warn";
+          msg = "This PR is a draft.";
+        } else if (status.mergeable === "CONFLICTING") {
+          cls = "err";
+          msg = "Has conflicts that must be resolved.";
+        } else if (blocked) {
+          cls = "warn";
+          msg = `Merge is blocked (${status.mergeStateStatus.toLowerCase()}). Checks or reviews may be pending.`;
+        } else if (!clean) {
+          cls = "warn";
+          msg = `State: ${status.mergeStateStatus}.`;
+        }
+        statusEl.className = `merge-status ${cls}`;
+        statusEl.textContent = msg;
+
+        if (status.canAdmin && !clean) {
+          adminField.classList.remove("hidden");
+        } else {
+          adminField.classList.add("hidden");
+        }
+      }
+
+      async function confirmMerge(overlay, close) {
+        if (!currentPr) return;
+        const method = overlay.querySelector("#merge-method").value;
+        const deleteBranch = overlay.querySelector("#merge-delete").checked;
+        const adminEl = overlay.querySelector("#merge-admin");
+        const admin = Boolean(adminEl && adminEl.checked && !adminEl.closest(".hidden"));
+        const confirmBtn = overlay.querySelector("#merge-confirm");
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Merging…";
+        try {
+          const res = await fetch("/api/pr-merge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Token": TOKEN },
+            body: JSON.stringify({
+              repo: currentPr.repo,
+              number: currentPr.number,
+              method,
+              deleteBranch,
+              admin,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            const statusEl = overlay.querySelector("#merge-status");
+            if (statusEl) {
+              statusEl.className = "merge-status err";
+              statusEl.textContent = `Merge failed: ${data.error || res.status}`;
+            }
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Merge";
+            return;
+          }
+          toast(`PR #${currentPr.number}`, null, null, `Merged (${method}) ✓`);
+          close();
+          currentPr = null;
+          loadPrs();
+        } catch (err) {
+          const statusEl = overlay.querySelector("#merge-status");
+          if (statusEl) {
+            statusEl.className = "merge-status err";
+            statusEl.textContent = `Merge failed: ${err}`;
+          }
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = "Merge";
+        }
+      }
+
       function renderPrDiff(pr, groups) {
         content.innerHTML = "";
         const banner = document.createElement("div");
@@ -1138,6 +1374,7 @@
           `<span class="pr-banner-title">${escapeHtml(pr.title)}</span>` +
           `<a href="${escapeHtml(pr.url)}" target="_blank" rel="noreferrer">open on GitHub ↗</a>` +
           `<button id="pr-comments-toggle">Comments</button>` +
+          `<button id="pr-merge">Merge…</button>` +
           `<button id="pr-start" class="${startCls}"${pr.started ? " disabled" : ""}>${startLabel}</button>`;
         content.appendChild(banner);
         banner.querySelector("#pr-back").onclick = () => {
@@ -1145,6 +1382,7 @@
           loadPrs();
         };
         banner.querySelector("#pr-start").onclick = startReview;
+        banner.querySelector("#pr-merge").onclick = openMergeDialog;
         banner.querySelector("#pr-comments-toggle").onclick = () => {
           const panel = document.getElementById("comments-panel");
           if (panel) panel.classList.toggle("collapsed");
@@ -2055,7 +2293,12 @@
 
       connect();
       if (params.get("mode") === "prs") {
-        setMode("prs");
+        const prParam = Number(params.get("pr"));
+        if (Number.isInteger(prParam) && prParam > 0) {
+          openPrByNumber(prParam);
+        } else {
+          setMode("prs");
+        }
       } else {
         loadDiff();
       }

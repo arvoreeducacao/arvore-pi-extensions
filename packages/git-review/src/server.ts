@@ -744,6 +744,82 @@ async function replyToComment(
   return { htmlUrl: parsed.html_url || "" };
 }
 
+export type MergeMethod = "merge" | "squash" | "rebase";
+
+export interface MergeStatus {
+  state: string;
+  mergeable: string;
+  mergeStateStatus: string;
+  isDraft: boolean;
+  viewerPermission: string;
+  canAdmin: boolean;
+}
+
+async function collectMergeStatus(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+): Promise<MergeStatus | null> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) return null;
+
+  const { stdout } = await pi.exec(
+    "gh",
+    ["pr", "view", String(prNumber), "--json", "state,mergeable,mergeStateStatus,isDraft"],
+    { cwd: dir },
+  );
+  const view = JSON.parse(stdout) as {
+    state?: string;
+    mergeable?: string;
+    mergeStateStatus?: string;
+    isDraft?: boolean;
+  };
+
+  let viewerPermission = "";
+  try {
+    const { stdout: permOut } = await pi.exec("gh", ["repo", "view", "--json", "viewerPermission"], {
+      cwd: dir,
+    });
+    viewerPermission = (JSON.parse(permOut) as { viewerPermission?: string }).viewerPermission || "";
+  } catch {}
+
+  return {
+    state: view.state || "UNKNOWN",
+    mergeable: view.mergeable || "UNKNOWN",
+    mergeStateStatus: view.mergeStateStatus || "UNKNOWN",
+    isDraft: Boolean(view.isDraft),
+    viewerPermission,
+    canAdmin: viewerPermission === "ADMIN",
+  };
+}
+
+async function mergePullRequest(
+  pi: ExtensionAPI,
+  repo: string,
+  prNumber: number,
+  opts: { method: MergeMethod; deleteBranch?: boolean; admin?: boolean },
+): Promise<{ ok: true }> {
+  const repos = await findRepoDirs(pi);
+  const dir = repoDirForLabel(repos, repo);
+  if (!dir) throw new Error("repo not found");
+
+  const args = ["pr", "merge", String(prNumber), `--${opts.method}`];
+  if (opts.deleteBranch) args.push("--delete-branch");
+  if (opts.admin) args.push("--admin");
+
+  try {
+    await pi.exec("gh", args, { cwd: dir });
+  } catch (err) {
+    const detail =
+      err && typeof err === "object"
+        ? String((err as { stderr?: string; message?: string }).stderr || (err as Error).message || err)
+        : String(err);
+    throw new Error(detail.trim() || "merge failed");
+  }
+  return { ok: true };
+}
+
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
@@ -951,6 +1027,73 @@ export function startGitReviewServer(
           sendJson(res, 200, { ok: true, htmlUrl: result.htmlUrl });
         } catch (err) {
           sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/pr-merge-status") {
+        if (url.searchParams.get("token") !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        const repo = url.searchParams.get("repo") || ".";
+        const number = Number(url.searchParams.get("number"));
+        if (!Number.isInteger(number) || number <= 0) {
+          sendJson(res, 400, { error: "invalid pr number" });
+          return;
+        }
+        try {
+          const status = await collectMergeStatus(pi, repo, number);
+          if (!status) {
+            sendJson(res, 404, { error: "repo not found" });
+            return;
+          }
+          sendJson(res, 200, { status });
+        } catch (err) {
+          sendJson(res, 500, { error: String(err) });
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/pr-merge" && req.method === "POST") {
+        if ((req.headers["x-token"] as string) !== token) {
+          sendJson(res, 403, { error: "forbidden" });
+          return;
+        }
+        try {
+          const body = await readJsonBody(req);
+          const repo = String(body.repo || ".");
+          const number = Number(body.number);
+          if (body.method !== "merge" && body.method !== "squash" && body.method !== "rebase") {
+            sendJson(res, 400, { error: "invalid merge method" });
+            return;
+          }
+          const method: MergeMethod = body.method;
+          if (!Number.isInteger(number) || number <= 0) {
+            sendJson(res, 400, { error: "invalid pr number" });
+            return;
+          }
+          const admin = Boolean(body.admin);
+          if (admin) {
+            const status = await collectMergeStatus(pi, repo, number);
+            if (!status) {
+              sendJson(res, 404, { error: "repo not found" });
+              return;
+            }
+            const clean = status.mergeable === "MERGEABLE" && status.mergeStateStatus === "CLEAN";
+            if (!status.canAdmin || clean) {
+              sendJson(res, 403, { error: "admin override not allowed" });
+              return;
+            }
+          }
+          await mergePullRequest(pi, repo, number, {
+            method,
+            deleteBranch: Boolean(body.deleteBranch),
+            admin,
+          });
+          sendJson(res, 200, { ok: true });
+        } catch (err) {
+          sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
         }
         return;
       }

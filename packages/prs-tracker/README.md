@@ -43,6 +43,19 @@ The production deploy run is matched by the `push` event on the merge commit, pi
 - `/prs show` — re-show the widget
 - `/prs refresh` — force an immediate status refresh
 
+## Git-review integration
+
+If the [`@arvoretech/pi-git-review`](../git-review) extension is loaded **and** its
+reviewer server is running this session (i.e. you ran `/review` at least once), each PR's
+link in the widget is swapped from the GitHub URL to a local **git-review** deep link that
+opens that PR directly in the reviewer UI (`…?token=…&mode=prs&pr=<number>`).
+
+Discovery is automatic: git-review publishes its `{ baseUrl, token, port }` to a
+per-process file in the OS temp dir (`pi-git-review-<pid>.json`) while its server is up and
+removes it on shutdown. When git-review isn't running, the widget falls back to the plain
+GitHub PR URL. The canonical GitHub URL is always what's injected into the AI's context —
+only the clickable widget link changes.
+
 ## Requirements
 
 - GitHub CLI (`gh`) authenticated in the working directory.

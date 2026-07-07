@@ -15,6 +15,8 @@ a user message. The agent's answers appear in your terminal (PI TUI).
               │  GET /api/pr-comments→ PR review + conversation comments (REST + GraphQL)
               │  POST /api/pr-comment→ new inline review comment
               │  POST /api/pr-reply  → reply to a review thread
+              │  GET /api/pr-merge-status → mergeability + your repo permission (`gh pr view`/`gh repo view`)
+              │  POST /api/pr-merge  → merge the PR (`gh pr merge`, optional `--admin`)
               │  WS /ws              → you send { file, lines, code, question },
               │                        a pr_context primer, or comment_thread/comment_batch
               ▼
@@ -34,6 +36,8 @@ a user message. The agent's answers appear in your terminal (PI TUI).
 /review branch          # current branch vs `main`
 /review branch develop  # current branch vs `develop`
 /review prs             # list open PRs across all repos and review them
+/review 1234            # open PR #1234 directly in the reviewer
+/review #1234           # same, leading # is accepted
 ```
 
 The scope and base can also be changed live from the toolbar in the browser tab. The
@@ -78,6 +82,22 @@ any successful post or reply.
 > Posting comments and replies requires the `gh` CLI to be authenticated with write access
 > to the repo.
 
+#### Merging a PR
+
+The PR banner has a **Merge…** button that opens a dialog. It first calls
+`/api/pr-merge-status` (`gh pr view` for `mergeable`/`mergeStateStatus`/`isDraft` and
+`gh repo view` for your `viewerPermission`) and shows whether the PR is ready, blocked,
+conflicting, or a draft. You choose the method (merge commit / squash / rebase) and whether
+to delete the branch, then confirm — this runs `gh pr merge <n> --<method>` in the repo.
+
+When the PR is **not** cleanly mergeable **and** you have `ADMIN` permission on the repo,
+an **Override with admin privileges** checkbox appears, adding `--admin` to bypass branch
+protection. The option is hidden entirely when you lack admin rights, so it never offers a
+permission you don't have.
+
+> Merging requires the `gh` CLI authenticated with write (and, for the override, admin)
+> access to the repo.
+
 > Requires the [`gh` CLI](https://cli.github.com) installed and authenticated
 > (`gh auth status`).
 
@@ -90,6 +110,16 @@ In the tab:
 
 It scans the workspace for git repos (`.git` up to depth 4, pruning `node_modules`) and aggregates their diffs,
 prefixing paths per repo — so it works in a multi-repo workspace too.
+
+## Discovery (prs-tracker integration)
+
+While the reviewer server is running, git-review writes its `{ baseUrl, token, port }` to a
+per-process file in the OS temp dir (`pi-git-review-<pid>.json`) and removes it on session
+shutdown. This lets sibling extensions in the same Pi process — notably
+[`@arvoretech/pi-prs-tracker`](../prs-tracker) — build deep links straight into a PR
+(`…?token=…&mode=prs&pr=<number>`). The file carries the same session token used in the URL,
+so treat it as local-only (it lives under your user's temp dir, same trust model as the
+browser URL).
 
 ## Security
 
