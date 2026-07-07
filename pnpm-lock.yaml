@@ -10,10 +10,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      sharp:
-        specifier: ^0.34.5
-        version: 0.34.5
     devDependencies:
       typescript:
         specifier: ^5.3.0
@@ -478,6 +474,9 @@ importers:
       '@slack/web-api':
         specifier: 7.17.0
         version: 7.17.0
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
       slackify-markdown:
         specifier: 5.0.0
         version: 5.0.0
@@ -2451,11 +2450,6 @@ packages:
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
-
-  semver@7.7.4:
-    resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
-    engines: {node: '>=10'}
-    hasBin: true
 
   semver@7.8.0:
     resolution: {integrity: sha512-AcM7dV/5ul4EekoQ29Agm5vri8JNqRyj39o0qpX6vDF2GZrtutZl5RwgD1XnZjiTAfncsJhMI48QQH3sN87YNA==}
@@ -5092,15 +5086,13 @@ snapshots:
 
   safe-buffer@5.2.1: {}
 
-  semver@7.7.4: {}
-
   semver@7.8.0: {}
 
   sharp@0.34.5:
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
-      semver: 7.7.4
+      semver: 7.8.0
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5
