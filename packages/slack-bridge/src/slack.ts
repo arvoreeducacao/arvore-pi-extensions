@@ -58,7 +58,7 @@ export class SlackGateway {
   }
 
   async postRoot(text: string): Promise<string | undefined> {
-    const res = await this.web.chat.postMessage({ channel: this.config.channel, text });
+    const res = await this.web.chat.postMessage({ channel: this.config.channel, text, mrkdwn: true });
     return typeof res.ts === "string" ? res.ts : undefined;
   }
 
@@ -67,6 +67,7 @@ export class SlackGateway {
       channel: this.config.channel,
       thread_ts: threadTs,
       text,
+      mrkdwn: true,
     });
     return typeof res.ts === "string" ? res.ts : undefined;
   }
