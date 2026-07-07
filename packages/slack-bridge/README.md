@@ -30,16 +30,17 @@ O que vier primeiro define a thread. A partir daí o vínculo é fixo: só mensa
 
 ### Status nativo (animação)
 
-Durante um turno a extensão usa o status nativo de Assistant do Slack (`assistant.threads.setStatus`) — a animação "is typing…" com o passo atual (ex: `:wrench: bash: pnpm test`). Ao postar a resposta final, o status é limpo. Requer um app com scope `assistant:write`.
+Durante um turno a extensão usa o status nativo de Assistant do Slack (`assistant.threads.setStatus`) — a animação "is typing…" com o passo atual (ex: `bash: pnpm test`). Ao postar a resposta final, o status é limpo. Requer um app com scope `assistant:write`.
 
 ### Markdown
 
-Toda mensagem do agente e do terminal passa por [`slackify-markdown`](https://www.npmjs.com/package/slackify-markdown) antes de ser postada, convertendo Markdown/GFM (headings, `**negrito**`, listas, links `[texto](url)`, blocos de código) para o mrkdwn do Slack (`*negrito*`, `<url|texto>`, `•`). Prefixos decorativos da própria bridge (ex: `:bust_in_silhouette: *terminal*`) já são mrkdwn e não são convertidos.
+Toda mensagem do agente e do terminal passa por [`slackify-markdown`](https://www.npmjs.com/package/slackify-markdown) antes de ser postada, convertendo Markdown/GFM (headings, `**negrito**`, listas, links `[texto](url)`, blocos de código) para o mrkdwn do Slack (`*negrito*`, `<url|texto>`, `•`). As mensagens não usam emoji decorativo.
 
 ### Tool calls e perguntas
 
-- Cada chamada de tool vira uma linha na thread com emoji + nome + um resumo do argumento principal, além de atualizar o status nativo.
-- Quando o agente chama uma tool de pergunta (`ask_user_question` ou `questionnaire`), a bridge posta o enunciado com as opções numeradas e fica aguardando. Você responde pela thread com o número (`1`) ou texto livre; para uma única pergunta o número é resolvido para o rótulo da opção antes de voltar ao agente. Perguntas com múltiplos itens mandam o texto cru (ex: `1.2`) para o agente interpretar.
+- Cada chamada de tool vira uma linha na thread com o nome da tool e um resumo do argumento principal (ex: `` `bash` pnpm test ``). Quando a tool termina, essa mesma mensagem é editada com o resultado (`> ok: …` ou `> erro: …`), então você acompanha início e fim de cada passo sem poluir a thread.
+- Quando o agente chama uma tool de pergunta (`ask_user_question` ou `questionnaire`), a bridge posta o enunciado com as opções como **botões** (Block Kit). Ao clicar, a mensagem é atualizada mostrando `Respondido: *opção*` e a escolha volta pro agente automaticamente. Também é possível responder por texto na thread (útil para múltipla escolha ou resposta livre). Perguntas com vários itens só voltam pro agente quando todas forem respondidas.
+- Os botões exigem **Interactivity** habilitado no app do Slack (o manifest já inclui). Como a bridge roda em Socket Mode, não é preciso configurar Request URL.
 
 ## Setup
 

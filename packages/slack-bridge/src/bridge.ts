@@ -1,11 +1,18 @@
 import type { ExtensionAPI, ExtensionContext, CustomEntry } from "@earendil-works/pi-coding-agent";
 import type { SlackBridgeConfig } from "./config.js";
-import { SlackGateway, type InboundHandler, type InboundMessage } from "./slack.js";
 import {
+  SlackGateway,
+  type InboundHandler,
+  type InboundMessage,
+  type ActionHandler,
+  type BlockAction,
+} from "./slack.js";
+import {
+  buildQuestionBlocks,
+  consolidateAnswers,
   isQuestionTool,
+  parseActionId,
   parseQuestions,
-  renderQuestions,
-  resolveAnswer,
   toSlackMarkdown,
   type NormalizedQuestion,
 } from "./format.js";
@@ -15,6 +22,9 @@ export interface SlackTransport {
   stop(): Promise<void>;
   postRoot(text: string): Promise<string | undefined>;
   postToThread(threadTs: string, text: string): Promise<string | undefined>;
+  postBlocks(threadTs: string, text: string, blocks: unknown[]): Promise<string | undefined>;
+  updateBlocks(ts: string, text: string, blocks: unknown[]): Promise<void>;
+  updateText(ts: string, text: string): Promise<void>;
   setStatus(threadTs: string, status: string): Promise<void>;
   clearStatus(threadTs: string): Promise<void>;
   resolveBotUserId(): Promise<string | undefined>;
@@ -23,10 +33,11 @@ export interface SlackTransport {
 export type TransportFactory = (
   config: SlackBridgeConfig,
   onInbound: InboundHandler,
+  onAction: ActionHandler,
 ) => SlackTransport;
 
-const defaultTransportFactory: TransportFactory = (config, onInbound) =>
-  new SlackGateway(config, onInbound);
+const defaultTransportFactory: TransportFactory = (config, onInbound, onAction) =>
+  new SlackGateway(config, onInbound, onAction);
 
 const ENTRY_TYPE = "slack-bridge-thread";
 
@@ -58,26 +69,38 @@ function truncate(value: string, max: number): string {
 
 const TOOL_HINT_FIELDS = ["command", "path", "pattern", "query", "url", "content", "prompt", "objective"] as const;
 
-const TOOL_EMOJI: Record<string, string> = {
-  bash: ":computer:",
-  read: ":page_facing_up:",
-  edit: ":pencil2:",
-  write: ":memo:",
-  ffgrep: ":mag:",
-  fffind: ":mag_right:",
-  search_codebase: ":mag:",
-};
-
 function summarizeTool(toolName: string, args: unknown): string {
-  const emoji = TOOL_EMOJI[toolName] ?? ":wrench:";
   const a = (args ?? {}) as Record<string, unknown>;
   for (const field of TOOL_HINT_FIELDS) {
     const value = a[field];
     if (typeof value === "string" && value) {
-      return `${emoji} \`${toolName}\` ${truncate(value, 100)}`;
+      return `\`${toolName}\` ${truncate(value, 120)}`;
     }
   }
-  return `${emoji} \`${toolName}\``;
+  return `\`${toolName}\``;
+}
+
+function summarizeResult(result: unknown): string {
+  if (result == null) return "";
+  if (typeof result === "string") return truncate(result, 160);
+  const r = result as Record<string, unknown>;
+  const candidate = r.output ?? r.content ?? r.text ?? r.message ?? r.stdout;
+  if (typeof candidate === "string") return truncate(candidate, 160);
+  if (Array.isArray(candidate)) {
+    const joined = candidate
+      .map((block) => {
+        if (typeof block === "string") return block;
+        const b = block as { text?: unknown };
+        return typeof b?.text === "string" ? b.text : "";
+      })
+      .join(" ");
+    if (joined.trim()) return truncate(joined, 160);
+  }
+  try {
+    return truncate(JSON.stringify(result), 160);
+  } catch {
+    return "";
+  }
 }
 
 export class SlackBridge {
@@ -92,6 +115,9 @@ export class SlackBridge {
   private statusPromise: Promise<void> = Promise.resolve();
   private turnActive = false;
   private pendingQuestions: NormalizedQuestion[] | undefined;
+  private questionAnswers = new Map<number, string>();
+  private questionMessageTs: string | undefined;
+  private readonly toolMessages = new Map<string, { ts: string; summary: string }>();
 
   constructor(
     pi: ExtensionAPI,
@@ -118,7 +144,11 @@ export class SlackBridge {
   }
 
   async start(): Promise<void> {
-    this.gateway = this.transportFactory(this.config, (message) => this.handleInbound(message));
+    this.gateway = this.transportFactory(
+      this.config,
+      (message) => this.handleInbound(message),
+      (action) => this.handleAction(action),
+    );
     this.botUserId = await this.gateway.resolveBotUserId();
     await this.gateway.start();
   }
@@ -133,8 +163,8 @@ export class SlackBridge {
     if (!this.gateway) return undefined;
     if (!this.rootPromise) {
       const header = seedText
-        ? `:robot_face: Pi session\n> ${seedText.slice(0, 200)}`
-        : ":robot_face: Pi session";
+        ? `*Pi session*\n> ${seedText.slice(0, 200)}`
+        : "*Pi session*";
       this.rootPromise = this.gateway.postRoot(header).then((ts) => {
         if (ts) this.adoptThread(ts);
       });
@@ -153,17 +183,17 @@ export class SlackBridge {
     const existed = this.threadTs !== undefined;
     const thread = await this.ensureThread(trimmed);
     if (!thread || !this.gateway || !existed) return;
-    await this.gateway.postToThread(thread, `:bust_in_silhouette: *terminal*\n${toSlackMarkdown(trimmed)}`);
+    await this.gateway.postToThread(thread, `*terminal*\n${toSlackMarkdown(trimmed)}`);
   }
 
   async beginTurn(): Promise<void> {
     const thread = await this.ensureThread();
     if (!thread) return;
     this.turnActive = true;
-    this.pushStatus(":hourglass_flowing_sand: pensando\u2026");
+    this.pushStatus("pensando\u2026");
   }
 
-  async recordTool(toolName: string, args: unknown): Promise<void> {
+  async recordTool(toolCallId: string, toolName: string, args: unknown): Promise<void> {
     if (!this.threadTs || !this.gateway) return;
     if (isQuestionTool(toolName)) {
       await this.postQuestions(args);
@@ -173,22 +203,89 @@ export class SlackBridge {
     this.pushStatus(summary);
     const thread = this.threadTs;
     const gateway = this.gateway;
-    this.enqueueStatus(() => gateway.postToThread(thread, summary).then(() => {}));
+    this.enqueueStatus(async () => {
+      const ts = await gateway.postToThread(thread, summary);
+      if (ts) this.toolMessages.set(toolCallId, { ts, summary });
+    });
+  }
+
+  async recordToolResult(toolCallId: string, result: unknown, isError: boolean): Promise<void> {
+    const entry = this.toolMessages.get(toolCallId);
+    if (!entry || !this.gateway) return;
+    this.toolMessages.delete(toolCallId);
+    const gateway = this.gateway;
+    const preview = summarizeResult(result);
+    const status = isError ? "erro" : "ok";
+    const body = preview
+      ? `${entry.summary}\n> ${status}: ${preview}`
+      : `${entry.summary}\n> ${status}`;
+    this.enqueueStatus(() => gateway.updateText(entry.ts, body));
   }
 
   private async postQuestions(args: unknown): Promise<void> {
     const questions = parseQuestions(args);
     if (questions.length === 0) return;
     this.pendingQuestions = questions;
+    this.questionAnswers = new Map();
+    this.questionMessageTs = undefined;
     const thread = this.threadTs;
     const gateway = this.gateway;
     if (!thread || !gateway) return;
-    const body = renderQuestions(questions);
+    const { text, blocks } = buildQuestionBlocks(questions, this.questionAnswers);
     this.enqueueStatus(async () => {
-      await gateway.postToThread(thread, body);
-      await gateway.setStatus(thread, ":question: aguardando sua resposta\u2026");
+      const ts = await gateway.postBlocks(thread, text, blocks);
+      this.questionMessageTs = ts;
+      await gateway.setStatus(thread, "aguardando sua resposta\u2026");
     });
     await this.statusPromise;
+  }
+
+  private async handleAction(action: BlockAction): Promise<void> {
+    if (action.channel !== this.config.channel) return;
+    if (!this.pendingQuestions || !this.gateway) return;
+    if (this.questionMessageTs && action.messageTs !== this.questionMessageTs) return;
+    const parsed = parseActionId(action.actionId);
+    if (!parsed) return;
+    const question = this.pendingQuestions[parsed.questionIndex];
+    const option = question?.options[parsed.optionIndex];
+    if (!option) return;
+
+    this.questionAnswers.set(parsed.questionIndex, option.label);
+    const questions = this.pendingQuestions;
+    const answers = this.questionAnswers;
+    const gateway = this.gateway;
+    const messageTs = this.questionMessageTs;
+    if (messageTs) {
+      const { text, blocks } = buildQuestionBlocks(questions, answers);
+      this.enqueueStatus(() => gateway.updateBlocks(messageTs, text, blocks));
+    }
+
+    const allAnswered = questions.every((_, i) => answers.has(i));
+    if (!allAnswered) return;
+
+    const outgoing = consolidateAnswers(questions, answers);
+    this.finalizeQuestions();
+    this.dispatch(outgoing);
+  }
+
+  private finalizeQuestions(): void {
+    this.pendingQuestions = undefined;
+    this.questionMessageTs = undefined;
+    this.questionAnswers = new Map();
+    const thread = this.threadTs;
+    if (thread && this.gateway) {
+      const gateway = this.gateway;
+      this.enqueueStatus(() => gateway.clearStatus(thread));
+    }
+  }
+
+  private dispatch(text: string): void {
+    const ctx = this.getContext?.();
+    if (!ctx || ctx.isIdle()) {
+      this.pi.sendUserMessage(text);
+    } else {
+      this.pi.sendUserMessage(text, { deliverAs: "steer" });
+    }
   }
 
   async finishTurn(message: unknown): Promise<void> {
@@ -197,7 +294,7 @@ export class SlackBridge {
     const thread = await this.ensureThread(text);
     if (!thread || !this.gateway) return;
     const gateway = this.gateway;
-    const body = text ? toSlackMarkdown(text) : ":white_check_mark: conclu\u00eddo";
+    const body = text ? toSlackMarkdown(text) : "conclu\u00eddo";
     this.enqueueStatus(async () => {
       await gateway.postToThread(thread, body);
       if (!this.pendingQuestions) await gateway.clearStatus(thread);
@@ -232,23 +329,9 @@ export class SlackBridge {
       this.adoptThread(message.threadTs ?? message.ts);
     }
 
-    let outgoing = text;
-    if (this.pendingQuestions) {
-      outgoing = resolveAnswer(this.pendingQuestions, text);
-      this.pendingQuestions = undefined;
-      const thread = this.threadTs;
-      if (thread && this.gateway) {
-        const gateway = this.gateway;
-        this.enqueueStatus(() => gateway.clearStatus(thread));
-      }
-    }
+    if (this.pendingQuestions) this.finalizeQuestions();
 
-    const ctx = this.getContext?.();
-    if (!ctx || ctx.isIdle()) {
-      this.pi.sendUserMessage(outgoing);
-    } else {
-      this.pi.sendUserMessage(outgoing, { deliverAs: "steer" });
-    }
+    this.dispatch(text);
   }
 
   private adoptThread(ts: string): void {
