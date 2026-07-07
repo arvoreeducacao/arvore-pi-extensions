@@ -10,6 +10,11 @@ export function toSlackMarkdown(text: string): string {
   }
 }
 
+function truncate(value: string, max: number): string {
+  const clean = value.replace(/\s+/g, " ").trim();
+  return clean.length > max ? `${clean.slice(0, max - 1)}\u2026` : clean;
+}
+
 const QUESTION_TOOLS = new Set(["ask_user_question", "questionnaire"]);
 
 export function isQuestionTool(toolName: string): boolean {
@@ -61,42 +66,83 @@ export function parseQuestions(args: unknown): NormalizedQuestion[] {
   return questions;
 }
 
-export function renderQuestions(questions: NormalizedQuestion[]): string {
-  const parts: string[] = [":question: *Preciso da sua resposta:*"];
-  const single = questions.length === 1;
-  questions.forEach((q, qi) => {
-    const heading = single ? `*${q.prompt}*` : `*${qi + 1}. ${q.prompt}*`;
-    parts.push("");
-    parts.push(heading);
-    q.options.forEach((opt, oi) => {
-      const num = single ? `${oi + 1}` : `${qi + 1}.${oi + 1}`;
-      const desc = opt.description ? ` — ${opt.description}` : "";
-      parts.push(`  \`${num}\` ${opt.label}${desc}`);
-    });
-    if (q.multiSelect) parts.push("  _(pode escolher mais de uma, separe por vírgula)_");
-  });
-  parts.push("");
-  parts.push(
-    single
-      ? "_Responda com o número da opção ou escreva sua resposta._"
-      : "_Responda com os números (ex: `1.2`) ou escreva sua resposta._",
-  );
-  return parts.join("\n");
+export const QUESTION_ACTION_PREFIX = "sbq";
+
+export function buildActionId(questionIndex: number, optionIndex: number): string {
+  return `${QUESTION_ACTION_PREFIX}_${questionIndex}_${optionIndex}`;
 }
 
-export function resolveAnswer(questions: NormalizedQuestion[], reply: string): string {
-  const text = reply.trim();
-  if (questions.length !== 1) return text;
-  const options = questions[0].options;
-  const parts = text.split(",").map((p) => p.trim()).filter(Boolean);
-  const labels: string[] = [];
-  for (const part of parts) {
-    const idx = Number.parseInt(part, 10);
-    if (Number.isInteger(idx) && idx >= 1 && idx <= options.length && String(idx) === part) {
-      labels.push(options[idx - 1].label);
-    } else {
-      return text;
+export function parseActionId(actionId: string): { questionIndex: number; optionIndex: number } | undefined {
+  const match = /^sbq_(\d+)_(\d+)$/.exec(actionId);
+  if (!match) return undefined;
+  return { questionIndex: Number(match[1]), optionIndex: Number(match[2]) };
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+export interface QuestionRender {
+  text: string;
+  blocks: unknown[];
+}
+
+export function buildQuestionBlocks(
+  questions: NormalizedQuestion[],
+  answers: Map<number, string>,
+): QuestionRender {
+  const blocks: unknown[] = [];
+  const single = questions.length === 1;
+
+  questions.forEach((q, qi) => {
+    const heading = single ? q.prompt : `${qi + 1}. ${q.prompt}`;
+    blocks.push({ type: "section", text: { type: "mrkdwn", text: `*${heading}*` } });
+
+    const descriptions = q.options
+      .filter((opt) => opt.description)
+      .map((opt) => `- *${opt.label}* — ${opt.description}`);
+    if (descriptions.length > 0) {
+      blocks.push({ type: "section", text: { type: "mrkdwn", text: descriptions.join("\n") } });
     }
-  }
-  return labels.length > 0 ? labels.join(", ") : text;
+
+    const answered = answers.get(qi);
+    if (answered !== undefined) {
+      blocks.push({
+        type: "context",
+        elements: [{ type: "mrkdwn", text: `Respondido: *${answered}*` }],
+      });
+      return;
+    }
+
+    const buttons = q.options.map((opt, oi) => ({
+      type: "button",
+      text: { type: "plain_text", text: truncate(opt.label, 75), emoji: false },
+      action_id: buildActionId(qi, oi),
+      value: `${qi}:${oi}`,
+    }));
+    for (const group of chunk(buttons, 5)) {
+      blocks.push({ type: "actions", elements: group });
+    }
+    if (q.multiSelect) {
+      blocks.push({
+        type: "context",
+        elements: [{ type: "mrkdwn", text: "Pode escolher mais de uma respondendo por texto." }],
+      });
+    }
+  });
+
+  blocks.push({
+    type: "context",
+    elements: [{ type: "mrkdwn", text: "Clique numa opção ou responda por texto." }],
+  });
+
+  const text = questions.map((q) => q.prompt).join(" / ");
+  return { text, blocks };
+}
+
+export function consolidateAnswers(questions: NormalizedQuestion[], answers: Map<number, string>): string {
+  if (questions.length === 1) return answers.get(0) ?? "";
+  return questions.map((_, i) => `${i + 1}. ${answers.get(i) ?? ""}`).join("\n");
 }

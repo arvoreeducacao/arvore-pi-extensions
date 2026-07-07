@@ -11,7 +11,17 @@ export interface InboundMessage {
   botId?: string;
 }
 
+export interface BlockAction {
+  actionId: string;
+  value: string;
+  userId: string;
+  channel: string;
+  messageTs: string;
+  threadTs?: string;
+}
+
 export type InboundHandler = (message: InboundMessage) => void | Promise<void>;
+export type ActionHandler = (action: BlockAction) => void | Promise<void>;
 
 export class SlackGateway {
   private readonly web: WebClient;
@@ -19,7 +29,7 @@ export class SlackGateway {
   private readonly config: SlackBridgeConfig;
   private started = false;
 
-  constructor(config: SlackBridgeConfig, onInbound: InboundHandler) {
+  constructor(config: SlackBridgeConfig, onInbound: InboundHandler, onAction?: ActionHandler) {
     this.config = config;
     this.web = new WebClient(config.botToken);
     this.socket = new SocketModeClient({ appToken: config.appToken });
@@ -40,6 +50,26 @@ export class SlackGateway {
         threadTs: typeof event.thread_ts === "string" ? event.thread_ts : undefined,
         botId: typeof event.bot_id === "string" ? event.bot_id : undefined,
       });
+    });
+
+    this.socket.on("interactive", async ({ body, ack }: { body: Record<string, unknown>; ack: () => Promise<void> }) => {
+      await ack();
+      if (!onAction) return;
+      if (body?.type !== "block_actions") return;
+      const actions = Array.isArray(body.actions) ? body.actions : [];
+      const first = actions[0] as Record<string, unknown> | undefined;
+      if (!first) return;
+      const user = body.user as Record<string, unknown> | undefined;
+      const channelObj = body.channel as Record<string, unknown> | undefined;
+      const messageObj = body.message as Record<string, unknown> | undefined;
+      const actionId = typeof first.action_id === "string" ? first.action_id : "";
+      const value = typeof first.value === "string" ? first.value : "";
+      const userId = typeof user?.id === "string" ? user.id : "";
+      const channel = typeof channelObj?.id === "string" ? channelObj.id : "";
+      const messageTs = typeof messageObj?.ts === "string" ? messageObj.ts : "";
+      const threadTs = typeof messageObj?.thread_ts === "string" ? messageObj.thread_ts : undefined;
+      if (!actionId || !channel || !messageTs) return;
+      await onAction({ actionId, value, userId, channel, messageTs, threadTs });
     });
   }
 
@@ -70,6 +100,29 @@ export class SlackGateway {
       mrkdwn: true,
     });
     return typeof res.ts === "string" ? res.ts : undefined;
+  }
+
+  async postBlocks(threadTs: string, text: string, blocks: unknown[]): Promise<string | undefined> {
+    const res = await this.web.chat.postMessage({
+      channel: this.config.channel,
+      thread_ts: threadTs,
+      text,
+      blocks: blocks as never,
+    });
+    return typeof res.ts === "string" ? res.ts : undefined;
+  }
+
+  async updateBlocks(ts: string, text: string, blocks: unknown[]): Promise<void> {
+    await this.web.chat.update({
+      channel: this.config.channel,
+      ts,
+      text,
+      blocks: blocks as never,
+    });
+  }
+
+  async updateText(ts: string, text: string): Promise<void> {
+    await this.web.chat.update({ channel: this.config.channel, ts, text });
   }
 
   async setStatus(threadTs: string, status: string): Promise<void> {
