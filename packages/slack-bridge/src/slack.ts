@@ -125,6 +125,17 @@ export class SlackGateway {
     await this.web.chat.update({ channel: this.config.channel, ts, text });
   }
 
+  async uploadImage(threadTs: string, png: Buffer, title: string, comment?: string): Promise<void> {
+    await this.web.files.uploadV2({
+      channel_id: this.config.channel,
+      thread_ts: threadTs,
+      file: png,
+      filename: `${title.replace(/[^\w.-]+/g, "_").slice(0, 60) || "diff"}.png`,
+      title,
+      initial_comment: comment,
+    });
+  }
+
   async setStatus(threadTs: string, status: string): Promise<void> {
     await this.web.apiCall("assistant.threads.setStatus", {
       channel_id: this.config.channel,
