@@ -37,8 +37,5 @@
   "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=20.0.0"
-  },
-  "dependencies": {
-    "sharp": "^0.34.5"
   }
 }
