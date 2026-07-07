@@ -33,6 +33,7 @@ function publishServerInfo(srv: { url: string; token: string; port: number }): v
         url: srv.url,
         ts: Date.now(),
       }),
+      { mode: 0o600 },
     );
   } catch {}
 }

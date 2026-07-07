@@ -1064,16 +1064,32 @@ export function startGitReviewServer(
           const body = await readJsonBody(req);
           const repo = String(body.repo || ".");
           const number = Number(body.number);
-          const method: MergeMethod =
-            body.method === "squash" || body.method === "rebase" ? body.method : "merge";
+          if (body.method !== "merge" && body.method !== "squash" && body.method !== "rebase") {
+            sendJson(res, 400, { error: "invalid merge method" });
+            return;
+          }
+          const method: MergeMethod = body.method;
           if (!Number.isInteger(number) || number <= 0) {
             sendJson(res, 400, { error: "invalid pr number" });
             return;
           }
+          const admin = Boolean(body.admin);
+          if (admin) {
+            const status = await collectMergeStatus(pi, repo, number);
+            if (!status) {
+              sendJson(res, 404, { error: "repo not found" });
+              return;
+            }
+            const clean = status.mergeable === "MERGEABLE" && status.mergeStateStatus === "CLEAN";
+            if (!status.canAdmin || clean) {
+              sendJson(res, 403, { error: "admin override not allowed" });
+              return;
+            }
+          }
           await mergePullRequest(pi, repo, number, {
             method,
             deleteBranch: Boolean(body.deleteBranch),
-            admin: Boolean(body.admin),
+            admin,
           });
           sendJson(res, 200, { ok: true });
         } catch (err) {

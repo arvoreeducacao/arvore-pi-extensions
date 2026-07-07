@@ -536,7 +536,11 @@ function renderWidget(width: number, theme: any): string[] {
     const status = [ci, deploy].filter(Boolean).join(fg("dim", "  ·  "));
     if (status) lines.push(`      ${status}`);
     const reviewUrl = gitReviewUrlFor(pr);
-    lines.push(`      ${fg("mdLinkUrl", trunc(reviewUrl ?? pr.url))}`);
+    if (reviewUrl) {
+      lines.push(`      ${osc8(reviewUrl, fg("mdLinkUrl", "Open in git-review"))}`);
+    } else {
+      lines.push(`      ${fg("mdLinkUrl", trunc(pr.url))}`);
+    }
   }
   if (prs.length > max) lines.push(fg("dim", `   +${prs.length - max} more`));
   return lines;

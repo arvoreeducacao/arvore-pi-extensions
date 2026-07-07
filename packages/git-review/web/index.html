@@ -1108,14 +1108,19 @@
           const data = await res.json();
           if (appMode !== "prs") return;
           const groups = data.groups || [];
-          let match = null;
+          const matches = [];
           for (const group of groups) {
             const found = (group.prs || []).find((pr) => pr.number === number);
             if (found) {
-              match = found;
-              break;
+              matches.push(found);
             }
           }
+          if (matches.length > 1) {
+            content.innerHTML = `<div class="empty">PR #${number} exists in multiple repos.<br/>Showing all open PRs instead.</div>`;
+            setMode("prs");
+            return;
+          }
+          const match = matches[0];
           if (!match) {
             content.innerHTML = `<div class="empty">PR #${number} not found among open PRs.<br/>Showing all open PRs instead.</div>`;
             setMode("prs");
