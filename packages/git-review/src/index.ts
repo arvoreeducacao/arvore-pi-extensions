@@ -215,6 +215,7 @@ export default function (pi: ExtensionAPI) {
   const clients: Set<WebSocket> = new Set();
   let isIdle: () => boolean = () => true;
   let requestTimer: ReturnType<typeof setInterval> | null = null;
+  let serverStarting = false;
 
   const handleMessage = (msg: IncomingMessage_) => {
     let message: string;
@@ -242,15 +243,21 @@ export default function (pi: ExtensionAPI) {
     ui: { notify: (m: string, type?: "error" | "warning" | "info") => void };
   }): Promise<GitReviewServer | null> {
     if (server) return server;
-    for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
-      try {
-        server = await startGitReviewServer(port, pi, clients, handleMessage);
-        publishServerInfo(server);
-        return server;
-      } catch {}
+    if (serverStarting) return null;
+    serverStarting = true;
+    try {
+      for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
+        try {
+          server = await startGitReviewServer(port, pi, clients, handleMessage);
+          publishServerInfo(server);
+          return server;
+        } catch {}
+      }
+      ctx.ui.notify("git-review: no available port in range", "warning");
+      return null;
+    } finally {
+      serverStarting = false;
     }
-    ctx.ui.notify("git-review: no available port in range", "warning");
-    return null;
   }
 
   function startRequestWatcher(ctx: {
@@ -258,7 +265,7 @@ export default function (pi: ExtensionAPI) {
   }): void {
     if (requestTimer) return;
     requestTimer = setInterval(() => {
-      if (server) return;
+      if (server || serverStarting) return;
       if (!consumeServerRequest()) return;
       void ensureServer(ctx);
     }, REQUEST_POLL_MS);
