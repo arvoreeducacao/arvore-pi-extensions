@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-git-review",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "PI extension that opens a browser-based git diff reviewer; selected code + comments are sent to the agent in real time",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
