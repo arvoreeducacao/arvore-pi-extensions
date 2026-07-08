@@ -28,6 +28,10 @@ a user message. The agent's answers appear in your terminal (PI TUI).
   streaming, normal message when idle).
 - Replies are **terminal-only** by design — the browser is a pure input surface.
 
+> UI: GitHub-style dark theme. Diff rows are built as HTML in a single pass and
+> syntax highlighting runs progressively in idle time, so even large diffs render
+> instantly instead of blocking on per-line highlighting.
+
 ## Usage
 
 ```

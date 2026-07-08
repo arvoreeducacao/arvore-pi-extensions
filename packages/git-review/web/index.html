@@ -11,33 +11,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
       :root {
-        --bg: #151e23;
-        --bg-dark: #121d24;
-        --bg-elev: #1a2830;
-        --bg-subtle: #1a2a2e;
-        --bg-statusline: #0d1b22;
-        --border: #2a3a42;
-        --border-strong: #406a76;
-        --fg: #e6faf7;
-        --fg-dim: #7c98a1;
-        --fg-gutter: #406a76;
-        --accent: #40cab6;
-        --accent-bright: #66dcce;
-        --accent-bg: #40cab6;
-        --add-bg: #1e2e24;
-        --add-gutter: #2a4231;
-        --del-bg: #2e1a1e;
-        --del-gutter: #44262a;
-        --success: #4ec685;
-        --error: #fa5371;
-        --warning: #fdd351;
-        --sel: rgba(64, 202, 182, 0.22);
-        --shadow: rgba(5, 16, 20, 0.4);
-        --shadow-lg: rgba(5, 16, 20, 0.6);
-        --radius: 10px;
-        --radius-sm: 8px;
+        --bg: #0d1117;
+        --bg-dark: #010409;
+        --bg-elev: #161b22;
+        --bg-subtle: #21262d;
+        --bg-statusline: #010409;
+        --border: #30363d;
+        --border-strong: #58a6ff;
+        --fg: #e6edf3;
+        --fg-dim: #7d8590;
+        --fg-gutter: #6e7681;
+        --accent: #58a6ff;
+        --accent-bright: #79c0ff;
+        --accent-bg: #238636;
+        --accent-fg: #ffffff;
+        --add-bg: rgba(46, 160, 67, 0.15);
+        --add-gutter: rgba(46, 160, 67, 0.4);
+        --del-bg: rgba(248, 81, 73, 0.15);
+        --del-gutter: rgba(248, 81, 73, 0.4);
+        --success: #3fb950;
+        --error: #f85149;
+        --warning: #d29922;
+        --sel: rgba(56, 139, 253, 0.15);
+        --shadow: rgba(1, 4, 9, 0.5);
+        --shadow-lg: rgba(1, 4, 9, 0.7);
+        --radius: 6px;
+        --radius-sm: 6px;
         --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-        --sans: Averta, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
       }
       * {
         box-sizing: border-box;
@@ -63,13 +64,14 @@
         gap: 12px;
         flex-wrap: wrap;
         padding: 12px 16px;
-        background: var(--bg-elev);
+        background: var(--bg-dark);
         border-bottom: 1px solid var(--border);
       }
       header h1 {
         margin: 0;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
+        letter-spacing: 0.01em;
       }
       .spacer {
         flex: 1;
@@ -78,26 +80,29 @@
       input[type="text"],
       button {
         font: inherit;
+        font-size: 13px;
         color: var(--fg);
-        background: var(--bg);
-        border: 1px solid var(--border);
+        background: var(--bg-subtle);
+        border: 1px solid rgba(240, 246, 252, 0.1);
         border-radius: 6px;
-        padding: 6px 10px;
+        padding: 5px 12px;
       }
       button {
         cursor: pointer;
+        font-weight: 500;
       }
       button:hover {
-        border-color: var(--accent);
+        background: var(--border);
+        border-color: var(--fg-gutter);
       }
       button.primary {
         background: var(--accent-bg);
-        border-color: var(--accent-bg);
-        color: var(--bg-dark);
+        border-color: rgba(240,246,252,0.1);
+        color: var(--accent-fg);
       }
       button.primary:hover {
-        background: var(--accent);
-        border-color: var(--accent);
+        background: #2ea043;
+        border-color: rgba(240,246,252,0.1);
       }
       .tabs {
         display: flex;
@@ -119,8 +124,9 @@
         color: var(--fg);
       }
       .tabs button.active {
-        background: var(--accent-bg);
-        color: var(--bg-dark);
+        background: var(--bg-subtle);
+        color: var(--fg);
+        box-shadow: inset 0 0 0 1px var(--border);
       }
       .pr-list {
         display: flex;
@@ -316,18 +322,22 @@
         border-radius: var(--radius);
         overflow: hidden;
       }
+      .file:target,
+      .file.open {
+        overflow: visible;
+      }
       .repo-group {
         margin-bottom: 28px;
       }
       .repo-head {
         position: sticky;
-        top: 53px;
+        top: 49px;
         z-index: 5;
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 10px 14px;
-        background: linear-gradient(var(--bg), var(--bg-elev));
+        background: var(--bg-elev);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         margin-bottom: 12px;
@@ -335,7 +345,7 @@
         user-select: none;
       }
       .repo-head:hover {
-        border-color: var(--accent);
+        background: var(--bg-subtle);
       }
       .repo-head .chevron {
         color: var(--fg-dim);
@@ -368,8 +378,9 @@
         color: var(--fg-dim);
       }
       .repo-head .badge.branch {
-        border-color: var(--accent);
+        border-color: rgba(88, 166, 255, 0.4);
         color: var(--accent);
+        background: rgba(56, 139, 253, 0.1);
       }
       .repo-head .badge.worktree {
         border-color: var(--warning);
@@ -384,8 +395,9 @@
         padding: 8px 12px;
         background: var(--bg-elev);
         border-bottom: 1px solid var(--border);
+        border-radius: var(--radius) var(--radius) 0 0;
         font-family: var(--mono);
-        font-size: 13px;
+        font-size: 12.5px;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -489,6 +501,16 @@
         background: transparent;
         padding: 0;
       }
+      td.code .mk {
+        color: var(--fg-dim);
+        user-select: none;
+      }
+      tr.add td.code .mk {
+        color: var(--success);
+      }
+      tr.del td.code .mk {
+        color: var(--error);
+      }
       tr.add td.code {
         background: var(--add-bg);
       }
@@ -503,8 +525,9 @@
       }
       tr.hunk td {
         color: var(--fg-dim);
-        background: var(--bg-subtle);
+        background: rgba(56, 139, 253, 0.1);
         user-select: none;
+        font-size: 12px;
       }
       tr.selected td.code {
         background: var(--sel) !important;
@@ -618,7 +641,7 @@
         z-index: 45;
         display: none;
         background: var(--accent-bg);
-        color: var(--bg-dark);
+        color: var(--accent-fg);
         border: none;
         border-radius: 6px;
         padding: 5px 10px;
@@ -801,7 +824,7 @@
       }
       .cp-actions button.primary {
         background: var(--accent-bg);
-        color: var(--bg-dark);
+        color: var(--accent-fg);
         border: none;
         font-weight: 700;
       }
@@ -876,7 +899,7 @@
       #batch-bar button {
         width: 100%;
         background: var(--accent-bg);
-        color: var(--bg-dark);
+        color: var(--accent-fg);
         border: none;
         border-radius: 6px;
         padding: 6px;
@@ -992,6 +1015,10 @@
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
+      }
+
+      function escapeAttr(s) {
+        return escapeHtml(String(s == null ? "" : s)).replace(/"/g, "&quot;");
       }
 
       function renderMarkdown(src) {
@@ -1774,10 +1801,11 @@
           return;
         }
         target.innerHTML = "";
+        hlReset();
         let fi = 0;
         groups.forEach((group) => {
           const groupEl = document.createElement("div");
-          groupEl.className = "repo-group";
+          groupEl.className = "repo-group open";
 
           const head = document.createElement("div");
           head.className = "repo-head";
@@ -1807,30 +1835,69 @@
           head.addEventListener("click", () => {
             groupEl.classList.toggle("open");
           });
-          if (groups.length === 1) groupEl.classList.add("open");
           target.appendChild(groupEl);
         });
 
         wireSelection();
+        hlSchedule(target);
       }
 
-      function highlightCode(raw, lang) {
-        try {
-          return lang && hljs.getLanguage(lang)
-            ? hljs.highlight(raw, { language: lang }).value
-            : escapeHtml(raw);
-        } catch {
-          return escapeHtml(raw);
+      let hlQueue = [];
+      let hlRunning = false;
+      const idle =
+        window.requestIdleCallback ||
+        ((cb) => setTimeout(() => cb({ timeRemaining: () => 8 }), 1));
+
+      function hlReset() {
+        hlQueue = [];
+        hlRunning = false;
+      }
+
+      function hlSchedule(root) {
+        const cells = root.querySelectorAll("span.ln[data-hl]");
+        for (const el of cells) hlQueue.push(el);
+        if (!hlRunning && hlQueue.length) {
+          hlRunning = true;
+          idle(hlPump);
         }
+      }
+
+      function hlPump(deadline) {
+        let done = 0;
+        while (
+          hlQueue.length &&
+          (done < 40 || (deadline && deadline.timeRemaining && deadline.timeRemaining() > 4))
+        ) {
+          const el = hlQueue.shift();
+          done++;
+          if (!el || !el.isConnected) continue;
+          const lang = el.getAttribute("data-hl");
+          el.removeAttribute("data-hl");
+          if (!lang) continue;
+          const raw = el.textContent;
+          try {
+            el.innerHTML = hljs.highlight(raw, { language: lang }).value;
+          } catch {}
+        }
+        if (hlQueue.length) {
+          idle(hlPump);
+        } else {
+          hlRunning = false;
+        }
+      }
+
+      function langFor(name) {
+        const ext = (name.split(".").pop() || "").toLowerCase();
+        return ext && hljs.getLanguage(ext) ? ext : null;
       }
 
       function renderFile(file, fi, container, stripPrefix) {
         const name = fileName(file);
         const display =
           stripPrefix && name.startsWith(stripPrefix) ? name.slice(stripPrefix.length) : name;
-        const lang = (name.split(".").pop() || "").toLowerCase();
+        const lang = langFor(name);
         const wrap = document.createElement("div");
-        wrap.className = "file";
+        wrap.className = "file open";
 
         const head = document.createElement("div");
         head.className = "file-head";
@@ -1848,11 +1915,10 @@
         const table = document.createElement("table");
         table.className = viewMode === "split" ? "diff split" : "diff";
         const tbody = document.createElement("tbody");
-        if (viewMode === "split") {
-          renderSplitBody(tbody, file, fi, name, lang);
-        } else {
-          renderUnifiedBody(tbody, file, fi, name, lang);
-        }
+        tbody.innerHTML =
+          viewMode === "split"
+            ? splitBodyHtml(file, fi, name, lang)
+            : unifiedBodyHtml(file, fi, name, lang);
         table.appendChild(tbody);
         fileBody.appendChild(table);
         wrap.appendChild(fileBody);
@@ -1862,29 +1928,30 @@
         container.appendChild(wrap);
       }
 
-      function renderUnifiedBody(tbody, file, fi, name, lang) {
-        (file.chunks || []).forEach((chunk) => {
-          const hunkRow = document.createElement("tr");
-          hunkRow.className = "hunk";
-          hunkRow.innerHTML = `<td></td><td class="code">${escapeHtml(chunk.content)}</td>`;
-          tbody.appendChild(hunkRow);
+      function codeCell(raw, lang) {
+        if (!lang) return escapeHtml(raw);
+        return `<span class="ln" data-hl="${lang}">${escapeHtml(raw)}</span>`;
+      }
 
+      function unifiedBodyHtml(file, fi, name, lang) {
+        let html = "";
+        (file.chunks || []).forEach((chunk) => {
+          html +=
+            `<tr class="hunk"><td></td>` +
+            `<td class="code">${escapeHtml(chunk.content)}</td></tr>`;
           (chunk.changes || []).forEach((ch) => {
-            const tr = document.createElement("tr");
             const lineNo = ch.type === "del" ? ch.ln : ch.type === "add" ? ch.ln : ch.ln2;
-            tr.className = ch.type === "add" ? "add" : ch.type === "del" ? "del" : "";
-            tr.dataset.file = name;
-            tr.dataset.fileIdx = String(fi);
-            tr.dataset.line = lineNo != null ? String(lineNo) : "";
+            const cls = ch.type === "add" ? "add" : ch.type === "del" ? "del" : "";
             const raw = ch.content.replace(/^[+\- ]/, "");
-            const html = highlightCode(raw, lang);
             const marker = ch.type === "add" ? "+" : ch.type === "del" ? "-" : " ";
-            tr.innerHTML =
+            html +=
+              `<tr class="${cls}" data-file="${escapeAttr(name)}" data-file-idx="${fi}" data-line="${lineNo != null ? lineNo : ""}">` +
               `<td class="gutter"><span class="num">${lineNo != null ? lineNo : ""}</span></td>` +
-              `<td class="code">${escapeHtml(marker)}${html}</td>`;
-            tbody.appendChild(tr);
+              `<td class="code"><span class="mk">${escapeHtml(marker)}</span>${codeCell(raw, lang)}</td>` +
+              `</tr>`;
           });
         });
+        return html;
       }
 
       function pairChanges(changes) {
@@ -1913,42 +1980,36 @@
         return rows;
       }
 
-      function renderSplitBody(tbody, file, fi, name, lang) {
+      function splitBodyHtml(file, fi, name, lang) {
+        let html = "";
         (file.chunks || []).forEach((chunk) => {
-          const hunkRow = document.createElement("tr");
-          hunkRow.className = "hunk";
-          hunkRow.innerHTML =
-            `<td></td><td class="code"></td><td></td><td class="code">${escapeHtml(chunk.content)}</td>`;
-          tbody.appendChild(hunkRow);
-
+          html +=
+            `<tr class="hunk"><td></td><td class="code"></td><td></td>` +
+            `<td class="code">${escapeHtml(chunk.content)}</td></tr>`;
           pairChanges(chunk.changes || []).forEach((pair) => {
-            const tr = document.createElement("tr");
             const leftLine = pair.left ? pair.left.ln || pair.left.ln1 : null;
             const rightLine = pair.right
               ? pair.right.ln2 != null
                 ? pair.right.ln2
                 : pair.right.ln
               : null;
-            tr.dataset.file = name;
-            tr.dataset.fileIdx = String(fi);
             const sel = rightLine != null ? rightLine : leftLine;
-            tr.dataset.line = sel != null ? String(sel) : "";
-
             const leftCls = pair.normal ? "" : pair.left ? "del" : "empty";
             const rightCls = pair.normal ? "" : pair.right ? "add" : "empty";
             const leftRaw = pair.left ? pair.left.content.replace(/^[+\- ]/, "") : "";
             const rightRaw = pair.right ? pair.right.content.replace(/^[+\- ]/, "") : "";
-            const leftHtml = pair.left ? highlightCode(leftRaw, lang) : "";
-            const rightHtml = pair.right ? highlightCode(rightRaw, lang) : "";
-
-            tr.innerHTML =
+            const leftHtml = pair.left ? codeCell(leftRaw, lang) : "";
+            const rightHtml = pair.right ? codeCell(rightRaw, lang) : "";
+            html +=
+              `<tr data-file="${escapeAttr(name)}" data-file-idx="${fi}" data-line="${sel != null ? sel : ""}">` +
               `<td class="gutter side ${leftCls}"><span class="num">${leftLine != null ? leftLine : ""}</span></td>` +
               `<td class="code side ${leftCls}">${leftHtml}</td>` +
               `<td class="gutter side ${rightCls}"><span class="num">${rightLine != null ? rightLine : ""}</span></td>` +
-              `<td class="code side ${rightCls}">${rightHtml}</td>`;
-            tbody.appendChild(tr);
+              `<td class="code side ${rightCls}">${rightHtml}</td>` +
+              `</tr>`;
           });
         });
+        return html;
       }
 
       function clearSelection() {
