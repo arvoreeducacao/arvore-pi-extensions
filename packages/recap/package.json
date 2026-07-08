@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-recap",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension that drafts a one-line recap of where you left off — on demand with /recap and automatically when you return to an idle session",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -40,12 +40,14 @@ export default function recapExtension(pi: ExtensionAPI): void {
     if (countUserTurns(entries) < MIN_TURNS) return;
 
     showedRecapSinceActivity = true;
-    try {
-      const recap = await generateRecap(ctx);
-      if (recap) ctx.ui.notify(`Recap: ${recap}`, "info");
-    } catch {
-      // recap is best-effort; never block the turn
-    }
+    void (async () => {
+      try {
+        const recap = await generateRecap(ctx);
+        if (recap) ctx.ui.notify(`Recap: ${recap}`, "info");
+      } catch {
+        // recap is best-effort; never block the turn
+      }
+    })();
   });
 
   pi.registerCommand("recap", {
