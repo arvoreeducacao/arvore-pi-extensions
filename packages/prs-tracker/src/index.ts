@@ -498,6 +498,15 @@ function osc8(url: string | null, label: string): string {
   return `\u001b]8;;${url}\u0007${label}\u001b]8;;\u0007`;
 }
 
+function linkWithFallback(
+  url: string | null,
+  label: string,
+  fg: (c: string, s: string) => string,
+): string {
+  if (!url) return label;
+  return `${osc8(url, label)} ${fg("dim", url)}`;
+}
+
 function ciLine(pr: TrackedPr, fg: (c: string, s: string) => string): string | null {
   const ci = pr.ci;
   if (!ci || ci.state === "NONE") return null;
@@ -558,7 +567,9 @@ function renderWidget(width: number, theme: any): string[] {
     if (status) lines.push(`      ${status}`);
     const reviewUrl = gitReviewUrlFor(pr);
     if (reviewUrl) {
-      lines.push(`      ${osc8(reviewUrl, fg("mdLinkUrl", "Open in git-review"))}`);
+      lines.push(
+        `      ${linkWithFallback(reviewUrl, fg("mdLinkUrl", "Open in git-review"), fg)}`,
+      );
     } else {
       lines.push(`      ${fg("mdLinkUrl", trunc(pr.url))}`);
     }
