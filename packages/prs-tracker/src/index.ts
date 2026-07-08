@@ -38,6 +38,8 @@ interface TrackedPr {
 
 const POLL_INTERVAL_MS = 60_000;
 const MERGED_RETENTION_MS = 24 * 60 * 60 * 1000;
+const GIT_REVIEW_DISCOVERY_FILE = join(tmpdir(), `pi-git-review-${process.pid}.json`);
+const GIT_REVIEW_REQUEST_FILE = join(tmpdir(), `pi-git-review-request-${process.pid}.json`);
 const PR_URL_RE = /https?:\/\/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/g;
 const STATE_DIR = ".pi/prs-tracker-sessions";
 const DEPLOY_WORKFLOW_RE = /deploy|publish|release/i;
@@ -97,10 +99,9 @@ interface GitReviewInfo {
 }
 
 function readGitReviewInfo(): GitReviewInfo | null {
-  const path = join(tmpdir(), `pi-git-review-${process.pid}.json`);
-  if (!existsSync(path)) return null;
+  if (!existsSync(GIT_REVIEW_DISCOVERY_FILE)) return null;
   try {
-    const info = JSON.parse(readFileSync(path, "utf-8")) as {
+    const info = JSON.parse(readFileSync(GIT_REVIEW_DISCOVERY_FILE, "utf-8")) as {
       baseUrl?: string;
       token?: string;
       port?: number;
@@ -116,6 +117,26 @@ function gitReviewUrlFor(pr: TrackedPr): string | null {
   const info = readGitReviewInfo();
   if (!info) return null;
   return `${info.baseUrl}/?token=${info.token}&mode=prs&pr=${pr.number}`;
+}
+
+function hasOpenPr(): boolean {
+  for (const pr of tracked.values()) {
+    if (pr.state === "OPEN") return true;
+  }
+  return false;
+}
+
+function requestGitReviewServer(): void {
+  if (existsSync(GIT_REVIEW_DISCOVERY_FILE)) return;
+  if (existsSync(GIT_REVIEW_REQUEST_FILE)) return;
+  if (!hasOpenPr()) return;
+  try {
+    writeFileSync(
+      GIT_REVIEW_REQUEST_FILE,
+      JSON.stringify({ pid: process.pid, reason: "open-pr", ts: Date.now() }),
+      { mode: 0o600 },
+    );
+  } catch {}
 }
 
 function saveState(cwd: string): void {
@@ -622,6 +643,7 @@ function startPolling(ctx: any): void {
       saveState(ctx?.cwd ?? uiCtx?.cwd ?? process.cwd());
       updateWidget(ctx);
     }
+    requestGitReviewServer();
   }, POLL_INTERVAL_MS);
   if (typeof pollTimer.unref === "function") pollTimer.unref();
 }
@@ -640,6 +662,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
     if (tracked.size > 0) refreshAll();
     startPolling(ctx);
     updateWidget(ctx);
+    requestGitReviewServer();
   });
 
   pi.on("session_shutdown", async () => {
@@ -677,6 +700,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
     if (tracked.size !== before || JSON.stringify([...tracked.values()]) !== beforeSnapshot) {
       saveState(cwd);
       updateWidget(ctx);
+      requestGitReviewServer();
     }
   });
 

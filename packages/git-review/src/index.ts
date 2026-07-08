@@ -1,6 +1,6 @@
 import { platform } from "node:os";
 import { tmpdir } from "node:os";
-import { writeFileSync, unlinkSync } from "node:fs";
+import { existsSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { WebSocket } from "ws";
@@ -20,6 +20,8 @@ const PORT_RANGE_START = 9890;
 const PORT_RANGE_END = 9899;
 
 const DISCOVERY_FILE = join(tmpdir(), `pi-git-review-${process.pid}.json`);
+const REQUEST_FILE = join(tmpdir(), `pi-git-review-request-${process.pid}.json`);
+const REQUEST_POLL_MS = 1_000;
 
 function publishServerInfo(srv: { url: string; token: string; port: number }): void {
   try {
@@ -42,6 +44,14 @@ function unpublishServerInfo(): void {
   try {
     unlinkSync(DISCOVERY_FILE);
   } catch {}
+}
+
+function consumeServerRequest(): boolean {
+  if (!existsSync(REQUEST_FILE)) return false;
+  try {
+    unlinkSync(REQUEST_FILE);
+  } catch {}
+  return true;
 }
 
 function openBrowser(pi: ExtensionAPI, url: string): void {
@@ -204,6 +214,8 @@ export default function (pi: ExtensionAPI) {
   let server: GitReviewServer | null = null;
   const clients: Set<WebSocket> = new Set();
   let isIdle: () => boolean = () => true;
+  let requestTimer: ReturnType<typeof setInterval> | null = null;
+  let serverStarting = false;
 
   const handleMessage = (msg: IncomingMessage_) => {
     let message: string;
@@ -231,15 +243,40 @@ export default function (pi: ExtensionAPI) {
     ui: { notify: (m: string, type?: "error" | "warning" | "info") => void };
   }): Promise<GitReviewServer | null> {
     if (server) return server;
-    for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
-      try {
-        server = await startGitReviewServer(port, pi, clients, handleMessage);
-        publishServerInfo(server);
-        return server;
-      } catch {}
+    if (serverStarting) return null;
+    serverStarting = true;
+    try {
+      for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
+        try {
+          server = await startGitReviewServer(port, pi, clients, handleMessage);
+          publishServerInfo(server);
+          return server;
+        } catch {}
+      }
+      ctx.ui.notify("git-review: no available port in range", "warning");
+      return null;
+    } finally {
+      serverStarting = false;
     }
-    ctx.ui.notify("git-review: no available port in range", "warning");
-    return null;
+  }
+
+  function startRequestWatcher(ctx: {
+    ui: { notify: (m: string, type?: "error" | "warning" | "info") => void };
+  }): void {
+    if (requestTimer) return;
+    requestTimer = setInterval(() => {
+      if (server || serverStarting) return;
+      if (!consumeServerRequest()) return;
+      void ensureServer(ctx);
+    }, REQUEST_POLL_MS);
+    if (typeof requestTimer.unref === "function") requestTimer.unref();
+  }
+
+  function stopRequestWatcher(): void {
+    if (requestTimer) {
+      clearInterval(requestTimer);
+      requestTimer = null;
+    }
   }
 
   pi.registerCommand("review", {
@@ -274,9 +311,12 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_start", async (_event, ctx) => {
     isIdle = () => ctx.isIdle();
+    startRequestWatcher(ctx);
   });
 
   pi.on("session_shutdown", async () => {
+    stopRequestWatcher();
+    consumeServerRequest();
     unpublishServerInfo();
     server?.close();
     server = null;
