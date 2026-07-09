@@ -356,6 +356,86 @@ const PR_DIFF_TTL_MS = 20_000;
 const PR_COMMENTS_TTL_MS = 15_000;
 const MERGE_STATUS_TTL_MS = 10_000;
 
+const GH_API = "https://api.github.com";
+const GH_TOKEN_TTL_MS = 600_000;
+const PRS_GRAPHQL_CHUNK = 8;
+
+let ghTokenCache: { token: string; expiresAt: number } | null = null;
+let ghTokenInflight: Promise<string> | null = null;
+
+async function ghToken(pi: ExtensionAPI): Promise<string> {
+  if (ghTokenCache && ghTokenCache.expiresAt > Date.now()) return ghTokenCache.token;
+  if (ghTokenInflight) return ghTokenInflight;
+  ghTokenInflight = pi
+    .exec("gh", ["auth", "token"])
+    .then(({ stdout }) => {
+      const token = stdout.trim();
+      if (!token) throw new Error("empty gh auth token");
+      ghTokenCache = { token, expiresAt: Date.now() + GH_TOKEN_TTL_MS };
+      ghTokenInflight = null;
+      return token;
+    })
+    .catch((err) => {
+      ghTokenInflight = null;
+      throw err;
+    });
+  return ghTokenInflight;
+}
+
+async function ghRest(pi: ExtensionAPI, path: string, accept: string): Promise<string> {
+  const token = await ghToken(pi);
+  const res = await fetch(`${GH_API}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: accept,
+      "User-Agent": "pi-git-review",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (!res.ok) throw new Error(`GitHub API ${res.status} on ${path}`);
+  return res.text();
+}
+
+async function ghGraphql<T>(
+  pi: ExtensionAPI,
+  query: string,
+  variables: Record<string, unknown> = {},
+): Promise<T> {
+  const token = await ghToken(pi);
+  const res = await fetch(`${GH_API}/graphql`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": "pi-git-review",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!res.ok) throw new Error(`GitHub GraphQL ${res.status}`);
+  const parsed = (await res.json()) as { data?: T | null; errors?: Array<{ message?: string }> };
+  if (!parsed.data) throw new Error(parsed.errors?.[0]?.message || "GraphQL error");
+  return parsed.data;
+}
+
+interface GqlActor {
+  login?: string | null;
+}
+
+const slugCache = new Map<string, string | null>();
+
+async function slugForDir(pi: ExtensionAPI, dir: string): Promise<string | null> {
+  const cached = slugCache.get(dir);
+  if (cached !== undefined) return cached;
+  let slug: string | null = null;
+  try {
+    const { stdout } = await pi.exec("git", ["-C", dir, "remote", "get-url", "origin"]);
+    const match = /github\.com[:/]([^/\s]+)\/([^/\s]+?)(?:\.git)?$/.exec(stdout.trim());
+    if (match) slug = `${match[1]}/${match[2]}`;
+  } catch {}
+  slugCache.set(dir, slug);
+  return slug;
+}
+
 async function collectRepoGroups(
   pi: ExtensionAPI,
   scope: DiffScope,
@@ -389,14 +469,96 @@ async function collectRepoGroups(
   return groups;
 }
 
-async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]> {
-  const repos = await findRepoDirs(pi);
+function uniqueByLabel(repos: RepoDir[]): RepoDir[] {
   const seen = new Set<string>();
-  const uniqueRepos = repos.filter(({ label }) => {
+  return repos.filter(({ label }) => {
     if (seen.has(label)) return false;
     seen.add(label);
     return true;
   });
+}
+
+interface GqlPrNode {
+  number: number;
+  title: string;
+  url: string;
+  isDraft: boolean;
+  updatedAt: string;
+  additions?: number | null;
+  deletions?: number | null;
+  baseRefName: string;
+  headRefName: string;
+  author?: GqlActor | null;
+}
+
+async function collectPullRequestsApi(pi: ExtensionAPI): Promise<PullRequestGroup[]> {
+  const repos = await findRepoDirs(pi);
+  const uniqueRepos = uniqueByLabel(repos);
+  const withSlugs = await mapWithConcurrency(uniqueRepos, PR_LIST_CONCURRENCY, async (r) => ({
+    label: r.label,
+    slug: await slugForDir(pi, r.dir),
+  }));
+  const targets = withSlugs.filter((r): r is { label: string; slug: string } => Boolean(r.slug));
+  if (!targets.length) return [];
+
+  const chunks: Array<Array<{ label: string; slug: string }>> = [];
+  for (let i = 0; i < targets.length; i += PRS_GRAPHQL_CHUNK) {
+    chunks.push(targets.slice(i, i + PRS_GRAPHQL_CHUNK));
+  }
+  const chunkResults = await Promise.all(
+    chunks.map((chunk) => {
+      const parts = chunk.map(({ slug }, i) => {
+        const [owner, name] = slug.split("/");
+        return (
+          `r${i}: repository(owner:${JSON.stringify(owner)}, name:${JSON.stringify(name)}){` +
+          `pullRequests(states:OPEN, first:50, orderBy:{field:CREATED_AT, direction:DESC}){nodes{` +
+          `number title url isDraft updatedAt additions deletions baseRefName headRefName author{login}}}}`
+        );
+      });
+      return ghGraphql<Record<string, { pullRequests?: { nodes?: GqlPrNode[] } } | null>>(
+        pi,
+        `query{${parts.join(" ")}}`,
+      );
+    }),
+  );
+
+  const groups: PullRequestGroup[] = [];
+  chunks.forEach((chunk, ci) => {
+    chunk.forEach(({ label }, i) => {
+      const nodes = chunkResults[ci][`r${i}`]?.pullRequests?.nodes || [];
+      if (!nodes.length) return;
+    const prs: PullRequest[] = nodes.map((p) => ({
+      repo: label,
+      number: p.number,
+      title: p.title,
+      author: p.author?.login || "unknown",
+      url: p.url,
+      baseRefName: p.baseRefName,
+      headRefName: p.headRefName,
+      isDraft: p.isDraft,
+      updatedAt: p.updatedAt,
+      additions: p.additions || 0,
+      deletions: p.deletions || 0,
+    }));
+      prs.sort((a, b) => b.number - a.number);
+      groups.push({ repo: label, prs });
+    });
+  });
+  groups.sort((a, b) => a.repo.localeCompare(b.repo));
+  return groups;
+}
+
+async function collectPullRequests(pi: ExtensionAPI): Promise<PullRequestGroup[]> {
+  try {
+    return await collectPullRequestsApi(pi);
+  } catch {
+    return collectPullRequestsCli(pi);
+  }
+}
+
+async function collectPullRequestsCli(pi: ExtensionAPI): Promise<PullRequestGroup[]> {
+  const repos = await findRepoDirs(pi);
+  const uniqueRepos = uniqueByLabel(repos);
 
   const results = await mapWithConcurrency(uniqueRepos, PR_LIST_CONCURRENCY, async ({ dir, label }) => {
     try {
@@ -453,6 +615,17 @@ function repoDirForLabel(repos: RepoDir[], label: string): string | null {
   return match ? match.dir : null;
 }
 
+interface PrView {
+  number: number;
+  title: string;
+  author?: { login?: string | null } | null;
+  url: string;
+  baseRefName: string;
+  headRefName: string;
+  headRefOid: string;
+  body: string;
+}
+
 async function collectPrDiff(
   pi: ExtensionAPI,
   repo: string,
@@ -461,8 +634,44 @@ async function collectPrDiff(
   const repos = await findRepoDirs(pi);
   const dir = repoDirForLabel(repos, repo);
   if (!dir) return null;
-  const prefix = repo === "." ? "" : repo + "/";
+  try {
+    return await collectPrDiffApi(pi, repo, dir, prNumber);
+  } catch {
+    return collectPrDiffCli(pi, repo, dir, prNumber);
+  }
+}
 
+async function collectPrDiffApi(
+  pi: ExtensionAPI,
+  repo: string,
+  dir: string,
+  prNumber: number,
+): Promise<{ files: parseDiff.File[]; context: PrContext }> {
+  const slug = await slugForDir(pi, dir);
+  if (!slug) throw new Error("no github slug for dir");
+  const [owner, name] = slug.split("/");
+  const query =
+    `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){` +
+    `pullRequest(number:$number){number title url baseRefName headRefName headRefOid body author{login}}}}`;
+  const [data, diffOut] = await Promise.all([
+    ghGraphql<{ repository?: { pullRequest?: (Omit<PrView, "author"> & { author?: GqlActor | null }) | null } | null }>(
+      pi,
+      query,
+      { owner, name, number: prNumber },
+    ),
+    ghRest(pi, `/repos/${slug}/pulls/${prNumber}`, "application/vnd.github.diff"),
+  ]);
+  const pr = data.repository?.pullRequest;
+  if (!pr) throw new Error("PR not found");
+  return buildPrDiffResult(repo, { ...pr, author: { login: pr.author?.login || undefined } }, diffOut);
+}
+
+async function collectPrDiffCli(
+  pi: ExtensionAPI,
+  repo: string,
+  dir: string,
+  prNumber: number,
+): Promise<{ files: parseDiff.File[]; context: PrContext }> {
   const [{ stdout: viewOut }, { stdout: diffOut }] = await Promise.all([
     pi.exec("gh", [
       "pr",
@@ -473,16 +682,15 @@ async function collectPrDiff(
     ], { cwd: dir }),
     pi.exec("gh", ["pr", "diff", String(prNumber)], { cwd: dir }),
   ]);
-  const view = JSON.parse(viewOut) as {
-    number: number;
-    title: string;
-    author?: { login?: string };
-    url: string;
-    baseRefName: string;
-    headRefName: string;
-    headRefOid: string;
-    body: string;
-  };
+  return buildPrDiffResult(repo, JSON.parse(viewOut) as PrView, diffOut);
+}
+
+function buildPrDiffResult(
+  repo: string,
+  view: PrView,
+  diffOut: string,
+): { files: parseDiff.File[]; context: PrContext } {
+  const prefix = repo === "." ? "" : repo + "/";
   const prefixed = diffOut
     .replace(/^diff --git a\//gm, `diff --git a/${prefix}`)
     .replace(/^(\+\+\+|---) ([ab])\//gm, `$1 $2/${prefix}`);
@@ -515,11 +723,8 @@ async function repoSlugForDir(
   dir: string,
   prNumber: number,
 ): Promise<string | null> {
-  try {
-    const { stdout } = await pi.exec("git", ["-C", dir, "remote", "get-url", "origin"]);
-    const match = /github\.com[:/]([^/\s]+)\/([^/\s]+?)(?:\.git)?$/.exec(stdout.trim());
-    if (match) return `${match[1]}/${match[2]}`;
-  } catch {}
+  const slug = await slugForDir(pi, dir);
+  if (slug) return slug;
   const url = await prUrlForNumber(pi, repo, prNumber);
   return url ? repoSlugFromUrl(url) : null;
 }
@@ -555,7 +760,157 @@ async function collectPrComments(
   const repos = await findRepoDirs(pi);
   const dir = repoDirForLabel(repos, repo);
   if (!dir) return null;
+  try {
+    return await collectPrCommentsApi(pi, dir, prNumber);
+  } catch {
+    return collectPrCommentsCli(pi, repo, dir, prNumber);
+  }
+}
 
+interface GqlCommentNode {
+  databaseId?: number | null;
+  body?: string | null;
+  createdAt: string;
+  url: string;
+  author?: GqlActor | null;
+}
+
+interface GqlPageInfo {
+  hasNextPage: boolean;
+  endCursor?: string | null;
+}
+
+interface GqlThreadNode {
+  isResolved: boolean;
+  isOutdated: boolean;
+  path?: string | null;
+  line?: number | null;
+  startLine?: number | null;
+  diffSide?: string | null;
+  comments?: { nodes?: GqlCommentNode[] };
+}
+
+interface GqlCommentsResponse {
+  repository?: {
+    pullRequest?: {
+      reviewThreads?: { pageInfo?: GqlPageInfo; nodes?: GqlThreadNode[] };
+      comments?: { pageInfo?: GqlPageInfo; nodes?: GqlCommentNode[] };
+    } | null;
+  } | null;
+}
+
+async function collectPrCommentsApi(
+  pi: ExtensionAPI,
+  dir: string,
+  prNumber: number,
+): Promise<{ threads: PrCommentThread[] }> {
+  const slug = await slugForDir(pi, dir);
+  if (!slug) throw new Error("no github slug for dir");
+  const [owner, name] = slug.split("/");
+
+  const reviewThreads: PrCommentThread[] = [];
+  const conversation: GqlCommentNode[] = [];
+  let threadCursor: string | null = null;
+  let commentCursor: string | null = null;
+  let wantThreads: boolean = true;
+  let wantComments: boolean = true;
+
+  while (wantThreads || wantComments) {
+    const query: string =
+      `query($owner:String!,$name:String!,$number:Int!,$tc:String,$cc:String){` +
+      `repository(owner:$owner,name:$name){pullRequest(number:$number){` +
+      (wantThreads
+        ? `reviewThreads(first:50,after:$tc){pageInfo{hasNextPage endCursor} nodes{` +
+          `isResolved isOutdated path line startLine diffSide ` +
+          `comments(first:100){nodes{databaseId body createdAt url author{login}}}}} `
+        : "") +
+      (wantComments
+        ? `comments(first:100,after:$cc){pageInfo{hasNextPage endCursor} nodes{` +
+          `databaseId body createdAt url author{login}}}`
+        : "") +
+      `}}}`;
+    const data: GqlCommentsResponse = await ghGraphql<GqlCommentsResponse>(pi, query, {
+      owner,
+      name,
+      number: prNumber,
+      tc: threadCursor,
+      cc: commentCursor,
+    });
+
+    const pr: NonNullable<NonNullable<GqlCommentsResponse["repository"]>["pullRequest"]> | null | undefined =
+      data.repository?.pullRequest;
+    if (!pr) throw new Error("PR not found");
+
+    if (wantThreads) {
+      for (const node of pr.reviewThreads?.nodes || []) {
+        const comments = (node.comments?.nodes || []).filter((c) => c.databaseId != null);
+        if (!comments.length) continue;
+        reviewThreads.push({
+          id: String(comments[0].databaseId),
+          kind: "review",
+          path: node.path ?? undefined,
+          line: node.line ?? undefined,
+          startLine: node.startLine ?? undefined,
+          side: node.diffSide === "LEFT" ? "LEFT" : node.diffSide === "RIGHT" ? "RIGHT" : undefined,
+          isResolved: Boolean(node.isResolved),
+          isOutdated: Boolean(node.isOutdated),
+          htmlUrl: comments[0].url,
+          comments: comments.map((c) => ({
+            id: c.databaseId as number,
+            author: c.author?.login || "unknown",
+            body: stripHtmlComments(c.body || ""),
+            createdAt: c.createdAt,
+            htmlUrl: c.url,
+          })),
+        });
+      }
+      const info: GqlPageInfo | undefined = pr.reviewThreads?.pageInfo;
+      wantThreads = Boolean(info?.hasNextPage && info?.endCursor);
+      threadCursor = info?.endCursor || null;
+    }
+
+    if (wantComments) {
+      conversation.push(...(pr.comments?.nodes || []).filter((c) => c.databaseId != null));
+      const info: GqlPageInfo | undefined = pr.comments?.pageInfo;
+      wantComments = Boolean(info?.hasNextPage && info?.endCursor);
+      commentCursor = info?.endCursor || null;
+    }
+  }
+
+  reviewThreads.sort((a, b) => {
+    const pathCmp = (a.path || "").localeCompare(b.path || "");
+    if (pathCmp !== 0) return pathCmp;
+    return (a.line || 0) - (b.line || 0);
+  });
+
+  const conversationThreads: PrCommentThread[] = conversation
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((c) => ({
+      id: `issue-${c.databaseId}`,
+      kind: "conversation" as const,
+      isResolved: false,
+      isOutdated: false,
+      htmlUrl: c.url,
+      comments: [
+        {
+          id: c.databaseId as number,
+          author: c.author?.login || "unknown",
+          body: stripHtmlComments(c.body || ""),
+          createdAt: c.createdAt,
+          htmlUrl: c.url,
+        },
+      ],
+    }));
+
+  return { threads: [...reviewThreads, ...conversationThreads] };
+}
+
+async function collectPrCommentsCli(
+  pi: ExtensionAPI,
+  repo: string,
+  dir: string,
+  prNumber: number,
+): Promise<{ threads: PrCommentThread[] }> {
   const slug = await repoSlugForDir(pi, repo, dir, prNumber);
   if (!slug) return { threads: [] };
   const [owner, name] = slug.split("/");
@@ -874,7 +1229,53 @@ async function collectMergeStatus(
   const repos = await findRepoDirs(pi);
   const dir = repoDirForLabel(repos, repo);
   if (!dir) return null;
+  try {
+    return await collectMergeStatusApi(pi, dir, prNumber);
+  } catch {
+    return collectMergeStatusCli(pi, dir, prNumber);
+  }
+}
 
+async function collectMergeStatusApi(
+  pi: ExtensionAPI,
+  dir: string,
+  prNumber: number,
+): Promise<MergeStatus> {
+  const slug = await slugForDir(pi, dir);
+  if (!slug) throw new Error("no github slug for dir");
+  const [owner, name] = slug.split("/");
+  const query =
+    `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){` +
+    `viewerPermission pullRequest(number:$number){state mergeable mergeStateStatus isDraft}}}`;
+  const data = await ghGraphql<{
+    repository?: {
+      viewerPermission?: string | null;
+      pullRequest?: {
+        state?: string | null;
+        mergeable?: string | null;
+        mergeStateStatus?: string | null;
+        isDraft?: boolean | null;
+      } | null;
+    } | null;
+  }>(pi, query, { owner, name, number: prNumber });
+  const pr = data.repository?.pullRequest;
+  if (!pr) throw new Error("PR not found");
+  const viewerPermission = data.repository?.viewerPermission || "";
+  return {
+    state: pr.state || "UNKNOWN",
+    mergeable: pr.mergeable || "UNKNOWN",
+    mergeStateStatus: pr.mergeStateStatus || "UNKNOWN",
+    isDraft: Boolean(pr.isDraft),
+    viewerPermission,
+    canAdmin: viewerPermission === "ADMIN",
+  };
+}
+
+async function collectMergeStatusCli(
+  pi: ExtensionAPI,
+  dir: string,
+  prNumber: number,
+): Promise<MergeStatus> {
   const { stdout } = await pi.exec(
     "gh",
     ["pr", "view", String(prNumber), "--json", "state,mergeable,mergeStateStatus,isDraft"],
