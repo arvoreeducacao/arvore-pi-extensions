@@ -297,6 +297,7 @@ export default function (pi: ExtensionAPI) {
 
       const srv = await ensureServer(ctx);
       if (!srv) return;
+      if (mode === "prs") srv.warmPrs();
       const url =
         mode === "prs"
           ? `${srv.url}&mode=prs${prNumber ? `&pr=${prNumber}` : ""}`
