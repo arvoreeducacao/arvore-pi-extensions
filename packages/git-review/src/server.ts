@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
@@ -28,6 +29,7 @@ export interface GitReviewServer {
   port: number;
   token: string;
   url: string;
+  warmPrs(): void;
   close(): void;
 }
 
@@ -219,6 +221,29 @@ function diffArgsForScope(scope: DiffScope, base: string): string[] {
   }
 }
 
+const UNTRACKED_MAX_FILES = 300;
+const UNTRACKED_MAX_FILE_BYTES = 262_144;
+const UNTRACKED_MAX_TOTAL_BYTES = 2_000_000;
+const UNTRACKED_CONCURRENCY = 8;
+
+function omittedFileStub(path: string, reason: string): string {
+  return [
+    `diff --git a/${path} b/${path}`,
+    "new file mode 100644",
+    "index 0000000..0000000",
+    "--- /dev/null",
+    `+++ b/${path}`,
+    "@@ -0,0 +1 @@",
+    `+[git-review: untracked file omitted — ${reason}]`,
+    "",
+  ].join("\n");
+}
+
+function formatBytes(size: number): string {
+  if (size >= 1_048_576) return `${(size / 1_048_576).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
 async function untrackedDiff(pi: ExtensionAPI, dir: string): Promise<string> {
   let files: string[] = [];
   try {
@@ -233,9 +258,23 @@ async function untrackedDiff(pi: ExtensionAPI, dir: string): Promise<string> {
   } catch {
     return "";
   }
+  if (!files.length) return "";
 
-  const diffs: string[] = [];
-  for (const file of files) {
+  const kept = files.slice(0, UNTRACKED_MAX_FILES);
+  const overflow = files.slice(UNTRACKED_MAX_FILES);
+
+  let totalBytes = 0;
+  const diffs = await mapWithConcurrency(kept, UNTRACKED_CONCURRENCY, async (file) => {
+    try {
+      const info = await stat(join(dir, file));
+      if (info.size > UNTRACKED_MAX_FILE_BYTES) {
+        return omittedFileStub(file, formatBytes(info.size));
+      }
+    } catch {}
+    if (totalBytes > UNTRACKED_MAX_TOTAL_BYTES) {
+      return omittedFileStub(file, "untracked diff budget exceeded");
+    }
+    let out = "";
     try {
       const { stdout } = await pi.exec("git", [
         "-C",
@@ -246,17 +285,76 @@ async function untrackedDiff(pi: ExtensionAPI, dir: string): Promise<string> {
         "/dev/null",
         file,
       ]);
-      if (stdout.trim()) diffs.push(stdout);
+      out = stdout;
     } catch (err: unknown) {
       const e = err as { stdout?: string };
-      if (e && typeof e.stdout === "string" && e.stdout.trim()) diffs.push(e.stdout);
+      if (e && typeof e.stdout === "string") out = e.stdout;
     }
+    totalBytes += out.length;
+    return out.trim() ? out : "";
+  });
+
+  const parts = diffs.filter(Boolean);
+  for (const file of overflow) {
+    parts.push(omittedFileStub(file, `over ${UNTRACKED_MAX_FILES}-file limit`));
   }
-  return diffs.join("\n");
+  return parts.join("\n");
 }
 
-const PR_LIST_CONCURRENCY = 8;
-const DIFF_CONCURRENCY = 8;
+const PR_LIST_CONCURRENCY = 16;
+const DIFF_CONCURRENCY = 16;
+
+interface SwrEntry {
+  value: unknown;
+  fetchedAt: number;
+  refresh: Promise<unknown> | null;
+}
+
+const swrStore = new Map<string, SwrEntry>();
+const swrInflight = new Map<string, Promise<unknown>>();
+
+async function swr<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
+  const entry = swrStore.get(key);
+  if (entry) {
+    if (Date.now() - entry.fetchedAt > ttlMs && !entry.refresh) {
+      entry.refresh = fetcher()
+        .then((value) => {
+          swrStore.set(key, { value, fetchedAt: Date.now(), refresh: null });
+          return value;
+        })
+        .catch(() => {
+          entry.refresh = null;
+          return entry.value;
+        });
+    }
+    return entry.value as T;
+  }
+  const inflight = swrInflight.get(key);
+  if (inflight) return inflight as Promise<T>;
+  const fetch = fetcher()
+    .then((value) => {
+      swrStore.set(key, { value, fetchedAt: Date.now(), refresh: null });
+      swrInflight.delete(key);
+      return value;
+    })
+    .catch((err) => {
+      swrInflight.delete(key);
+      throw err;
+    });
+  swrInflight.set(key, fetch);
+  return fetch;
+}
+
+function swrInvalidate(prefix: string): void {
+  for (const key of swrStore.keys()) {
+    if (key.startsWith(prefix)) swrStore.delete(key);
+  }
+}
+
+const PRS_TTL_MS = 30_000;
+const PR_DIFF_TTL_MS = 20_000;
+const PR_COMMENTS_TTL_MS = 15_000;
+const MERGE_STATUS_TTL_MS = 10_000;
 
 async function collectRepoGroups(
   pi: ExtensionAPI,
@@ -365,13 +463,16 @@ async function collectPrDiff(
   if (!dir) return null;
   const prefix = repo === "." ? "" : repo + "/";
 
-  const { stdout: viewOut } = await pi.exec("gh", [
-    "pr",
-    "view",
-    String(prNumber),
-    "--json",
-    "number,title,author,url,baseRefName,headRefName,headRefOid,body",
-  ], { cwd: dir });
+  const [{ stdout: viewOut }, { stdout: diffOut }] = await Promise.all([
+    pi.exec("gh", [
+      "pr",
+      "view",
+      String(prNumber),
+      "--json",
+      "number,title,author,url,baseRefName,headRefName,headRefOid,body",
+    ], { cwd: dir }),
+    pi.exec("gh", ["pr", "diff", String(prNumber)], { cwd: dir }),
+  ]);
   const view = JSON.parse(viewOut) as {
     number: number;
     title: string;
@@ -382,10 +483,6 @@ async function collectPrDiff(
     headRefOid: string;
     body: string;
   };
-
-  const { stdout: diffOut } = await pi.exec("gh", ["pr", "diff", String(prNumber)], {
-    cwd: dir,
-  });
   const prefixed = diffOut
     .replace(/^diff --git a\//gm, `diff --git a/${prefix}`)
     .replace(/^(\+\+\+|---) ([ab])\//gm, `$1 $2/${prefix}`);
@@ -410,6 +507,21 @@ async function collectPrDiff(
 function repoSlugFromUrl(url: string): string | null {
   const match = /github\.com\/([^/]+\/[^/]+)\/pull\//.exec(url);
   return match ? match[1] : null;
+}
+
+async function repoSlugForDir(
+  pi: ExtensionAPI,
+  repo: string,
+  dir: string,
+  prNumber: number,
+): Promise<string | null> {
+  try {
+    const { stdout } = await pi.exec("git", ["-C", dir, "remote", "get-url", "origin"]);
+    const match = /github\.com[:/]([^/\s]+)\/([^/\s]+?)(?:\.git)?$/.exec(stdout.trim());
+    if (match) return `${match[1]}/${match[2]}`;
+  } catch {}
+  const url = await prUrlForNumber(pi, repo, prNumber);
+  return url ? repoSlugFromUrl(url) : null;
 }
 
 async function prUrlForNumber(
@@ -444,14 +556,15 @@ async function collectPrComments(
   const dir = repoDirForLabel(repos, repo);
   if (!dir) return null;
 
-  const url = await prUrlForNumber(pi, repo, prNumber);
-  const slug = url ? repoSlugFromUrl(url) : null;
+  const slug = await repoSlugForDir(pi, repo, dir, prNumber);
   if (!slug) return { threads: [] };
   const [owner, name] = slug.split("/");
 
-  const reviewComments = await fetchReviewComments(pi, dir, slug, prNumber);
-  const issueComments = await fetchIssueComments(pi, dir, slug, prNumber);
-  const threadState = await fetchReviewThreadState(pi, dir, owner, name, prNumber);
+  const [reviewComments, issueComments, threadState] = await Promise.all([
+    fetchReviewComments(pi, dir, slug, prNumber),
+    fetchIssueComments(pi, dir, slug, prNumber),
+    fetchReviewThreadState(pi, dir, owner, name, prNumber),
+  ]);
 
   const threads = buildReviewThreads(reviewComments, threadState);
   const conversation = buildConversationThreads(issueComments);
@@ -683,8 +796,7 @@ async function postReviewComment(
   const repos = await findRepoDirs(pi);
   const dir = repoDirForLabel(repos, repo);
   if (!dir) throw new Error("repo not found");
-  const url = await prUrlForNumber(pi, repo, prNumber);
-  const slug = url ? repoSlugFromUrl(url) : null;
+  const slug = await repoSlugForDir(pi, repo, dir, prNumber);
   if (!slug) throw new Error("could not resolve repo slug");
 
   const prefix = repo === "." ? "" : repo + "/";
@@ -724,8 +836,7 @@ async function replyToComment(
   const repos = await findRepoDirs(pi);
   const dir = repoDirForLabel(repos, repo);
   if (!dir) throw new Error("repo not found");
-  const url = await prUrlForNumber(pi, repo, prNumber);
-  const slug = url ? repoSlugFromUrl(url) : null;
+  const slug = await repoSlugForDir(pi, repo, dir, prNumber);
   if (!slug) throw new Error("could not resolve repo slug");
 
   const { stdout } = await pi.exec(
@@ -906,7 +1017,7 @@ export function startGitReviewServer(
           return;
         }
         try {
-          const groups = await collectPullRequests(pi);
+          const groups = await swr("prs", PRS_TTL_MS, () => collectPullRequests(pi));
           sendJson(res, 200, { groups });
         } catch (err) {
           sendJson(res, 500, { error: String(err) });
@@ -926,7 +1037,9 @@ export function startGitReviewServer(
           return;
         }
         try {
-          const result = await collectPrDiff(pi, repo, number);
+          const result = await swr(`pr-diff:${repo}#${number}`, PR_DIFF_TTL_MS, () =>
+            collectPrDiff(pi, repo, number),
+          );
           if (!result) {
             sendJson(res, 404, { error: "repo not found" });
             return;
@@ -950,7 +1063,9 @@ export function startGitReviewServer(
           return;
         }
         try {
-          const result = await collectPrComments(pi, repo, number);
+          const result = await swr(`pr-comments:${repo}#${number}`, PR_COMMENTS_TTL_MS, () =>
+            collectPrComments(pi, repo, number),
+          );
           if (!result) {
             sendJson(res, 404, { error: "repo not found" });
             return;
@@ -1001,6 +1116,7 @@ export function startGitReviewServer(
             startLine,
             startSide: body.startSide === "LEFT" ? "LEFT" : undefined,
           });
+          swrInvalidate(`pr-comments:${repo}#${number}`);
           sendJson(res, 200, { ok: true, htmlUrl: result.htmlUrl });
         } catch (err) {
           sendJson(res, 500, { error: String(err) });
@@ -1024,6 +1140,7 @@ export function startGitReviewServer(
             return;
           }
           const result = await replyToComment(pi, repo, number, commentId, text);
+          swrInvalidate(`pr-comments:${repo}#${number}`);
           sendJson(res, 200, { ok: true, htmlUrl: result.htmlUrl });
         } catch (err) {
           sendJson(res, 500, { error: String(err) });
@@ -1043,7 +1160,9 @@ export function startGitReviewServer(
           return;
         }
         try {
-          const status = await collectMergeStatus(pi, repo, number);
+          const status = await swr(`merge-status:${repo}#${number}`, MERGE_STATUS_TTL_MS, () =>
+            collectMergeStatus(pi, repo, number),
+          );
           if (!status) {
             sendJson(res, 404, { error: "repo not found" });
             return;
@@ -1091,6 +1210,9 @@ export function startGitReviewServer(
             deleteBranch: Boolean(body.deleteBranch),
             admin,
           });
+          swrInvalidate("prs");
+          swrInvalidate(`pr-diff:${repo}#${number}`);
+          swrInvalidate(`merge-status:${repo}#${number}`);
           sendJson(res, 200, { ok: true });
         } catch (err) {
           sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
@@ -1140,6 +1262,9 @@ export function startGitReviewServer(
         port,
         token,
         url: `http://127.0.0.1:${port}/?token=${token}`,
+        warmPrs() {
+          swr("prs", PRS_TTL_MS, () => collectPullRequests(pi)).catch(() => {});
+        },
         close() {
           for (const client of clients) client.close();
           clients.clear();
