@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-catch-the-fox",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "PI extension: uma raposa em pixel-art que reage ao que o agente está fazendo (farejando, cavando, executando, dormindo)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +12,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "tsc --noEmit",
+    "test": "pnpm build && node --test test/*.test.mjs",
     "preview": "pnpm build && node preview.mjs",
     "preview:sheet": "pnpm build && node preview.mjs --sheet fox-preview.png"
   },

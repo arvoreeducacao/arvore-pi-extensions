@@ -1,23 +1,34 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
   ANIMS,
+  FOX_WIDTH,
   PALETTE,
   type FoxState,
   type RGB,
 } from "./fox-art.js";
+import { FoxRunMotion, orientFoxGrid } from "./fox-run-motion.js";
 
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
 const fg = ([r, g, b]: RGB) => `${ESC}38;2;${r};${g};${b}m`;
 const bg = ([r, g, b]: RGB) => `${ESC}48;2;${r};${g};${b}m`;
 
-export function gridToAnsi(grid: string[]): string[] {
+export function gridToAnsi(
+  grid: string[],
+  maximumWidth = Number.POSITIVE_INFINITY,
+): string[] {
   const lines: string[] = [];
   for (let row = 0; row < grid.length; row += 2) {
     const top = grid[row];
     const bottom = grid[row + 1] ?? ".".repeat(top.length);
+    const width = Math.min(
+      top.length,
+      Number.isFinite(maximumWidth)
+        ? Math.max(0, Math.floor(maximumWidth))
+        : top.length,
+    );
     let line = "";
-    for (let column = 0; column < top.length; column++) {
+    for (let column = 0; column < width; column++) {
       const topColor = top[column] === "." ? null : PALETTE[top[column]];
       const bottomColor =
         bottom[column] === "." ? null : PALETTE[bottom[column]];
@@ -53,10 +64,10 @@ function trimLeadingBlankRows(grids: string[][]): string[][] {
   return grids.map((grid) => grid.slice(evenBlankRows));
 }
 
-const RENDERED = Object.fromEntries(
+const TRIMMED_GRIDS = Object.fromEntries(
   Object.entries(ANIMS).map(([state, animation]) => [
     state,
-    trimLeadingBlankRows(animation.grids).map(gridToAnsi),
+    trimLeadingBlankRows(animation.grids),
   ]),
 ) as Record<FoxState, string[][]>;
 
@@ -82,6 +93,8 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
   let animationTimer: ReturnType<typeof setInterval> | null = null;
   let transitionTimer: ReturnType<typeof setTimeout> | null = null;
   let errorStreak = 0;
+  let terminalWidth = FOX_WIDTH;
+  let runMotion = new FoxRunMotion();
 
   const widgetId = "catch-the-fox";
 
@@ -104,25 +117,44 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
       } catch {}
       return;
     }
-    const frames = RENDERED[state];
-    const frame = frames[frameIndex % frames.length];
-    const lines = [` ${ANIMS[state].label}`, ...frame];
+    const renderState = state;
+    const renderFrameIndex = frameIndex;
     try {
       ui.setWidget(widgetId, () => ({
-        render: () => lines,
+        render: (width: number) => {
+          terminalWidth = Math.max(0, Math.floor(width));
+          const grids = TRIMMED_GRIDS[renderState];
+          let grid = grids[renderFrameIndex % grids.length];
+          let offset = 0;
+          if (renderState === "run") {
+            const placement = runMotion.snapshot(terminalWidth);
+            grid = orientFoxGrid(grid, placement.direction);
+            offset = placement.offset;
+          }
+          const frame = gridToAnsi(grid, terminalWidth - offset);
+          const padding = " ".repeat(offset);
+          const label = ` ${ANIMS[renderState].label}`.slice(
+            0,
+            terminalWidth,
+          );
+          return [label, ...frame.map((line) => `${padding}${line}`)];
+        },
         invalidate: () => {},
       }));
     } catch {}
   }
 
   function setState(nextState: FoxState): void {
+    const enteringRun = nextState === "run" && state !== "run";
     clearTimers();
     state = nextState;
     frameIndex = 0;
+    if (enteringRun) runMotion = new FoxRunMotion();
     render();
     if (hidden) return;
     animationTimer = setInterval(() => {
       frameIndex += 1;
+      if (state === "run") runMotion.advance(terminalWidth);
       render();
     }, ANIMS[state].intervalMs);
     animationTimer.unref?.();
