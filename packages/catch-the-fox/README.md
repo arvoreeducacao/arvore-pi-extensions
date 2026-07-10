@@ -1,6 +1,6 @@
 # 🦊 catch-the-fox
 
-Extensão do PI que mostra uma **raposa em pixel-art animada** (half-block truecolor) acima do editor. A raposa muda de pose conforme o que o agente está fazendo — farejando, cavando, correndo, pulando, celebrando ou dormindo enquanto espera você.
+Extensão do PI que mostra uma **raposa em pixel-art animada** (half-block truecolor) acima do editor. A raposa muda de pose conforme o que o agente está fazendo — farejando, cavando, correndo, pulando, celebrando ou dormindo enquanto espera você. Durante execuções, ela atravessa o terminal, derrapa junto à borda, vira e corre de volta.
 
 Os 32 quadros usam a mesma personagem, uma grade fixa de 24 × 20 pixels e a paleta compacta da folha de referência: contorno roxo-escuro, pelagem laranja, focinho e peito brancos, sombras azul-acinzentadas e poucas cores de efeito por estado.
 
@@ -13,13 +13,13 @@ Os 32 quadros usam a mesma personagem, uma grade fixa de 24 × 20 pixels e a pal
 | `sleep` | ocioso (turno terminou) | raposa dormindo, `zzz` cinza |
 | `sniff` | `read`, `grep`, `find`, `search`, `list` | raposa farejando, rastro cinza |
 | `dig` | `edit`, `write`, `patch`, `replace` | raposa de costas cavando, terra saindo |
-| `run` | `bash`, `shell`, `fetch`, `web`, `curl` | raposa correndo, poeira atrás |
+| `run` | `bash`, `shell`, `fetch`, `web`, `curl` | raposa corre entre as bordas, derrapa e volta na direção oposta |
 | `jump` | fim do turno (sucesso) | raposa pulando com brilhos amarelos |
 | `caught` | após o pulo | raposa de frente celebrando com brilhos, 1.6s → `sleep` |
 | `error` | uma tool retornou erro | flash vermelho, 1.2s |
 | `sad` | 3+ erros seguidos no turno | orelhas caídas e lágrimas azuis |
 
-A animação roda quadro a quadro via `setInterval` no intervalo próprio de cada estado (de 130ms no `run` a 700ms no `sleep`), e o widget é atualizado com `ctx.ui.setWidget`.
+A animação roda quadro a quadro via `setInterval` no intervalo próprio de cada estado (de 130ms no `run` a 700ms no `sleep`). A factory do widget é registrada uma vez com `ctx.ui.setWidget`, e cada tick solicita uma nova renderização com `tui.requestRender()`. No estado `run`, `render(width)` fornece a largura real do terminal para calcular a trajetória. A raposa desacelera nos últimos passos, levanta poeira, para sem ultrapassar a borda, espelha o sprite e retoma a corrida. Resize e terminais mais estreitos que os 24 pixels do sprite são limitados sem provocar quebra de linha.
 
 ## Como funciona
 
@@ -40,6 +40,7 @@ Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da `PALETTE`.
 - `/fox <estado>` — força um estado (`sleep`, `sniff`, `dig`, `run`, `jump`, `caught`, `error`, `sad`)
 - `/fox hide` — esconde a raposa
 - `/fox show` — traz de volta
+- `pi --fox-reduced-motion` — mantém as mudanças de estado, mas usa quadros estáticos sem movimento contínuo
 
 ## Preview
 
@@ -55,6 +56,8 @@ Para deixar um único estado animando até `Ctrl+C`:
 pnpm preview -- --state run
 ```
 
+O preview de `run` usa a largura atual do terminal e mostra o percurso completo com derrapagem e retorno.
+
 Para gerar `fox-preview.png` com todos os quadros lado a lado:
 
 ```bash
@@ -69,4 +72,5 @@ Os dois comandos compilam a extensão antes de renderizar, portanto o resultado 
 pnpm install
 pnpm build   # tsc → dist/
 pnpm dev     # tsc --watch
+pnpm test    # trajetória, resize, orientação e integração ANSI
 ```

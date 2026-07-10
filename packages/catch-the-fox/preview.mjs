@@ -8,6 +8,10 @@ import {
   PALETTE,
 } from "./dist/fox-art.js";
 import { gridToAnsi } from "./dist/index.js";
+import {
+  FoxRunMotion,
+  renderRunGrid,
+} from "./dist/fox-run-motion.js";
 
 const ESC = "\x1b[";
 const stateNotes = {
@@ -36,28 +40,52 @@ function assertState(state) {
   return state;
 }
 
-function widgetFrame(state, frameIndex) {
+function widgetFrame(state, frameIndex, terminalWidth, runMotion) {
   const animation = ANIMS[state];
-  const frame = animation.grids[frameIndex % animation.grids.length];
-  const lines = gridToAnsi(frame);
+  let frame = animation.grids[frameIndex % animation.grids.length];
+  let offset = 0;
+  if (state === "run") {
+    const placement = runMotion.snapshot(terminalWidth);
+    frame = renderRunGrid(frame, placement);
+    offset = placement.offset;
+  }
+  const lines = gridToAnsi(frame, terminalWidth - offset);
+  const padding = " ".repeat(offset);
+  const renderedWidth = Math.min(FOX_WIDTH, terminalWidth - offset);
+  const trailingPadding = " ".repeat(
+    terminalWidth - offset - renderedWidth,
+  );
+  const innerWidth = terminalWidth + 3;
+  const title = " catch-the-fox ";
+  const fitLine = (line) => line.slice(0, innerWidth).padEnd(innerWidth);
   let output = `${ESC}H${ESC}J`;
-  output += "  ╭─ catch-the-fox ─────────────────────────╮\n";
-  output += `  │  ${state.padEnd(7)} — ${stateNotes[state]}\n`;
-  output += "  ├──────────────────────────────────────────┤\n";
-  output += `  │   ${animation.label}\n`;
-  output += "  │\n";
-  for (const line of lines) output += `  │   ${line}\n`;
-  output += "  ╰──────────────────────────────────────────╯\n";
+  output += `  ╭─${title}${"─".repeat(innerWidth - title.length - 1)}╮\n`;
+  output += `  │${fitLine(`  ${state.padEnd(7)} — ${stateNotes[state]}`)}│\n`;
+  output += `  ├${"─".repeat(innerWidth)}┤\n`;
+  output += `  │${fitLine(`   ${animation.label}`)}│\n`;
+  output += `  │${" ".repeat(innerWidth)}│\n`;
+  for (const line of lines) {
+    output += `  │   ${padding}${line}${trailingPadding}│\n`;
+  }
+  output += `  ╰${"─".repeat(innerWidth)}╯\n`;
   return output;
 }
 
 async function animateState(state, continuous) {
   const animation = ANIMS[state];
+  const runMotion = new FoxRunMotion();
   const frameCount = continuous
     ? Number.POSITIVE_INFINITY
     : Math.max(animation.grids.length * 3, 8);
   for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
-    process.stdout.write(widgetFrame(state, frameIndex));
+    const terminalWidth = Math.max(
+      FOX_WIDTH,
+      (process.stdout.columns ?? 80) - 7,
+    );
+    process.stdout.write(
+      widgetFrame(state, frameIndex, terminalWidth, runMotion),
+    );
+    if (state === "run") runMotion.advance(terminalWidth);
     await delay(animation.intervalMs);
   }
 }
