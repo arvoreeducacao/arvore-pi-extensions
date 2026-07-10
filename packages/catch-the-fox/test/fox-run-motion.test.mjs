@@ -90,6 +90,37 @@ test("the fox stays visible in narrow and resized terminals", () => {
   assert.equal(resizedPlacement.phase, "running");
 });
 
+test("the skid never accelerates at any terminal width", () => {
+  for (let terminalWidth = 25; terminalWidth <= 200; terminalWidth += 1) {
+    const motion = new FoxRunMotion();
+    let previousPlacement = motion.snapshot(terminalWidth);
+    let skidSteps = [];
+    let completedSkids = 0;
+
+    for (let frame = 0; frame < 500; frame += 1) {
+      const placement = motion.advance(terminalWidth);
+      const step = Math.abs(placement.offset - previousPlacement.offset);
+      if (placement.phase === "skidding") {
+        skidSteps.push(step);
+      } else if (skidSteps.length > 0) {
+        assert.ok(
+          skidSteps.every(
+            (skidStep, index) =>
+              skidStep <= 3 &&
+              (index === 0 || skidStep <= skidSteps[index - 1]),
+          ),
+          `terminal width ${terminalWidth}: ${skidSteps.join(", ")}`,
+        );
+        completedSkids += 1;
+        skidSteps = [];
+      }
+      previousPlacement = placement;
+    }
+
+    assert.ok(completedSkids > 0, `terminal width ${terminalWidth}`);
+  }
+});
+
 test("the fox faces the direction it is running", () => {
   const leftFacingGrid = ["FOX.", "TAIL"];
 
