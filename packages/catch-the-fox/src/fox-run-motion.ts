@@ -11,12 +11,27 @@ export interface FoxRunPlacement {
 
 const RUN_STEP = 3;
 const SKID_DISTANCE = 12;
-const SKID_PROGRESS = [0.25, 0.48, 0.68, 0.84, 0.95, 1] as const;
 
 interface Skid {
   frame: number;
-  start: number;
   target: number;
+  steps: number[];
+}
+
+function buildSkidSteps(distance: number): number[] {
+  if (distance <= 0) return [0, 0];
+
+  const steps: number[] = [];
+  let remaining = distance;
+  while (remaining > 0) {
+    const step = Math.min(RUN_STEP, remaining);
+    steps.push(step);
+    remaining -= step;
+  }
+
+  if (steps.length < 2) steps.unshift(0);
+
+  return steps;
 }
 
 type DustPixel = readonly [x: number, y: number, color: "H" | "Q"];
@@ -81,7 +96,11 @@ export class FoxRunMotion {
     const remainingDistance = Math.abs(target - this.offset);
     if (remainingDistance <= SKID_DISTANCE) {
       this.phase = "skidding";
-      this.skid = { frame: 0, start: this.offset, target };
+      this.skid = {
+        frame: 0,
+        target,
+        steps: buildSkidSteps(remainingDistance),
+      };
       return this.advanceSkid();
     }
 
@@ -93,15 +112,14 @@ export class FoxRunMotion {
     const skid = this.skid;
     if (!skid) return this.placement();
 
-    const progress = SKID_PROGRESS[skid.frame];
-    this.offset = Math.round(
-      skid.start + (skid.target - skid.start) * progress,
-    );
+    const step = skid.steps[skid.frame] ?? 0;
+    this.offset += this.direction === "right" ? step : -step;
     skid.frame += 1;
 
-    if (skid.frame === SKID_PROGRESS.length) {
+    if (skid.frame === skid.steps.length) {
       this.offset = skid.target;
       this.direction = this.direction === "right" ? "left" : "right";
+      this.phase = "running";
       this.skid = null;
     }
 
