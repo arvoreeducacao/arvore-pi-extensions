@@ -89,8 +89,12 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
     }
     const frames = RENDERED[state];
     const frame = frames[frameIndex % frames.length];
+    const lines = [` ${ANIMS[state].label}`, "", ...frame];
     try {
-      ui.setWidget(widgetId, [` ${ANIMS[state].label}`, "", ...frame]);
+      ui.setWidget(widgetId, () => ({
+        render: () => lines,
+        invalidate: () => {},
+      }));
     } catch {}
   }
 
