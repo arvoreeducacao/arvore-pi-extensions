@@ -19,7 +19,7 @@ Os 32 quadros usam a mesma personagem, uma grade fixa de 24 × 20 pixels e a pal
 | `error` | uma tool retornou erro | flash vermelho, 1.2s |
 | `sad` | 3+ erros seguidos no turno | orelhas caídas e lágrimas azuis |
 
-A animação roda quadro a quadro via `setInterval` no intervalo próprio de cada estado (de 130ms no `run` a 700ms no `sleep`), e o widget é atualizado com `ctx.ui.setWidget`. No estado `run`, `render(width)` fornece a largura real do terminal para calcular a trajetória. A raposa desacelera nos últimos passos, para sem ultrapassar a borda, espelha o sprite e retoma a corrida. Resize e terminais mais estreitos que os 24 pixels do sprite são limitados sem provocar quebra de linha.
+A animação roda quadro a quadro via `setInterval` no intervalo próprio de cada estado (de 130ms no `run` a 700ms no `sleep`). A factory do widget é registrada uma vez com `ctx.ui.setWidget`, e cada tick solicita uma nova renderização com `tui.requestRender()`. No estado `run`, `render(width)` fornece a largura real do terminal para calcular a trajetória. A raposa desacelera nos últimos passos, levanta poeira, para sem ultrapassar a borda, espelha o sprite e retoma a corrida. Resize e terminais mais estreitos que os 24 pixels do sprite são limitados sem provocar quebra de linha.
 
 ## Como funciona
 
@@ -40,6 +40,7 @@ Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da `PALETTE`.
 - `/fox <estado>` — força um estado (`sleep`, `sniff`, `dig`, `run`, `jump`, `caught`, `error`, `sad`)
 - `/fox hide` — esconde a raposa
 - `/fox show` — traz de volta
+- `pi --fox-reduced-motion` — mantém as mudanças de estado, mas usa quadros estáticos sem movimento contínuo
 
 ## Preview
 

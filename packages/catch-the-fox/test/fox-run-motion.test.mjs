@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   FoxRunMotion,
   orientFoxGrid,
+  renderRunGrid,
 } from "../dist/fox-run-motion.js";
 
 test("the fox skids at the terminal edge and runs back", () => {
@@ -37,10 +38,20 @@ test("the fox skids at the terminal edge and runs back", () => {
     ({ direction, offset }, index) =>
       index > rightTurn && direction === "left" && offset < rightEdge,
   );
+  const leftTurn = placements.findIndex(
+    ({ direction, offset }, index) =>
+      index > runningBack && direction === "right" && offset === 0,
+  );
+  const runningForward = placements.findIndex(
+    ({ direction, offset }, index) =>
+      index > leftTurn && direction === "right" && offset > 0,
+  );
 
   assert.ok(skidStart > 0);
   assert.ok(rightTurn > skidStart);
   assert.ok(runningBack > rightTurn);
+  assert.ok(leftTurn > runningBack);
+  assert.ok(runningForward > leftTurn);
   assert.equal(placements[runningBack].phase, "running");
 
   const skidOffsets = placements
@@ -49,9 +60,15 @@ test("the fox skids at the terminal edge and runs back", () => {
   const skidSteps = skidOffsets
     .slice(1)
     .map((offset, index) => offset - skidOffsets[index]);
+  const runningStep = placements[1].offset - placements[0].offset;
 
   assert.ok(skidSteps.every((step) => step >= 0));
-  assert.ok(skidSteps.at(-1) <= skidSteps[0]);
+  assert.ok(skidSteps.every((step) => step <= runningStep));
+  assert.ok(
+    skidSteps.every(
+      (step, index) => index === 0 || step <= skidSteps[index - 1],
+    ),
+  );
 });
 
 test("the fox stays visible in narrow and resized terminals", () => {
@@ -82,4 +99,26 @@ test("the fox faces the direction it is running", () => {
     "LIAT",
   ]);
   assert.deepEqual(leftFacingGrid, ["FOX.", "TAIL"]);
+});
+
+test("the skid throws extra dust behind the fox", () => {
+  const emptyGrid = Array.from({ length: 6 }, () => "......");
+  const rightSkid = renderRunGrid(emptyGrid, {
+    direction: "right",
+    phase: "skidding",
+  });
+  const leftSkid = renderRunGrid(emptyGrid, {
+    direction: "left",
+    phase: "skidding",
+  });
+
+  assert.ok(rightSkid.some((row) => /^[QH]{1,3}/.test(row)));
+  assert.ok(leftSkid.some((row) => /[QH]{1,3}$/.test(row)));
+  assert.deepEqual(
+    renderRunGrid(emptyGrid, {
+      direction: "right",
+      phase: "running",
+    }),
+    emptyGrid,
+  );
 });

@@ -11,7 +11,7 @@ export interface FoxRunPlacement {
 
 const RUN_STEP = 3;
 const SKID_DISTANCE = 12;
-const SKID_PROGRESS = [0.36, 0.62, 0.8, 0.92, 1] as const;
+const SKID_PROGRESS = [0.25, 0.48, 0.68, 0.84, 0.95, 1] as const;
 
 interface Skid {
   frame: number;
@@ -19,12 +19,44 @@ interface Skid {
   target: number;
 }
 
+type DustPixel = readonly [x: number, y: number, color: "H" | "Q"];
+
 export function orientFoxGrid(
   grid: string[],
   direction: FoxRunDirection,
 ): string[] {
   if (direction === "left") return grid;
   return grid.map((row) => [...row].reverse().join(""));
+}
+
+export function renderRunGrid(
+  grid: string[],
+  placement: Pick<FoxRunPlacement, "direction" | "phase">,
+): string[] {
+  const orientedGrid = orientFoxGrid(grid, placement.direction);
+  if (placement.phase === "running" || orientedGrid.length < 3) {
+    return orientedGrid;
+  }
+
+  const pixels = orientedGrid.map((row) => [...row]);
+  const width = pixels[0]?.length ?? 0;
+  const rightDust: DustPixel[] = [
+    [0, pixels.length - 3, "Q"],
+    [1, pixels.length - 2, "H"],
+    [2, pixels.length - 1, "Q"],
+  ];
+  const leftDust: DustPixel[] = [
+    [width - 1, pixels.length - 3, "Q"],
+    [width - 2, pixels.length - 2, "H"],
+    [width - 3, pixels.length - 1, "Q"],
+  ];
+  const dust = placement.direction === "right" ? rightDust : leftDust;
+
+  for (const [x, y, color] of dust) {
+    if (x >= 0 && pixels[y]?.[x] === ".") pixels[y][x] = color;
+  }
+
+  return pixels.map((row) => row.join(""));
 }
 
 export class FoxRunMotion {

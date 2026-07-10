@@ -10,7 +10,7 @@ import {
 import { gridToAnsi } from "./dist/index.js";
 import {
   FoxRunMotion,
-  orientFoxGrid,
+  renderRunGrid,
 } from "./dist/fox-run-motion.js";
 
 const ESC = "\x1b[";
@@ -46,7 +46,7 @@ function widgetFrame(state, frameIndex, terminalWidth, runMotion) {
   let offset = 0;
   if (state === "run") {
     const placement = runMotion.snapshot(terminalWidth);
-    frame = orientFoxGrid(frame, placement.direction);
+    frame = renderRunGrid(frame, placement);
     offset = placement.offset;
   }
   const lines = gridToAnsi(frame, terminalWidth - offset);
