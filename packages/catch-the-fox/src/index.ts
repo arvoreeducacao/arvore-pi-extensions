@@ -36,10 +36,27 @@ export function gridToAnsi(grid: string[]): string[] {
   return lines;
 }
 
+function isBlankRow(row: string): boolean {
+  return /^\.*$/.test(row);
+}
+
+function trimLeadingBlankRows(grids: string[][]): string[][] {
+  let blankRows = Infinity;
+  for (const grid of grids) {
+    let count = 0;
+    while (count < grid.length && isBlankRow(grid[count])) count += 1;
+    blankRows = Math.min(blankRows, count);
+  }
+  if (!Number.isFinite(blankRows) || blankRows <= 0) return grids;
+  const evenBlankRows = blankRows - (blankRows % 2);
+  if (evenBlankRows <= 0) return grids;
+  return grids.map((grid) => grid.slice(evenBlankRows));
+}
+
 const RENDERED = Object.fromEntries(
   Object.entries(ANIMS).map(([state, animation]) => [
     state,
-    animation.grids.map(gridToAnsi),
+    trimLeadingBlankRows(animation.grids).map(gridToAnsi),
   ]),
 ) as Record<FoxState, string[][]>;
 
@@ -89,7 +106,7 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
     }
     const frames = RENDERED[state];
     const frame = frames[frameIndex % frames.length];
-    const lines = [` ${ANIMS[state].label}`, "", ...frame];
+    const lines = [` ${ANIMS[state].label}`, ...frame];
     try {
       ui.setWidget(widgetId, () => ({
         render: () => lines,
