@@ -1,88 +1,152 @@
-const PALETTE = {
-  O: [232, 118, 58], D: [198, 83, 31], W: [247, 240, 227], B: [53, 35, 26],
-  N: [30, 20, 16], P: [232, 155, 155], R: [220, 70, 70], Y: [240, 200, 80],
-  G: [150, 150, 150], C: [120, 180, 235],
+import path from "node:path";
+import process from "node:process";
+import {
+  ANIMS,
+  FOX_HEIGHT,
+  FOX_STATES,
+  FOX_WIDTH,
+  PALETTE,
+} from "./dist/fox-art.js";
+import { gridToAnsi } from "./dist/index.js";
+
+const ESC = "\x1b[";
+const stateNotes = {
+  sniff: "pi lendo ou buscando arquivos",
+  dig: "pi editando código",
+  run: "pi executando shell ou web",
+  error: "uma ferramenta falhou",
+  jump: "turno concluído",
+  caught: "resultado capturado",
+  sad: "três erros seguidos",
+  sleep: "ocioso, esperando você",
 };
-const ESC = "\x1b[", RESET = ESC + "0m";
-const fg = ([r, g, b]) => `${ESC}38;2;${r};${g};${b}m`;
-const bg = ([r, g, b]) => `${ESC}48;2;${r};${g};${b}m`;
-function g2a(grid) {
-  const L = [];
-  for (let r = 0; r < grid.length; r += 2) {
-    const t = grid[r], b = grid[r + 1] ?? ".".repeat(t.length);
-    let l = "";
-    for (let c = 0; c < t.length; c++) {
-      const T = t[c] === "." ? null : PALETTE[t[c]];
-      const B = b[c] === "." ? null : PALETTE[b[c]];
-      if (!T && !B) l += RESET + " ";
-      else if (T && B) l += fg(T) + bg(B) + "▀";
-      else if (T) l += RESET + fg(T) + "▀";
-      else l += RESET + fg(B) + "▄";
-    }
-    L.push(l + RESET);
-  }
-  return L;
+
+const delay = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function argumentValue(name) {
+  const argumentIndex = process.argv.indexOf(name);
+  return argumentIndex === -1 ? undefined : process.argv[argumentIndex + 1];
 }
-const A = {
-  sleep: { label: "esperando você…", ms: 700, grids: [
-    ["..........................", "..........................", "......................G...", "....................G.....", "...NN.....................", "..NOON....NNNNNN..........", "..NODON.NNOOOOOONN........", ".NOOOOONOOOOOOOOOON.......", ".NOOOOOOOOOOOOOOOOON......", ".NOONNOOOOOOOOOOOOOON.....", ".NOOOOOOOOOOOOOOOWWWN.....", "..NWWWWNOOOOOOOOWWWNN.....", "...NNNNNNNNNNNNNNNN.......", ".........................."],
-    ["..........................", ".......................G..", ".....................G....", "..........................", "...NN.....................", "..NOON....NNNNNN..........", "..NODON.NNOOOOOONN........", ".NOOOOONOOOOOOOOOON.......", ".NOOOOOOOOOOOOOOOOON......", ".NOONNOOOOOOOOOOOOOON.....", ".NOOOOOOOOOOOOOOOWWWN.....", "..NWWWWNOOOOOOOOWWWNN.....", "...NNNNNNNNNNNNNNNN.......", ".........................."],
-    ["........................G.", "......................G...", "..........................", "..........................", "...NN.....................", "..NOON....NNNNNN..........", "..NODON.NNOOOOOONN........", ".NOOOOONOOOOOOOOOON.......", ".NOOOOOOOOOOOOOOOOON......", ".NOONNOOOOOOOOOOOOOON.....", ".NOOOOOOOOOOOOOOOWWWN.....", "..NWWWWNOOOOOOOOWWWNN.....", "...NNNNNNNNNNNNNNNN.......", ".........................."]] },
-  sniff: { label: "farejando o código", ms: 280, grids: [
-    [".................N...N....", "................NON.NON...", "................NODNDON...", "................NOOOOON...", ".NN...........NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONN.", ".NOODN....NOOOOOOOOOOOOOON", "..NOODN..NOOOOOOOOOOWWWWNG", "...NOODNNOOOOOOOOOOONWWNN.", "....NOOOOOOOOOOOOOWWNNN...", ".....NNNOODNNNDOOWWN......", ".......NOON..NOON.........", ".......NBBN..NBBN........."],
-    [".................N...N....", "................NON.NON...", "................NODNDON...", "................NOOOOON...", ".NN...........NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONN.", ".NOODN....NOOOOOOOOOOOOOOG", "..NOODN..NOOOOOOOOOOWWWWNG", "...NOODNNOOOOOOOOOOONWWNN.", "....NOOOOOOOOOOOOOWWNNN...", ".....NNNOODNNNDOOWWN......", ".......NOON..NOON.........", ".......NBBN..NBBN........."],
-    [".................N...N....", "................NON.NON...", "................NODNDON...", "................NOOOOON...", ".NN...........NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONNG", ".NOODN....NOOOOOOOOOOOOOOG", "..NOODN..NOOOOOOOOOOWWWWNN", "...NOODNNOOOOOOOOOOONWWNNG", "....NOOOOOOOOOOOOOWWNNN...", ".....NNNOODNNNDOOWWN......", ".......NOON..NOON.........", ".......NBBN..NBBN........."]] },
-  dig: { label: "cavando na base", ms: 220, grids: [
-    [".NN.......................", "NWWN......NN..............", "NWWON....NOON.............", ".NOON...NOOOON..N...N.....", "..NOON.NOOOOOONNON.NON....", "...NOONOOOOOOONODNDON.....", "....NOOOOOOOONOOOOOON.....", ".....NNOOOOONOOOOOOON.....", ".......NOOONOOONOOOOON....", ".......NOONOOOOOOOOOOON...", ".......NOON.NOOOOOWWDWNN..", ".......NBBN.NOONWWDWWNN...", "........NN..NBBN.NBBN.....", ".............NN...NN......"],
-    [".NN.......................", "NWWN......NN..............", "NWWON....NOON.............", ".NOON...NOOOON..N...N.....", "..NOON.NOOOOOONNON.NON....", "...NOONOOOOOOONODNDON.....", "....NOOOOOOOONOOOOOON.....", ".....NNOOOOONOOOOOOON.....", ".......NOOONOOONOOOOON....", ".......NOONOOOOOOOODOON...", ".......NOON.NOOOODWWWWNN..", ".......NBBN.NOONWWWWWDN...", "........NN..NBBN.NBBN.....", ".............NN...NN......"],
-    [".NN.......................", "NWWN......NN..............", "NWWON....NOON.............", ".NOON...NOOOON..N...N.....", "..NOON.NOOOOOONNON.NON....", "...NOONOOOOOOONODNDON.....", "....NOOOOOOOONOOOOOON.....", ".....NNOOOOONOOOOOOON.....", ".......NOOONOOONOODOON....", ".......NOONOOOOODOOOOON...", ".......NOON.NOOOOOWWWDNN..", ".......NBBN.NOONWWWWWNND..", "........NN..NBBN.NBBN.....", ".............NN...NN......"]] },
-  run: { label: "correndo atrás", ms: 130, grids: [
-    [".................N...N....", "................NON.NON...", "................NODNDON...", "................NOOOOON...", ".NN...........NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONN.", ".NOODN....NOOOOOOOOOOOOOON", "..NOODN..NOOOOOOOOOOWWWWNN", "...NOODNNOOOOOOOOOOONWWNN.", "....NOOOOOOOOOOOOOWWNNN...", ".G...NNNOODNNNDOOWWN......", "G........NOON.NOON........", ".........NBBN.NBBN........"],
-    [".................N...N....", "................NON.NON...", "................NODNDON...", "................NOOOOON...", ".NN...........NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONN.", ".NOODN....NOOOOOOOOOOOOOON", "..NOODN..NOOOOOOOOOOWWWWNN", "...NOODNNOOOOOOOOOOONWWNN.", "G...NOOOOOOOOOOOOOWWNNN...", ".G...NNNOODNNNDOOWWN......", "..G...NOON......NOON......", ".....NBBN........NBBN....."]] },
-  jump: { label: "pulando de alegria!", ms: 160, grids: [
-    ["...Y......................", "........NNNNNN............", ".NN...NNOOOOOONN....Y.....", "NWWN.NOOOOOOOOOON.........", "NWWONOOOOOOOOOOOON.N...N..", ".NOONOOOODNNOOOOOONON.NON.", "..NOOOODNN..NNOOOONODNDON.", "...NNNNN......NOOOOOOOOOY.", "....NBN.......NNOOONOOOON.", ".....N.........NOOOOOOOONN", "...............NBNOOWWWWWN", "................N.NWWWWNN.", "..................NNNNN...", ".........................."],
-    [".................Y........", "......Y.NNNNNN............", ".NN...NNOOOOOONN..........", "NWWN.NOOOOOOOOOON.........", "NWWONOOOOOOOOOOOON.N...N..", ".NOONOOOODNNOOOOOONON.NOY.", "..NOOOODNN..NNOOOONODNDON.", "...NNNNN......NOOOOOOOOON.", "....NBN.......NNOOONOOOON.", ".....N.........NOOOOOOOONN", "...............NBNOOWWWWWN", "...Y............N.NWWWWNN.", "..................NNNNN...", ".........................."],
-    ["...........Y..............", "........NNNNNN............", ".NN...NNOOOOOONN..........", "NYWN.NOOOOOOOOOON......Y..", "NWWONOOOOOOOOOOOON.N...N..", ".NOONOOOODNNOOOOOONON.NON.", "..NOOOODNN..NNOOOONODNDON.", "...NNNNN......NOOOOOOOOON.", "....NBN.......NNOOONOOOON.", ".Y...N.........NOOOOOOOONN", "...............NBNOOWWWWWN", "................N.NWWWWNN.", "..................NNNNN...", ".........................."]] },
-  caught: { label: "pegou!", ms: 170, grids: [
-    [".....Y....N...N...........", ".........NON.NON..Y.......", ".........NODNDON..........", ".........NOOOOON..........", "........NOOOOOOONN........", "........NOOOOONOOON..Y....", "........NOOOOOOWWWNN......", ".NN.....NOOOOOONWWNN......", "NWWN...NOOOOWWWWNNN..Y....", "NWWON..NOOOWWWWWON........", ".NOONNNOOOWWWWWWON........", "..NOOOOOOOWWWWWWON........", "...NNOOOOOWWWWOOON........", ".....NNBBBNNNBBBNN........"],
-    ["..........N...N.....Y.....", ".........NON.NON..........", "...Y.....NODNDON..........", ".........NOOOOON..........", ".....Y..NOOOOOOONN........", "........NOOOOONOOON.......", "........NOOOOOOWWWNN......", ".NN.....NOOOOOONWWNN......", "NWWN...NOOOOWWWWNNN.......", "NWWON..NOOOWWWWWON........", ".NOONNNOOOWWWWWWON..Y.....", "..NOOOOOOOWWWWWWON........", "...NNOOOOOWWWWOOON........", ".....NNBBBNNNBBBNN........"]] },
-  error: { label: "ai! deu erro", ms: 190, grids: [
-    [".........R.......N...N....", ".........R......NON.NON...", ".........R......NODNDON...", "................NOOOOON...", ".NN......R....NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONN.", ".NOODN....NOOOOOOOOOOOOOON", "..NOODN..NOOOOOOOOOOWWWWNN", "...NOODNNOOOOOOOOOOONWWNN.", "....NOOOOOOOOOOOOOWWNNN...", ".....NNNOODNNNDOOWWN......", ".......NOON..NOON.........", ".......NBBN..NBBN........."],
-    [".................N...N....", "................NON.NON...", "................NODNDON...", "................NOOOOON...", ".NN...........NNOOOOOON...", "NWWN.........NOOOOONOOON..", "NWWON......NNOOOOOOOOOONN.", ".NOODN....NOOOOOOOOOOOOOON", "..NOODN..NOOOOOOOOOOWWWWNN", "...NOODNNOOOOOOOOOOONWWNN.", "....NOOOOOOOOOOOOOWWNNN...", ".....NNNOODNNNDOOWWN......", ".......NOON..NOON.........", ".......NBBN..NBBN........."]] },
-  sad: { label: "tá difícil hoje…", ms: 580, grids: [
-    ["..........................", "..........................", "........NN.....NN.........", ".......NOONNNNNOON........", ".......NDNOOOOONDN........", "........NOOOOONOOON.......", "........NOOOOOCWWWNN......", ".NN.....NOOOOOONWWNN......", "NWWN...NOOOOWWWWNNN.......", "NWWON..NOOOWWWWWON........", ".NOONNNOOOWWWWWWON........", "..NOOOOOOOWWWWWWON........", "...NNOOOOOWWWWOOON........", ".....NNBBBNNNBBBNN........"],
-    ["..........................", "..........................", "........NN.....NN.........", ".......NOONNNNNOON........", ".......NDNOOOOONDN........", "........NOOOOONOOON.......", "........NOOOOOOWWWNN......", ".NN.....NOOOOOCNWWNN......", "NWWN...NOOOOWWWWNNN.......", "NWWON..NOOOWWWWWON........", ".NOONNNOOOWWWWWWON........", "..NOOOOOOOWWWWWWON........", "...NNOOOOOWWWWOOON........", ".....NNBBBNNNBBBNN........"]] },
-};
-const seq = [
-  ["sniff", "pi lendo/buscando arquivos"],
-  ["dig", "pi editando código"],
-  ["run", "pi rodando bash / web"],
-  ["error", "uma tool falhou"],
-  ["jump", "turno concluído"],
-  ["caught", "comemorando"],
-  ["sad", "3 erros seguidos"],
-  ["sleep", "ocioso, esperando você"],
-];
-const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
-(async () => {
-  process.stdout.write(ESC + "?25l");
-  for (const [state, note] of seq) {
-    const a = A[state];
-    const cycles = Math.max(a.grids.length * 3, 8);
-    for (let i = 0; i < cycles; i++) {
-      const lines = g2a(a.grids[i % a.grids.length]);
-      let out = ESC + "H" + ESC + "J";
-      out += `  ╭─ pi widget ──────────────────────╮\n`;
-      out += `  │  ${state.padEnd(7)} — ${note}\n`;
-      out += `  ├───────────────────────────────────┤\n`;
-      out += `  │   ${a.label}\n`;
-      out += `  │\n`;
-      for (const l of lines) out += "  │   " + l + "\n";
-      out += `  ╰───────────────────────────────────╯\n`;
-      process.stdout.write(out);
-      await sleepMs(a.ms);
+
+function assertState(state) {
+  if (!state || !FOX_STATES.includes(state)) {
+    throw new Error(`Estado inválido. Use: ${FOX_STATES.join(", ")}`);
+  }
+  return state;
+}
+
+function widgetFrame(state, frameIndex) {
+  const animation = ANIMS[state];
+  const frame = animation.grids[frameIndex % animation.grids.length];
+  const lines = gridToAnsi(frame);
+  let output = `${ESC}H${ESC}J`;
+  output += "  ╭─ catch-the-fox ─────────────────────────╮\n";
+  output += `  │  ${state.padEnd(7)} — ${stateNotes[state]}\n`;
+  output += "  ├──────────────────────────────────────────┤\n";
+  output += `  │   ${animation.label}\n`;
+  output += "  │\n";
+  for (const line of lines) output += `  │   ${line}\n`;
+  output += "  ╰──────────────────────────────────────────╯\n";
+  return output;
+}
+
+async function animateState(state, continuous) {
+  const animation = ANIMS[state];
+  const frameCount = continuous
+    ? Number.POSITIVE_INFINITY
+    : Math.max(animation.grids.length * 3, 8);
+  for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
+    process.stdout.write(widgetFrame(state, frameIndex));
+    await delay(animation.intervalMs);
+  }
+}
+
+async function terminalPreview() {
+  const requestedState = argumentValue("--state");
+  process.stdout.write(`${ESC}?25l`);
+  const restoreCursor = () => process.stdout.write(`${ESC}?25h`);
+  process.once("exit", restoreCursor);
+  process.once("SIGINT", () => process.exit(130));
+  if (requestedState) {
+    await animateState(assertState(requestedState), true);
+    return;
+  }
+  for (const state of FOX_STATES) await animateState(state, false);
+  restoreCursor();
+  process.removeListener("exit", restoreCursor);
+  process.stdout.write("\nA raposa passou por todos os estados.\n");
+}
+
+function escapeXml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function frameRectangles(frame, offsetX, offsetY, pixelSize) {
+  const rectangles = [];
+  for (let row = 0; row < FOX_HEIGHT; row += 1) {
+    for (let column = 0; column < FOX_WIDTH; column += 1) {
+      const colorKey = frame[row][column];
+      if (colorKey === ".") continue;
+      const [red, green, blue] = PALETTE[colorKey];
+      rectangles.push(
+        `<rect x="${offsetX + column * pixelSize}" y="${offsetY + row * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="rgb(${red} ${green} ${blue})"/>`,
+      );
     }
   }
-  process.stdout.write(ESC + "?25h");
-  console.log("\n(fim — a raposa passou por todos os estados)");
-})();
+  return rectangles.join("");
+}
+
+async function renderSheet(outputArgument) {
+  const { default: sharp } = await import("sharp");
+  const outputPath = path.resolve(outputArgument || "fox-preview.png");
+  const pixelSize = 4;
+  const frameGap = 8;
+  const cellPadding = 16;
+  const titleHeight = 30;
+  const columns = 2;
+  const rows = Math.ceil(FOX_STATES.length / columns);
+  const maximumFrames = Math.max(
+    ...FOX_STATES.map((state) => ANIMS[state].grids.length),
+  );
+  const frameWidth = FOX_WIDTH * pixelSize;
+  const frameHeight = FOX_HEIGHT * pixelSize;
+  const cellWidth =
+    cellPadding * 2 + maximumFrames * frameWidth + (maximumFrames - 1) * frameGap;
+  const cellHeight = cellPadding * 2 + titleHeight + frameHeight;
+  const width = cellWidth * columns;
+  const height = cellHeight * rows;
+  const cells = FOX_STATES.map((state, stateIndex) => {
+    const column = stateIndex % columns;
+    const row = Math.floor(stateIndex / columns);
+    const cellX = column * cellWidth;
+    const cellY = row * cellHeight;
+    const title = `${state} · ${ANIMS[state].label}`;
+    const frames = ANIMS[state].grids
+      .map((frame, frameIndex) =>
+        frameRectangles(
+          frame,
+          cellX + cellPadding + frameIndex * (frameWidth + frameGap),
+          cellY + cellPadding + titleHeight,
+          pixelSize,
+        ),
+      )
+      .join("");
+    return `<rect x="${cellX + 1}" y="${cellY + 1}" width="${cellWidth - 2}" height="${cellHeight - 2}" rx="8" fill="#fffaf3" stroke="#d9cfc2"/><text x="${cellX + cellPadding}" y="${cellY + cellPadding + 17}" font-family="ui-monospace, monospace" font-size="15" font-weight="700" fill="#2b1f1a">${escapeXml(title)}</text>${frames}`;
+  }).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#eee6dc"/>${cells}</svg>`;
+  await sharp(Buffer.from(svg)).png().toFile(outputPath);
+  process.stdout.write(`${outputPath}\n`);
+}
+
+const sheetOutput = argumentValue("--sheet");
+
+if (process.argv.includes("--sheet")) {
+  await renderSheet(sheetOutput);
+} else {
+  await terminalPreview();
+}

@@ -11,7 +11,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "preview": "pnpm build && node preview.mjs",
+    "preview:sheet": "pnpm build && node preview.mjs --sheet fox-preview.png"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
