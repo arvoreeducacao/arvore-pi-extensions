@@ -64,6 +64,11 @@ interface DevicePollResponse {
   error?: string;
 }
 
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  return error.cause instanceof Error ? error.cause.message : error.message;
+}
+
 async function runDeviceLogin(
   cloudUrl: string,
   notify: (m: string, t?: "info" | "warning" | "error") => void,
@@ -171,7 +176,16 @@ export default function (pi: ExtensionAPI) {
     description: "Authenticate this machine with git-review-cloud (GitHub device flow)",
     handler: async (_args, ctx) => {
       config = await loadConfig();
-      const result = await runDeviceLogin(config.cloudUrl, ctx.ui.notify, pi);
+      let result: Awaited<ReturnType<typeof runDeviceLogin>>;
+      try {
+        result = await runDeviceLogin(config.cloudUrl, ctx.ui.notify, pi);
+      } catch (error) {
+        ctx.ui.notify(
+          `git-review-cloud: could not reach ${config.cloudUrl} (${describeError(error)})`,
+          "error",
+        );
+        return;
+      }
       if (!result) return;
       config = { ...config, bridgeToken: result.bridgeToken, login: result.login };
       await saveConfig(config);

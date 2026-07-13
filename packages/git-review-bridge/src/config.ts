@@ -12,21 +12,21 @@ export interface BridgeConfig {
 const CONFIG_DIR = join(homedir(), ".config", "pi");
 const CONFIG_FILE = join(CONFIG_DIR, "git-review-cloud.json");
 
-const DEFAULT_CLOUD_URL =
-  process.env.GIT_REVIEW_CLOUD_URL || "https://git-review.arvore.com.br";
+export const DEFAULT_CLOUD_URL = "https://git-review.arvore.dev";
+const CONFIGURED_CLOUD_URL = process.env.GIT_REVIEW_CLOUD_URL || DEFAULT_CLOUD_URL;
 
 export async function loadConfig(): Promise<BridgeConfig> {
-  if (!existsSync(CONFIG_FILE)) return { cloudUrl: DEFAULT_CLOUD_URL };
+  if (!existsSync(CONFIG_FILE)) return { cloudUrl: CONFIGURED_CLOUD_URL };
   try {
     const raw = await readFile(CONFIG_FILE, "utf-8");
     const parsed = JSON.parse(raw) as Partial<BridgeConfig>;
     return {
-      cloudUrl: parsed.cloudUrl || DEFAULT_CLOUD_URL,
+      cloudUrl: parsed.cloudUrl || CONFIGURED_CLOUD_URL,
       bridgeToken: parsed.bridgeToken,
       login: parsed.login,
     };
   } catch {
-    return { cloudUrl: DEFAULT_CLOUD_URL };
+    return { cloudUrl: CONFIGURED_CLOUD_URL };
   }
 }
 

@@ -25,14 +25,14 @@ No inbound ports are opened locally. The bridge dials out to the cloud.
 
 ```jsonc
 {
-  "cloudUrl": "https://git-review.arvore.com.br",
+  "cloudUrl": "https://git-review.arvore.dev",
   "bridgeToken": "…",   // written by /review-cloud-login
   "login": "you"
 }
 ```
 
 `cloudUrl` can also be set with the `GIT_REVIEW_CLOUD_URL` env var. Defaults to
-`https://git-review.arvore.com.br`.
+`https://git-review.arvore.dev`.
 
 ## How repos are discovered
 

@@ -36,7 +36,7 @@ Install the App on the org/repos you want reviewable. Note the **App ID**,
 | `GITHUB_CLIENT_ID` | yes | App client id |
 | `GITHUB_CLIENT_SECRET` | yes | App client secret |
 | `GITHUB_APP_PRIVATE_KEY` | yes | PEM contents (with real newlines or `\n`-escaped), **or** base64 of the PEM |
-| `PUBLIC_URL` | yes | e.g. `https://git-review.arvore.com.br` |
+| `PUBLIC_URL` | yes | e.g. `https://git-review.arvore.dev` |
 | `GITHUB_ALLOWED_ORG` | recommended | only members of this org can log in |
 | `GITHUB_WEBHOOK_SECRET` | no | only if you wire webhooks later |
 | `PORT` | no | defaults to `8080` |
@@ -54,7 +54,7 @@ extension and point it at the deployed URL:
 
 ```jsonc
 // ~/.config/pi/git-review-cloud.json
-{ "cloudUrl": "https://git-review.arvore.com.br" }
+{ "cloudUrl": "https://git-review.arvore.dev" }
 ```
 
 Then inside pi:
