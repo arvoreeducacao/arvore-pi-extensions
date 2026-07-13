@@ -817,6 +817,61 @@
         color: var(--fg-dim);
         max-width: 380px;
       }
+      .pr-install-warn {
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-elev);
+        overflow: hidden;
+      }
+      .pr-install-warn-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 12px;
+        background: transparent;
+        border: 0;
+        color: var(--fg-dim);
+        font-size: 12px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .pr-install-warn-icon {
+        color: #d29922;
+        flex-shrink: 0;
+      }
+      .pr-install-warn-toggle span {
+        flex: 1;
+      }
+      .pr-install-warn-chevron {
+        flex-shrink: 0;
+        transition: transform 0.12s;
+      }
+      .pr-install-warn.open .pr-install-warn-chevron {
+        transform: rotate(180deg);
+      }
+      .pr-install-warn-list {
+        display: none;
+        list-style: none;
+        margin: 0;
+        padding: 0 12px 10px 12px;
+        font-size: 12px;
+        color: var(--fg-dim);
+        border-top: 1px solid var(--border);
+        padding-top: 8px;
+      }
+      .pr-install-warn.open .pr-install-warn-list {
+        display: block;
+      }
+      .pr-install-warn-list li {
+        padding: 3px 0;
+      }
+      .pr-install-warn-list strong {
+        color: var(--fg);
+        font-family: var(--mono);
+        font-weight: 500;
+      }
       #sentlog {
         position: fixed;
         bottom: 12px;
@@ -861,6 +916,48 @@
         font-weight: 700;
         cursor: pointer;
         box-shadow: 0 4px 14px var(--shadow-lg);
+      }
+      .pr-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+      }
+      .pr-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 4px;
+        margin-bottom: -1px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--fg-dim);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .pr-tab + .pr-tab {
+        margin-left: 16px;
+      }
+      .pr-tab:hover {
+        color: var(--fg);
+      }
+      .pr-tab.active {
+        color: var(--fg);
+        border-bottom-color: var(--accent-bg);
+      }
+      .pr-tab-count {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--fg-dim);
+        background: var(--bg-subtle);
+        border-radius: 999px;
+        padding: 0 7px;
+        line-height: 18px;
+      }
+      .pr-tab-pane[hidden] {
+        display: none;
       }
       .pr-layout {
         display: flex;
@@ -983,7 +1080,8 @@
         overflow-y: auto;
         margin-top: 2px;
       }
-      .cp-comment .body .md-code {
+      .cp-comment .body .md-code,
+      .pr-desc-body .md-code {
         background: var(--bg-subtle);
         border: 1px solid var(--border);
         border-radius: 6px;
@@ -993,25 +1091,63 @@
         white-space: pre;
       }
       .cp-comment .body .md-code code,
-      .cp-comment .body .md-inline {
+      .cp-comment .body .md-inline,
+      .pr-desc-body .md-code code,
+      .pr-desc-body .md-inline {
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-size: 11px;
       }
-      .cp-comment .body .md-inline {
+      .cp-comment .body .md-inline,
+      .pr-desc-body .md-inline {
         background: var(--bg-subtle);
         border-radius: 4px;
         padding: 1px 4px;
       }
-      .cp-comment .body .md-h {
+      .cp-comment .body .md-h,
+      .pr-desc-body .md-h {
         font-weight: 600;
         color: var(--fg);
-        margin: 4px 0 2px;
+        margin: 10px 0 4px;
+      }
+      .cp-comment .body .md-h:first-child,
+      .pr-desc-body .md-h:first-child {
+        margin-top: 0;
+      }
+      .pr-desc-body .md-h1 { font-size: 20px; }
+      .pr-desc-body .md-h2 { font-size: 17px; }
+      .pr-desc-body .md-h3,
+      .pr-desc-body .md-h4,
+      .pr-desc-body .md-h5,
+      .pr-desc-body .md-h6 { font-size: 14px; }
+      .cp-comment .body p,
+      .pr-desc-body p {
+        margin: 0 0 8px;
+      }
+      .cp-comment .body p:last-child,
+      .pr-desc-body p:last-child {
+        margin-bottom: 0;
+      }
+      .cp-comment .body .md-list,
+      .pr-desc-body .md-list {
+        margin: 4px 0 8px;
+        padding-left: 22px;
+      }
+      .cp-comment .body .md-list li,
+      .pr-desc-body .md-list li {
+        margin: 2px 0;
+      }
+      .cp-comment .body .md-hr,
+      .pr-desc-body .md-hr {
+        border: 0;
+        border-top: 1px solid var(--border);
+        margin: 10px 0;
       }
       .cp-comment .body .md-li {
         padding-left: 4px;
       }
-      .cp-comment .body blockquote {
-        margin: 2px 0;
+      .cp-comment .body blockquote,
+      .pr-desc-body blockquote {
+        margin: 2px 0 8px;
         padding-left: 8px;
         border-left: 2px solid var(--border);
         color: var(--fg-dim);
@@ -1307,6 +1443,14 @@
           "M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z",
         "link-external":
           "M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z",
+        alert:
+          "M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z",
+        "chevron-down":
+          "M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z",
+        "file-diff":
+          "M1 1.75C1 .784 1.784 0 2.75 0h7.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16H2.75A1.75 1.75 0 0 1 1 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V4.664a.25.25 0 0 0-.073-.177l-2.914-2.914a.25.25 0 0 0-.177-.073ZM8 3.25a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0V7h-1.5a.75.75 0 0 1 0-1.5h1.5V4A.75.75 0 0 1 8 3.25Zm-3 8a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Z",
+        "comment-discussion":
+          "M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Z",
       };
 
       function octicon(name, cls) {
@@ -1333,38 +1477,106 @@
           },
         );
 
-        s = escapeHtml(s);
+        function inline(text) {
+          let t = escapeHtml(text);
+          t = t
+            .replace(/`([^`]+)`/g, '<code class="md-inline">$1</code>')
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, "$1<em>$2</em>")
+            .replace(
+              /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+              '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
+            );
+          return t;
+        }
 
-        s = s
-          .replace(/`([^`]+)`/g, '<code class="md-inline">$1</code>')
-          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-          .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, "$1<em>$2</em>")
-          .replace(
-            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-            '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
-          );
+        const lines = s.split("\n");
+        const out = [];
+        let i = 0;
+        while (i < lines.length) {
+          const line = lines[i];
 
-        s = s
-          .split("\n")
-          .map((line) => {
-            if (/^\u0000\d+\u0000$/.test(line)) return line;
-            const h = line.match(/^(#{1,6})\s+(.*)$/);
-            if (h) return `<div class="md-h">${h[2]}</div>`;
-            if (/^&gt;\s?/.test(line))
-              return `<blockquote>${line.replace(/^&gt;\s?/, "")}</blockquote>`;
-            if (/^[-*]\s+/.test(line))
-              return `<div class="md-li">\u2022 ${line.replace(
-                /^[-*]\s+/,
-                "",
-              )}</div>`;
-            return line;
-          })
-          .join("<br>");
+          if (/^\u0000\d+\u0000$/.test(line)) {
+            out.push(line);
+            i++;
+            continue;
+          }
+          if (!line.trim()) {
+            i++;
+            continue;
+          }
 
-        return s.replace(
-          /\u0000(\d+)\u0000(<br>)?/g,
-          (_, i) => blocks[Number(i)],
-        );
+          const h = line.match(/^(#{1,6})\s+(.*)$/);
+          if (h) {
+            out.push(
+              `<div class="md-h md-h${h[1].length}">${inline(h[2])}</div>`,
+            );
+            i++;
+            continue;
+          }
+
+          if (/^\s*(---|\*\*\*|___)\s*$/.test(line)) {
+            out.push(`<hr class="md-hr">`);
+            i++;
+            continue;
+          }
+
+          if (/^\s*&gt;\s?/.test(line)) {
+            const quote = [];
+            while (i < lines.length && /^\s*&gt;\s?/.test(lines[i])) {
+              quote.push(lines[i].replace(/^\s*&gt;\s?/, ""));
+              i++;
+            }
+            out.push(`<blockquote>${inline(quote.join(" "))}</blockquote>`);
+            continue;
+          }
+
+          const olMatch = line.match(/^\s*\d+[.)]\s+/);
+          if (olMatch) {
+            const items = [];
+            while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) {
+              items.push(
+                `<li>${inline(lines[i].replace(/^\s*\d+[.)]\s+/, ""))}</li>`,
+              );
+              i++;
+            }
+            out.push(`<ol class="md-list">${items.join("")}</ol>`);
+            continue;
+          }
+
+          const ulMatch = line.match(/^\s*[-*]\s+/);
+          if (ulMatch) {
+            const items = [];
+            while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+              items.push(
+                `<li>${inline(lines[i].replace(/^\s*[-*]\s+/, ""))}</li>`,
+              );
+              i++;
+            }
+            out.push(`<ul class="md-list">${items.join("")}</ul>`);
+            continue;
+          }
+
+          const para = [];
+          while (
+            i < lines.length &&
+            lines[i].trim() &&
+            !/^\u0000\d+\u0000$/.test(lines[i]) &&
+            !/^(#{1,6})\s+/.test(lines[i]) &&
+            !/^\s*&gt;\s?/.test(lines[i]) &&
+            !/^\s*[-*]\s+/.test(lines[i]) &&
+            !/^\s*\d+[.)]\s+/.test(lines[i]) &&
+            !/^\s*(---|\*\*\*|___)\s*$/.test(lines[i])
+          ) {
+            para.push(lines[i]);
+            i++;
+          }
+          if (para.length) out.push(`<p>${inline(para.join(" "))}</p>`);
+        }
+
+        return out
+          .join("")
+          .replace(/\u0000(\d+)\u0000/g, (_, idx) => blocks[Number(idx)]);
       }
 
       let selection = null;
@@ -1486,12 +1698,12 @@
         errors = errors || [];
         if (!groups.length) {
           const errHtml = errors.length
-            ? errors
+            ? `<div class="pr-blankslate">${octicon("git-pull-request", "pr-blankslate-icon")}<div class="pr-blankslate-title">Couldn't load any pull requests</div><div class="pr-blankslate-sub">${errors
                 .map(
                   (e) =>
-                    `<div class="empty" style="border-color:#d33"><strong>${escapeHtml(e.repo || "repo")}</strong><br/>${escapeHtml(String(e.error || "").replace(/^Error:\s*/, ""))}</div>`,
+                    `<strong>${escapeHtml(e.repo || "repo")}</strong>: ${escapeHtml(String(e.error || "").replace(/^Error:\s*/, ""))}`,
                 )
-                .join("")
+                .join("<br/>")}</div></div>`
             : "";
           content.innerHTML =
             errHtml ||
@@ -1501,14 +1713,18 @@
         content.innerHTML = "";
         if (errors.length) {
           const warn = document.createElement("div");
-          warn.className = "empty";
-          warn.style.borderColor = "#d33";
-          warn.innerHTML = errors
+          warn.className = "pr-install-warn";
+          const list = errors
             .map(
               (e) =>
-                `${escapeHtml(e.repo || "repo")}: ${escapeHtml(String(e.error || "").replace(/^Error:\s*/, ""))}`,
+                `<li><strong>${escapeHtml(e.repo || "repo")}</strong>: ${escapeHtml(String(e.error || "").replace(/^Error:\s*/, ""))}</li>`,
             )
-            .join("<br/>");
+            .join("");
+          warn.innerHTML =
+            `<button class="pr-install-warn-toggle">${octicon("alert", "pr-install-warn-icon")}<span>${errors.length} repo${errors.length > 1 ? "s" : ""} couldn't be checked</span>${octicon("chevron-down", "pr-install-warn-chevron")}</button>` +
+            `<ul class="pr-install-warn-list">${list}</ul>`;
+          warn.querySelector(".pr-install-warn-toggle").onclick = () =>
+            warn.classList.toggle("open");
           content.appendChild(warn);
         }
         const filter = document.createElement("div");
@@ -1824,6 +2040,34 @@
           `</div>`;
         content.appendChild(banner);
 
+        const tabs = document.createElement("div");
+        tabs.className = "pr-tabs";
+        const fileCount = (groups[0] && groups[0].files ? groups[0].files.length : 0) || 0;
+        tabs.innerHTML =
+          `<button class="pr-tab active" data-tab="conversation">${octicon("comment-discussion")}<span>Conversation</span></button>` +
+          `<button class="pr-tab" data-tab="files">${octicon("file-diff")}<span>Files changed</span>${fileCount ? `<span class="pr-tab-count">${fileCount}</span>` : ""}</button>`;
+        content.appendChild(tabs);
+
+        const conversationPane = document.createElement("div");
+        conversationPane.className = "pr-tab-pane";
+        conversationPane.dataset.pane = "conversation";
+        const filesPane = document.createElement("div");
+        filesPane.className = "pr-tab-pane";
+        filesPane.dataset.pane = "files";
+        filesPane.hidden = true;
+        content.appendChild(conversationPane);
+        content.appendChild(filesPane);
+
+        tabs.querySelectorAll(".pr-tab").forEach((btn) => {
+          btn.onclick = () => {
+            tabs.querySelectorAll(".pr-tab").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            const tab = btn.dataset.tab;
+            conversationPane.hidden = tab !== "conversation";
+            filesPane.hidden = tab !== "files";
+          };
+        });
+
         if (ctx.body && ctx.body.trim()) {
           const desc = document.createElement("details");
           desc.className = "pr-description";
@@ -1832,7 +2076,7 @@
           desc.innerHTML =
             `<summary>${author}<span class="pr-desc-label">description</span></summary>` +
             `<div class="pr-desc-body body">${renderMarkdown(ctx.body)}</div>`;
-          content.appendChild(desc);
+          conversationPane.appendChild(desc);
         }
 
         banner.querySelector("#pr-back").onclick = () => {
@@ -1843,19 +2087,28 @@
         banner.querySelector("#pr-start").onclick = startReview;
         banner.querySelector("#pr-merge").onclick = openMergeDialog;
         banner.querySelector("#pr-comments-toggle").onclick = () => {
+          tabs.querySelector('[data-tab="conversation"]').click();
           const panel = document.getElementById("comments-panel");
-          if (panel) panel.classList.toggle("collapsed");
+          if (panel) panel.classList.remove("collapsed");
         };
 
-        const layout = document.createElement("div");
-        layout.className = "pr-layout";
-        const diffHost = document.createElement("div");
-        diffHost.className = "diff-host";
+        const convoLayout = document.createElement("div");
+        convoLayout.className = "pr-layout";
+        const commentsHost = document.createElement("div");
+        commentsHost.className = "diff-host";
+        commentsHost.innerHTML = `<div class="empty">Comments load below — open Files changed to review the diff.</div>`;
         const panel = document.createElement("div");
         panel.id = "comments-panel";
-        layout.appendChild(diffHost);
-        layout.appendChild(panel);
-        content.appendChild(layout);
+        convoLayout.appendChild(commentsHost);
+        convoLayout.appendChild(panel);
+        conversationPane.appendChild(convoLayout);
+
+        const filesLayout = document.createElement("div");
+        filesLayout.className = "pr-layout";
+        const diffHost = document.createElement("div");
+        diffHost.className = "diff-host";
+        filesLayout.appendChild(diffHost);
+        filesPane.appendChild(filesLayout);
 
         renderDiff(groups, diffHost);
         renderCommentsPanel();
@@ -1917,6 +2170,8 @@
       function jumpToThread(t) {
         const row = rowForThread(t);
         if (!row) return;
+        const filesTab = document.querySelector('.pr-tab[data-tab="files"]');
+        if (filesTab && !filesTab.classList.contains("active")) filesTab.click();
         const group = row.closest(".repo-group");
         if (group) group.classList.add("open");
         const fileBody = row.closest(".file-body");
