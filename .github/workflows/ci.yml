@@ -72,6 +72,11 @@ jobs:
           for pkg in packages/*/; do
             PKG_NAME=$(node -p "require('./$pkg/package.json').name")
             PKG_VERSION=$(node -p "require('./$pkg/package.json').version")
+            PKG_PRIVATE=$(node -p "require('./$pkg/package.json').private === true")
+            if [ "$PKG_PRIVATE" = "true" ]; then
+              echo "::notice::$PKG_NAME is private, skipping."
+              continue
+            fi
             if npm view "$PKG_NAME@$PKG_VERSION" version 2>/dev/null; then
               echo "::notice::$PKG_NAME@$PKG_VERSION already published, skipping."
               continue

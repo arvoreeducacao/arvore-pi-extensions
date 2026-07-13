@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "description": "Cloud backend for pi git-review: GitHub App OAuth, PR review REST, and a WS hub that pairs a browser reviewer with a local pi bridge",
   "type": "module",
-  "private": true,
-  "engines": {
+  "private": true,  "engines": {
     "node": ">=20"
   },
   "scripts": {

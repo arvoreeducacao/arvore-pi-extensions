@@ -1356,6 +1356,8 @@
             },
           ];
           renderPrDiff(currentPr, lastGroups);
+          const [o, r] = pr.repo.split("/");
+          if (o && r) history.pushState({ pr: pr.number, repo: pr.repo }, "", `/${o}/${r}/pull/${pr.number}`);
         } catch (err) {
           if (requestSeq !== prRequestSeq || appMode !== "prs") return;
           content.innerHTML = `<div class="empty">Failed to load PR: ${escapeHtml(String(err))}</div>`;
@@ -1528,6 +1530,7 @@
         content.appendChild(banner);
         banner.querySelector("#pr-back").onclick = () => {
           currentPr = null;
+          history.pushState({}, "", "/?mode=prs");
           loadPrs();
         };
         banner.querySelector("#pr-start").onclick = startReview;
