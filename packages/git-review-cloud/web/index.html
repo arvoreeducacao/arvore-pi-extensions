@@ -76,6 +76,12 @@
       .spacer {
         flex: 1;
       }
+      .octicon {
+        display: inline-block;
+        vertical-align: text-bottom;
+        overflow: visible;
+        fill: currentColor;
+      }
       select,
       input[type="text"],
       button {
@@ -131,64 +137,130 @@
       .pr-list {
         display: flex;
         flex-direction: column;
-        gap: 28px;
+        gap: 16px;
       }
-      .pr-repo-name {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--accent);
-        margin-bottom: 8px;
-        font-family: var(--mono);
-      }
-      .pr-card {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-        padding: 12px 14px;
-        margin-bottom: 8px;
+      .pr-group {
         border: 1px solid var(--border);
         border-radius: var(--radius);
+        overflow: hidden;
         background: var(--bg-elev);
+      }
+      .pr-repo-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--fg);
+        padding: 10px 16px;
+        background: var(--bg-subtle);
+        border-bottom: 1px solid var(--border);
+        font-family: var(--mono);
+      }
+      .pr-repo-icon {
+        color: var(--fg-dim);
+        flex-shrink: 0;
+      }
+      .pr-repo-count {
+        font-family: var(--sans, inherit);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--fg-dim);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0 7px;
+        line-height: 18px;
+      }
+      .pr-rows {
+        display: flex;
+        flex-direction: column;
+      }
+      .pr-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 16px;
+        border: 0;
+        border-top: 1px solid var(--border);
+        border-radius: 0;
+        background: transparent;
         color: inherit;
         font: inherit;
         text-align: left;
         cursor: pointer;
-        transition: border-color 0.12s;
+        transition: background 0.1s;
       }
-      .pr-card:hover {
-        border-color: var(--accent);
+      .pr-rows .pr-row:first-child {
+        border-top: 0;
+      }
+      .pr-row:hover {
+        background: var(--bg-subtle);
+        border-color: var(--border);
+      }
+      .pr-icon-wrap {
+        display: flex;
+        align-items: center;
+        height: 20px;
+        flex-shrink: 0;
+      }
+      .pr-icon.open {
+        color: var(--success);
+      }
+      .pr-icon.draft {
+        color: var(--fg-dim);
       }
       .pr-num {
         font-family: var(--mono);
         font-size: 12px;
         color: var(--fg-dim);
-        min-width: 48px;
       }
       .pr-main {
         flex: 1;
         min-width: 0;
       }
+      .pr-title-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
       .pr-title {
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
+        line-height: 1.4;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .pr-row:hover .pr-title {
+        color: var(--accent);
+      }
       .pr-meta {
         font-size: 12px;
         color: var(--fg-dim);
-        margin-top: 3px;
+        margin-top: 2px;
       }
-      .pr-badge {
+      .pr-label {
         font-size: 11px;
-        padding: 1px 7px;
+        font-weight: 500;
+        padding: 0 7px;
+        line-height: 18px;
         border-radius: 999px;
         border: 1px solid var(--border);
+        flex-shrink: 0;
       }
-      .pr-badge.draft {
+      .pr-label.draft {
         color: var(--fg-dim);
+        background: var(--bg-subtle);
+      }
+      .pr-stats {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-shrink: 0;
+        margin-top: 2px;
       }
       .pr-stat-add {
         color: var(--success);
@@ -200,34 +272,112 @@
         font-family: var(--mono);
         font-size: 12px;
       }
-      .pr-banner {
+      .pr-header {
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .pr-header-top {
+        margin-bottom: 10px;
+      }
+      .pr-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--fg-dim);
+        background: transparent;
+        border: 0;
+        padding: 4px 6px;
+        margin-left: -6px;
+        border-radius: 6px;
+      }
+      .pr-back:hover {
+        background: var(--bg-subtle);
+        border-color: transparent;
+        color: var(--accent);
+      }
+      .pr-header-title {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .pr-header-name {
+        font-size: 24px;
+        font-weight: 400;
+        line-height: 1.25;
+        color: var(--fg);
+        word-break: break-word;
+      }
+      .pr-header-num {
+        font-size: 24px;
+        font-weight: 300;
+        color: var(--fg-dim);
+      }
+      .pr-header-gh {
+        align-self: center;
+        color: var(--fg-dim);
+        display: inline-flex;
+        padding: 4px;
+        border-radius: 6px;
+      }
+      .pr-header-gh:hover {
+        color: var(--accent);
+        background: var(--bg-subtle);
+      }
+      .pr-header-sub {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        margin-bottom: 16px;
-        border: 1px solid var(--accent);
-        border-radius: var(--radius);
-        background: var(--bg-elev);
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
       }
-      .pr-banner .pr-banner-title {
-        flex: 1;
-        min-width: 0;
+      .pr-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
         font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: inherit !important;
-        font-size: 14px !important;
+        color: #fff;
+        padding: 5px 12px;
+        border-radius: 999px;
+        line-height: 1;
       }
-      .pr-banner .pr-banner-title:hover {
-        color: var(--accent) !important;
+      .pr-state.open {
+        background: var(--accent-bg);
       }
-      .pr-banner-branch {
+      .pr-state.draft {
+        background: #6e7681;
+      }
+      .pr-header-meta {
+        font-size: 14px;
+        color: var(--fg-dim);
+      }
+      .pr-header-meta .pr-author {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .pr-branch {
+        font-family: var(--mono);
         font-size: 12px;
-        opacity: 0.7;
-        font-family: ui-monospace, monospace;
+        color: var(--accent);
+        background: var(--sel);
+        border-radius: 6px;
+        padding: 2px 6px;
         white-space: nowrap;
+      }
+      .pr-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+      .pr-header-actions button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
       .pr-description {
         margin-bottom: 16px;
@@ -262,14 +412,6 @@
         line-height: 1.55;
         max-height: 340px;
         overflow-y: auto;
-      }
-      .pr-banner a {
-        color: var(--accent);
-        text-decoration: none;
-        font-size: 12px;
-      }
-      .pr-banner a:hover {
-        text-decoration: underline;
       }
       .merge-overlay {
         position: fixed;
@@ -650,6 +792,31 @@
         text-align: center;
         padding: 60px 0;
       }
+      .pr-blankslate {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 48px 24px;
+      }
+      .pr-blankslate-icon {
+        width: 32px;
+        height: 32px;
+        color: var(--fg-gutter);
+        margin-bottom: 6px;
+      }
+      .pr-blankslate-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .pr-blankslate-sub {
+        font-size: 13px;
+        color: var(--fg-dim);
+        max-width: 380px;
+      }
       #sentlog {
         position: fixed;
         bottom: 12px;
@@ -980,7 +1147,9 @@
       .session-tag select { margin-left: 4px; }
       .pr-filter { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
       .pr-filter input { flex: 1; padding: 8px 12px; font-size: 14px; border: 1px solid var(--border, #333); border-radius: 6px; background: var(--bg2, #1a1a1a); color: inherit; }
-      #pr-filter-count { font-size: 12px; opacity: 0.7; white-space: nowrap; }
+      #pr-filter-count { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg-dim); white-space: nowrap; }
+      #pr-filter-count strong { color: var(--fg); font-weight: 600; }
+      .pr-count-icon { color: var(--fg-dim); }
     </style>
   </head>
   <body>
@@ -1123,6 +1292,31 @@
 
       function escapeAttr(s) {
         return escapeHtml(String(s == null ? "" : s)).replace(/"/g, "&quot;");
+      }
+
+      const OCTICON_PATHS = {
+        "git-pull-request":
+          "M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z",
+        "git-pull-request-draft":
+          "M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 14a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0-3.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z",
+        "git-merge":
+          "M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z",
+        comment:
+          "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
+        "arrow-left":
+          "M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z",
+        "link-external":
+          "M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z",
+      };
+
+      function octicon(name, cls) {
+        const path = OCTICON_PATHS[name];
+        if (!path) return "";
+        return (
+          `<svg class="octicon${cls ? " " + cls : ""}" aria-hidden="true" ` +
+          `viewBox="0 0 16 16" width="16" height="16" fill="currentColor">` +
+          `<path d="${path}"></path></svg>`
+        );
       }
 
       function renderMarkdown(src) {
@@ -1301,7 +1495,7 @@
             : "";
           content.innerHTML =
             errHtml ||
-            '<div class="empty">No open PRs found.<br/>Make sure the GitHub App is installed on the repos you want to review.</div>';
+            `<div class="empty pr-blankslate">${octicon("git-pull-request", "pr-blankslate-icon")}<div class="pr-blankslate-title">No open pull requests</div><div class="pr-blankslate-sub">Make sure the GitHub App is installed on the repos you want to review.</div></div>`;
           return;
         }
         content.innerHTML = "";
@@ -1320,7 +1514,7 @@
         const filter = document.createElement("div");
         filter.className = "pr-filter";
         filter.innerHTML =
-          `<input id="pr-filter-input" type="text" placeholder="Filtrar por repo, título, autor ou #número…" autocomplete="off" />` +
+          `<input id="pr-filter-input" type="text" placeholder="Filter by repository, title, author or #number…" autocomplete="off" />` +
           `<span id="pr-filter-count"></span>`;
         content.appendChild(filter);
 
@@ -1344,42 +1538,59 @@
             });
             if (!matching.length) return;
             const repoEl = document.createElement("div");
+            repoEl.className = "pr-group";
             const name = document.createElement("div");
             name.className = "pr-repo-name";
-            name.textContent = group.repo;
+            name.innerHTML =
+              octicon("git-pull-request", "pr-repo-icon") +
+              `<span>${escapeHtml(group.repo)}</span>` +
+              `<span class="pr-repo-count">${matching.length}</span>`;
             repoEl.appendChild(name);
+            const rows = document.createElement("div");
+            rows.className = "pr-rows";
+            repoEl.appendChild(rows);
             matching.forEach((pr) => {
               shown += 1;
               const card = document.createElement("button");
               card.type = "button";
-              card.className = "pr-card";
-              const draft = pr.isDraft
-                ? '<span class="pr-badge draft">draft</span>'
+              card.className = "pr-row";
+              const isDraft = Boolean(pr.isDraft);
+              const icon = octicon(
+                isDraft ? "git-pull-request-draft" : "git-pull-request",
+                isDraft ? "pr-icon draft" : "pr-icon open",
+              );
+              const draftLabel = isDraft
+                ? '<span class="pr-label draft">Draft</span>'
                 : "";
-              const branch =
-                pr.headRefName && pr.baseRefName
-                  ? `${escapeHtml(pr.headRefName)} → ${escapeHtml(pr.baseRefName)} · `
-                  : "";
               const stats =
                 pr.additions || pr.deletions
-                  ? `<span class="pr-stat-add">+${pr.additions}</span><span class="pr-stat-del">-${pr.deletions}</span>`
+                  ? `<span class="pr-stat-add">+${pr.additions}</span><span class="pr-stat-del">\u2212${pr.deletions}</span>`
                   : "";
+              const opened = pr.updatedAt
+                ? `updated ${escapeHtml(timeAgo(pr.updatedAt))}`
+                : "";
+              const by = pr.author ? ` by ${escapeHtml(pr.author)}` : "";
               card.innerHTML =
-                `<span class="pr-num">#${pr.number}</span>` +
+                `<span class="pr-icon-wrap">${icon}</span>` +
                 `<div class="pr-main">` +
-                `<div class="pr-title">${escapeHtml(pr.title)}</div>` +
-                `<div class="pr-meta">${escapeHtml(pr.author)} · ${branch}${escapeHtml(timeAgo(pr.updatedAt))}</div>` +
+                `<div class="pr-title-line">` +
+                `<span class="pr-title">${escapeHtml(pr.title)}</span>` +
+                draftLabel +
                 `</div>` +
-                draft +
-                stats;
+                `<div class="pr-meta"><span class="pr-num">#${pr.number}</span> ${opened}${by}</div>` +
+                `</div>` +
+                (stats ? `<span class="pr-stats">${stats}</span>` : "");
               card.addEventListener("click", () => openPr(pr));
-              repoEl.appendChild(card);
+              rows.appendChild(card);
             });
             list.appendChild(repoEl);
           });
           const total = groups.reduce((n, g) => n + g.prs.length, 0);
           const countEl = document.getElementById("pr-filter-count");
-          if (countEl) countEl.textContent = q ? `${shown} de ${total} PRs` : `${total} PRs em ${groups.length} repos`;
+          if (countEl)
+            countEl.innerHTML = q
+              ? `${shown} of ${total} open`
+              : `${octicon("git-pull-request", "pr-count-icon")} <strong>${total}</strong> Open in ${groups.length} repos`;
         };
 
         renderGroups("");
@@ -1577,21 +1788,40 @@
         const ctx = pr.context || {};
         const title = ctx.title || pr.title;
         const banner = document.createElement("div");
-        banner.className = "pr-banner";
+        banner.className = "pr-header";
         const startLabel = pr.started ? "Review started" : "Start review";
         const startCls = pr.started ? "" : "primary";
-        const branchInfo =
+        const isDraft = Boolean(ctx.isDraft || pr.isDraft);
+        const stateLabel = isDraft
+          ? `<span class="pr-state draft">${octicon("git-pull-request-draft")}Draft</span>`
+          : `<span class="pr-state open">${octicon("git-pull-request")}Open</span>`;
+        const author = ctx.author
+          ? `<strong class="pr-author">${escapeHtml(ctx.author)}</strong>`
+          : "someone";
+        const branchLine =
           ctx.headRefName && ctx.baseRefName
-            ? `<span class="pr-banner-branch">${escapeHtml(ctx.headRefName)} → ${escapeHtml(ctx.baseRefName)}</span>`
-            : "";
+            ? `${author} wants to merge into ` +
+              `<span class="pr-branch">${escapeHtml(ctx.baseRefName)}</span> from ` +
+              `<span class="pr-branch">${escapeHtml(ctx.headRefName)}</span>`
+            : `${author} opened this pull request`;
         banner.innerHTML =
-          `<button id="pr-back">← PRs</button>` +
-          `<span class="pr-num">#${pr.number}</span>` +
-          `<a class="pr-banner-title" href="${escapeHtml(pr.url)}" target="_blank" rel="noreferrer" title="open on GitHub">${escapeHtml(title)}</a>` +
-          branchInfo +
-          `<button id="pr-comments-toggle">Comments</button>` +
-          `<button id="pr-merge">Merge…</button>` +
-          `<button id="pr-start" class="${startCls}"${pr.started ? " disabled" : ""}>${startLabel}</button>`;
+          `<div class="pr-header-top">` +
+          `<button id="pr-back" class="pr-back">${octicon("arrow-left")}<span>Pull requests</span></button>` +
+          `</div>` +
+          `<div class="pr-header-title">` +
+          `<span class="pr-header-name">${escapeHtml(title)}</span>` +
+          `<span class="pr-header-num">#${pr.number}</span>` +
+          `<a class="pr-header-gh" href="${escapeHtml(pr.url)}" target="_blank" rel="noreferrer" title="Open on GitHub">${octicon("link-external")}</a>` +
+          `</div>` +
+          `<div class="pr-header-sub">` +
+          stateLabel +
+          `<span class="pr-header-meta">${branchLine}</span>` +
+          `</div>` +
+          `<div class="pr-header-actions">` +
+          `<button id="pr-comments-toggle">${octicon("comment")}<span>Comments</span></button>` +
+          `<button id="pr-merge">${octicon("git-merge")}<span>Merge…</span></button>` +
+          `<button id="pr-start" class="${startCls}"${pr.started ? " disabled" : ""}>${startLabel}</button>` +
+          `</div>`;
         content.appendChild(banner);
 
         if (ctx.body && ctx.body.trim()) {
