@@ -8,6 +8,7 @@ import { getConfig } from "./config.js";
 import {
   exchangeOAuthCode,
   pollDeviceFlow,
+  reposForInstallation,
   startDeviceFlow,
   userFromToken,
   userInAllowedOrg,
@@ -238,6 +239,11 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
       for (const s of sessionsFor(claims.sub)) for (const r of s.repos) repos.add(r);
       const requested = url.searchParams.get("repo");
       if (requested) repos.add(requested);
+      if (repos.size === 0 && cfg.github.allowedOrg) {
+        try {
+          for (const slug of await reposForInstallation(cfg.github.allowedOrg)) repos.add(slug);
+        } catch {}
+      }
       try {
         const settled = await Promise.all(
           [...repos].map(async (slug) => {
