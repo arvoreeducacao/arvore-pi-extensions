@@ -130,6 +130,7 @@ export default function (pi: ExtensionAPI) {
 
   async function connect(): Promise<void> {
     if (closed) return;
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
     config = config || (await loadConfig());
     if (!config.bridgeToken) return;
 
@@ -157,7 +158,8 @@ export default function (pi: ExtensionAPI) {
     });
 
     socket.on("close", () => {
-      if (ws === socket) ws = null;
+      if (ws !== socket) return;
+      ws = null;
       scheduleReconnect();
     });
     socket.on("error", () => {

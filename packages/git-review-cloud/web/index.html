@@ -1471,7 +1471,6 @@
           `<option value="rebase">Rebase and merge</option>` +
           `</select></label>` +
           `<label class="merge-check"><input type="checkbox" id="merge-delete" checked /> Delete branch after merge</label>` +
-          `<label class="merge-check merge-admin hidden"><input type="checkbox" id="merge-admin" /> Override with admin privileges</label>` +
           `<div class="merge-actions">` +
           `<button id="merge-cancel">Cancel</button>` +
           `<button id="merge-confirm" class="primary">Merge</button>` +
@@ -1505,7 +1504,6 @@
 
       function renderMergeStatus(overlay, status) {
         const statusEl = overlay.querySelector("#merge-status");
-        const adminField = overlay.querySelector(".merge-admin");
         const clean = status.mergeable === "MERGEABLE" && status.mergeStateStatus === "CLEAN";
         const blocked =
           status.mergeStateStatus === "BLOCKED" ||
@@ -1528,20 +1526,12 @@
         }
         statusEl.className = `merge-status ${cls}`;
         statusEl.textContent = msg;
-
-        if (status.canAdmin && !clean) {
-          adminField.classList.remove("hidden");
-        } else {
-          adminField.classList.add("hidden");
-        }
       }
 
       async function confirmMerge(overlay, close) {
         if (!currentPr) return;
         const method = overlay.querySelector("#merge-method").value;
         const deleteBranch = overlay.querySelector("#merge-delete").checked;
-        const adminEl = overlay.querySelector("#merge-admin");
-        const admin = Boolean(adminEl && adminEl.checked && !adminEl.closest(".hidden"));
         const confirmBtn = overlay.querySelector("#merge-confirm");
         confirmBtn.disabled = true;
         confirmBtn.textContent = "Merging…";
@@ -1554,7 +1544,6 @@
               number: currentPr.number,
               method,
               deleteBranch,
-              admin,
             }),
           });
           const data = await res.json();
