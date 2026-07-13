@@ -516,14 +516,21 @@ async function repoPermissionForUser(slug: string, login: string): Promise<strin
 export async function mergePullRequest(
   slug: string,
   prNumber: number,
-  opts: { method: MergeMethod },
+  opts: { method: MergeMethod; deleteBranch?: boolean },
 ): Promise<{ ok: true }> {
   const [owner, name] = slug.split("/");
+  const prRes = await rest(slug, `/repos/${owner}/${name}/pulls/${prNumber}`);
+  const pr = prRes.ok ? ((await prRes.json()) as { head?: { ref?: string } }) : null;
   const res = await rest(slug, `/repos/${owner}/${name}/pulls/${prNumber}/merge`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ merge_method: opts.method }),
   });
   if (!res.ok) throw new Error(`merge failed: ${res.status} ${await res.text()}`);
+  if (opts.deleteBranch && pr?.head?.ref) {
+    await rest(slug, `/repos/${owner}/${name}/git/refs/heads/${encodeURIComponent(pr.head.ref)}`, {
+      method: "DELETE",
+    }).catch(() => {});
+  }
   return { ok: true };
 }

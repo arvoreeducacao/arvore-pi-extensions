@@ -392,11 +392,12 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
         const repo = String(body.repo || "");
         const number = Number(body.number);
         const method = String(body.method || "squash") as "merge" | "squash" | "rebase";
+        const deleteBranch = Boolean(body.deleteBranch);
         if (!repo.includes("/") || !Number.isInteger(number) || !["merge", "squash", "rebase"].includes(method)) {
           sendJson(res, 400, { error: "invalid request" });
           return true;
         }
-        const result = await mergePullRequest(repo, number, { method });
+        const result = await mergePullRequest(repo, number, { method, deleteBranch });
         sendJson(res, 200, result);
       } catch (err) {
         sendJson(res, 500, { error: String(err) });
@@ -444,9 +445,21 @@ export function startServer(): void {
   });
 
   const wss = new WebSocketServer({ noServer: true });
+  const publicOrigin = new URL(cfg.publicUrl).origin;
+
+  function originAllowed(req: IncomingMessage): boolean {
+    const origin = req.headers.origin;
+    if (!origin) return false;
+    return origin === publicOrigin;
+  }
+
   httpServer.on("upgrade", (req, socket, head) => {
     const url = new URL(req.url || "/", cfg.publicUrl);
     if (url.pathname === "/ws/bridge") {
+      if (req.headers.origin && !originAllowed(req)) {
+        socket.destroy();
+        return;
+      }
       const token = url.searchParams.get("token") || "";
       verifyToken(token, "bridge").then((claims) => {
         if (!claims) {
@@ -458,6 +471,10 @@ export function startServer(): void {
       return;
     }
     if (url.pathname === "/ws/browser") {
+      if (!originAllowed(req)) {
+        socket.destroy();
+        return;
+      }
       const token = cookies(req)["gr_session"] || url.searchParams.get("token") || "";
       verifyToken(token, "browser").then((claims) => {
         if (!claims) {
