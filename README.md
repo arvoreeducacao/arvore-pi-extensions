@@ -9,6 +9,7 @@ Monorepo for custom PI extensions used across Arvore projects.
 | `@arvoretech/pi-bee-context` | Injects personal facts from the Bee wearable assistant into the system prompt |
 | `@arvoretech/pi-changes-tracker` | Shows changed repos and files with `/changed` and `/changes` commands |
 | `@arvoretech/pi-ci-watch` | Monitors CI status, auto-fixes failures, and notifies on completion |
+| `@arvoretech/pi-git-review-bridge` | Local bridge for `git-review-cloud`: connects a pi session to the cloud PR reviewer over WebSocket and injects browser comments |
 | `@arvoretech/pi-element-inspector` | Receives inspected browser elements and pastes them into the editor |
 | `@arvoretech/pi-elevenlabs-stt` | Push-to-talk speech-to-text using ElevenLabs Scribe API |
 | `@arvoretech/pi-kiro-provider` | Provider for the Kiro API (AWS CodeWhisperer/Q) with multi-provider OAuth (Builder ID, Google, GitHub) |
@@ -21,6 +22,12 @@ Monorepo for custom PI extensions used across Arvore projects.
 | `@arvoretech/pi-recap` | Drafts a one-line recap of where you left off — on demand with `/recap` and automatically when you return to an idle session |
 | `@arvoretech/pi-warp-tab-title` | Renames Warp terminal tab to reflect current task focus |
 | `@arvoretech/pi-worktree` | Manages git worktrees across multi-repo workspaces with tree-themed names |
+
+## Cloud services
+
+| Package | Description |
+|---------|-------------|
+| `@arvoretech/git-review-cloud` | Cloud backend (Dokploy) for PR review: GitHub App OAuth + PR REST + a WS hub that pairs a browser reviewer with the local `pi-git-review-bridge`. Not a pi extension — deployed as a service. |
 
 ## Development
 
