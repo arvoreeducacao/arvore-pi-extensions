@@ -106,12 +106,12 @@ async function browserClaims(req: IncomingMessage, url: URL) {
   return verifyToken(token, "browser");
 }
 
-const oauthStates = new Map<string, number>();
+const oauthStates = new Map<string, { exp: number; next: string }>();
 const deviceCodes = new Map<string, { deviceCode: string; expiresAt: number }>();
 
 function pruneMaps(): void {
   const now = Date.now();
-  for (const [k, v] of oauthStates) if (v < now) oauthStates.delete(k);
+  for (const [k, v] of oauthStates) if (v.exp < now) oauthStates.delete(k);
   for (const [k, v] of deviceCodes) if (v.expiresAt < now) deviceCodes.delete(k);
 }
 setInterval(pruneMaps, 60_000).unref();
@@ -135,7 +135,9 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
 
   if (url.pathname === "/auth/github/login") {
     const state = randomUUID();
-    oauthStates.set(state, Date.now() + 10 * 60_000);
+    const rawNext = url.searchParams.get("next") || "/";
+    const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+    oauthStates.set(state, { exp: Date.now() + 10 * 60_000, next });
     const redirect = new URL("https://github.com/login/oauth/authorize");
     redirect.searchParams.set("client_id", cfg.github.clientId);
     redirect.searchParams.set("redirect_uri", `${cfg.publicUrl}/auth/github/callback`);
@@ -149,11 +151,13 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
   if (url.pathname === "/auth/github/callback") {
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
-    if (!code || !state || !oauthStates.has(state)) {
+    const stored = state ? oauthStates.get(state) : undefined;
+    if (!code || !state || !stored) {
       sendJson(res, 400, { error: "invalid oauth state" });
       return true;
     }
     oauthStates.delete(state);
+    const next = stored.next || "/";
     try {
       const tokens = await exchangeOAuthCode(code);
       if (!(await userInAllowedOrg(tokens.accessToken))) {
@@ -166,7 +170,7 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
         "browser",
       );
       res.writeHead(302, {
-        Location: "/?mode=prs",
+        Location: next && next !== "/" ? next : "/?mode=prs",
         "Set-Cookie": `gr_session=${session}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${cfg.browserTokenTtlSec}`,
       });
       res.end();
@@ -419,10 +423,15 @@ export function startServer(): void {
       return;
     }
 
-    if (url.pathname === "/" || url.pathname === "/index.html") {
+    if (
+      url.pathname === "/" ||
+      url.pathname === "/index.html" ||
+      /^\/[^/]+\/[^/]+\/pull\/\d+\/?$/.test(url.pathname)
+    ) {
       const claims = await browserClaims(req, url);
       if (!claims) {
-        res.writeHead(302, { Location: "/auth/github/login" });
+        const next = encodeURIComponent(url.pathname + url.search);
+        res.writeHead(302, { Location: `/auth/github/login?next=${next}` });
         res.end();
         return;
       }

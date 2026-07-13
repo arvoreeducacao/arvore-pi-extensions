@@ -1,7 +1,7 @@
 {
   "name": "@arvoretech/pi-git-review-bridge",
   "version": "0.1.0",
-  "description": "Local pi bridge for git-review-cloud: connects to the cloud hub over WebSocket and injects browser review comments into the running pi session",
+  "description": "PI extension that bridges a local pi session to the git-review-cloud PR reviewer: browser comments are delivered to the agent in real time over WebSocket",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -37,7 +37,7 @@
     "extension",
     "git",
     "code-review",
-    "cloud"
+    "pull-request"
   ],
   "repository": {
     "type": "git",
