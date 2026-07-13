@@ -77,6 +77,29 @@ export async function installationToken(owner: string): Promise<string> {
   return res.token;
 }
 
+export async function reposForInstallation(owner: string): Promise<string[]> {
+  const slugs = new Set<string>();
+  const token = await installationToken(owner);
+  let page = 1;
+  for (;;) {
+    const res = await fetch(`${GH_API}/installation/repositories?per_page=100&page=${page}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "git-review-cloud",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (!res.ok) break;
+    const data = (await res.json()) as { repositories?: Array<{ full_name: string }> };
+    const batch = data.repositories || [];
+    for (const r of batch) slugs.add(r.full_name);
+    if (batch.length < 100) break;
+    page += 1;
+  }
+  return [...slugs];
+}
+
 export interface OAuthTokens {
   accessToken: string;
   refreshToken?: string;
