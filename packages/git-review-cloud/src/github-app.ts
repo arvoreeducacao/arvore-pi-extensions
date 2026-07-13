@@ -190,15 +190,34 @@ export async function userFromToken(accessToken: string): Promise<GithubUser> {
 export async function userInAllowedOrg(accessToken: string): Promise<boolean> {
   const { github } = getConfig();
   if (!github.allowedOrg) return true;
-  const res = await fetch(`${GH_API}/user/memberships/orgs/${github.allowedOrg}`, {
+  const wanted = github.allowedOrg.toLowerCase();
+
+  const instRes = await fetch(`${GH_API}/user/installations`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/vnd.github+json",
       "User-Agent": "git-review-cloud",
     },
   });
-  if (!res.ok) return false;
-  const data = (await res.json()) as { state?: string };
+  if (instRes.ok) {
+    const data = (await instRes.json()) as {
+      installations?: Array<{ account?: { login?: string } }>;
+    };
+    const match = (data.installations || []).some(
+      (i) => (i.account?.login || "").toLowerCase() === wanted,
+    );
+    if (match) return true;
+  }
+
+  const orgRes = await fetch(`${GH_API}/user/memberships/orgs/${github.allowedOrg}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "git-review-cloud",
+    },
+  });
+  if (!orgRes.ok) return false;
+  const data = (await orgRes.json()) as { state?: string };
   return data.state === "active";
 }
 
