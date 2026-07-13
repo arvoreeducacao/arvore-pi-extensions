@@ -8,7 +8,6 @@ import { getConfig } from "./config.js";
 import {
   exchangeOAuthCode,
   pollDeviceFlow,
-  reposForInstallation,
   startDeviceFlow,
   userFromToken,
   userInAllowedOrg,
@@ -23,10 +22,22 @@ import {
   mergePullRequest,
   postReviewComment,
   replyToComment,
+  searchOpenPullRequests,
 } from "./github-pr.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = join(__dirname, "..", "web");
+
+const orgPrCache = new Map<string, { at: number; groups: Awaited<ReturnType<typeof searchOpenPullRequests>> }>();
+const ORG_PR_TTL_MS = 30_000;
+
+async function cachedOrgPrs(org: string): Promise<Awaited<ReturnType<typeof searchOpenPullRequests>>> {
+  const cached = orgPrCache.get(org);
+  if (cached && Date.now() - cached.at < ORG_PR_TTL_MS) return cached.groups;
+  const groups = await searchOpenPullRequests(org);
+  orgPrCache.set(org, { at: Date.now(), groups });
+  return groups;
+}
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
@@ -235,18 +246,24 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
     }
 
     if (url.pathname === "/api/prs") {
-      const repos = new Set<string>();
-      for (const s of sessionsFor(claims.sub)) for (const r of s.repos) repos.add(r);
+      const bridgeRepos = new Set<string>();
+      for (const s of sessionsFor(claims.sub)) for (const r of s.repos) bridgeRepos.add(r);
       const requested = url.searchParams.get("repo");
-      if (requested) repos.add(requested);
-      if (repos.size === 0 && cfg.github.allowedOrg) {
+      if (requested) bridgeRepos.add(requested);
+
+      if (bridgeRepos.size === 0 && cfg.github.allowedOrg) {
         try {
-          for (const slug of await reposForInstallation(cfg.github.allowedOrg)) repos.add(slug);
-        } catch {}
+          const groups = await cachedOrgPrs(cfg.github.allowedOrg);
+          sendJson(res, 200, { groups, errors: [] });
+        } catch (err) {
+          sendJson(res, 200, { groups: [], errors: [{ repo: cfg.github.allowedOrg, error: String(err) }] });
+        }
+        return true;
       }
+
       try {
         const settled = await Promise.all(
-          [...repos].map(async (slug) => {
+          [...bridgeRepos].map(async (slug) => {
             try {
               return { group: await listPullRequests(slug), error: null };
             } catch (err) {

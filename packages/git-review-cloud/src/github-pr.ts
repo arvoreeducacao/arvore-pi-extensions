@@ -112,6 +112,63 @@ function stripHtmlComments(body: string): string {
   return (body || "").replace(/<!--[\s\S]*?-->/g, "").trim();
 }
 
+export async function searchOpenPullRequests(org: string): Promise<PullRequestGroup[]> {
+  const token = await installationToken(org);
+  const byRepo = new Map<string, PullRequest[]>();
+  let page = 1;
+  for (;;) {
+    const q = encodeURIComponent(`is:open is:pr org:${org}`);
+    const res = await fetch(
+      `${GH_API}/search/issues?q=${q}&per_page=100&page=${page}&sort=updated&order=desc`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "git-review-cloud",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      },
+    );
+    if (!res.ok) throw new Error(`GitHub search ${res.status}: ${await res.text()}`);
+    const data = (await res.json()) as {
+      total_count?: number;
+      items?: Array<{
+        number: number;
+        title: string;
+        user?: { login?: string };
+        html_url: string;
+        draft?: boolean;
+        updated_at: string;
+        repository_url: string;
+      }>;
+    };
+    const items = data.items || [];
+    for (const it of items) {
+      const slug = it.repository_url.replace(`${GH_API}/repos/`, "");
+      const arr = byRepo.get(slug) || [];
+      arr.push({
+        repo: slug,
+        number: it.number,
+        title: it.title,
+        author: it.user?.login || "unknown",
+        url: it.html_url,
+        baseRefName: "",
+        headRefName: "",
+        isDraft: Boolean(it.draft),
+        updatedAt: it.updated_at,
+        additions: 0,
+        deletions: 0,
+      });
+      byRepo.set(slug, arr);
+    }
+    if (items.length < 100 || page >= 10) break;
+    page += 1;
+  }
+  return [...byRepo.entries()]
+    .map(([repo, prs]) => ({ repo, prs }))
+    .sort((a, b) => a.repo.localeCompare(b.repo));
+}
+
 export async function listPullRequests(slug: string): Promise<PullRequestGroup> {
   const [owner, name] = slug.split("/");
   const prs = await restJson<

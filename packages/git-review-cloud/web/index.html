@@ -931,9 +931,11 @@
           flex-basis: 280px;
         }
       }
-      .session-picker { display: inline-flex; align-items: center; }
-      .session-tag { font-size: 12px; opacity: 0.85; }
+      .session-picker { display: inline-flex; align-items: center; }      .session-tag { font-size: 12px; opacity: 0.85; }
       .session-tag select { margin-left: 4px; }
+      .pr-filter { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+      .pr-filter input { flex: 1; padding: 8px 12px; font-size: 14px; border: 1px solid var(--border, #333); border-radius: 6px; background: var(--bg2, #1a1a1a); color: inherit; }
+      #pr-filter-count { font-size: 12px; opacity: 0.7; white-space: nowrap; }
     </style>
   </head>
   <body>
@@ -1245,36 +1247,77 @@
             .join("<br/>");
           content.appendChild(warn);
         }
+        const filter = document.createElement("div");
+        filter.className = "pr-filter";
+        filter.innerHTML =
+          `<input id="pr-filter-input" type="text" placeholder="Filtrar por repo, título, autor ou #número…" autocomplete="off" />` +
+          `<span id="pr-filter-count"></span>`;
+        content.appendChild(filter);
+
         const list = document.createElement("div");
         list.className = "pr-list";
-        groups.forEach((group) => {
-          const repoEl = document.createElement("div");
-          const name = document.createElement("div");
-          name.className = "pr-repo-name";
-          name.textContent = group.repo;
-          repoEl.appendChild(name);
-          group.prs.forEach((pr) => {
-            const card = document.createElement("button");
-            card.type = "button";
-            card.className = "pr-card";
-            const draft = pr.isDraft
-              ? '<span class="pr-badge draft">draft</span>'
-              : "";
-            card.innerHTML =
-              `<span class="pr-num">#${pr.number}</span>` +
-              `<div class="pr-main">` +
-              `<div class="pr-title">${escapeHtml(pr.title)}</div>` +
-              `<div class="pr-meta">${escapeHtml(pr.author)} · ${escapeHtml(pr.headRefName)} → ${escapeHtml(pr.baseRefName)} · ${escapeHtml(timeAgo(pr.updatedAt))}</div>` +
-              `</div>` +
-              draft +
-              `<span class="pr-stat-add">+${pr.additions}</span>` +
-              `<span class="pr-stat-del">-${pr.deletions}</span>`;
-            card.addEventListener("click", () => openPr(pr));
-            repoEl.appendChild(card);
-          });
-          list.appendChild(repoEl);
-        });
         content.appendChild(list);
+
+        const renderGroups = (query) => {
+          const q = (query || "").trim().toLowerCase();
+          list.innerHTML = "";
+          let shown = 0;
+          groups.forEach((group) => {
+            const matching = group.prs.filter((pr) => {
+              if (!q) return true;
+              return (
+                group.repo.toLowerCase().includes(q) ||
+                pr.title.toLowerCase().includes(q) ||
+                (pr.author || "").toLowerCase().includes(q) ||
+                `#${pr.number}`.includes(q)
+              );
+            });
+            if (!matching.length) return;
+            const repoEl = document.createElement("div");
+            const name = document.createElement("div");
+            name.className = "pr-repo-name";
+            name.textContent = group.repo;
+            repoEl.appendChild(name);
+            matching.forEach((pr) => {
+              shown += 1;
+              const card = document.createElement("button");
+              card.type = "button";
+              card.className = "pr-card";
+              const draft = pr.isDraft
+                ? '<span class="pr-badge draft">draft</span>'
+                : "";
+              const branch =
+                pr.headRefName && pr.baseRefName
+                  ? `${escapeHtml(pr.headRefName)} → ${escapeHtml(pr.baseRefName)} · `
+                  : "";
+              const stats =
+                pr.additions || pr.deletions
+                  ? `<span class="pr-stat-add">+${pr.additions}</span><span class="pr-stat-del">-${pr.deletions}</span>`
+                  : "";
+              card.innerHTML =
+                `<span class="pr-num">#${pr.number}</span>` +
+                `<div class="pr-main">` +
+                `<div class="pr-title">${escapeHtml(pr.title)}</div>` +
+                `<div class="pr-meta">${escapeHtml(pr.author)} · ${branch}${escapeHtml(timeAgo(pr.updatedAt))}</div>` +
+                `</div>` +
+                draft +
+                stats;
+              card.addEventListener("click", () => openPr(pr));
+              repoEl.appendChild(card);
+            });
+            list.appendChild(repoEl);
+          });
+          const total = groups.reduce((n, g) => n + g.prs.length, 0);
+          const countEl = document.getElementById("pr-filter-count");
+          if (countEl) countEl.textContent = q ? `${shown} de ${total} PRs` : `${total} PRs em ${groups.length} repos`;
+        };
+
+        renderGroups("");
+        const input = document.getElementById("pr-filter-input");
+        if (input) {
+          input.addEventListener("input", () => renderGroups(input.value));
+          input.focus();
+        }
       }
 
       async function openPr(pr) {
