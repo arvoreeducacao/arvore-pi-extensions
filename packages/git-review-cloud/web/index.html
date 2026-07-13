@@ -1175,7 +1175,7 @@
           const res = await fetch(`/api/prs`);
           const data = await res.json();
           if (requestSeq !== prRequestSeq || appMode !== "prs") return;
-          renderPrList(data.groups || []);
+          renderPrList(data.groups || [], data.errors || []);
         } catch (err) {
           content.innerHTML = `<div class="empty">Failed to load PRs: ${escapeHtml(String(err))}</div>`;
         }
@@ -1216,13 +1216,35 @@
         }
       }
 
-      function renderPrList(groups) {
+      function renderPrList(groups, errors) {
+        errors = errors || [];
         if (!groups.length) {
+          const errHtml = errors.length
+            ? errors
+                .map(
+                  (e) =>
+                    `<div class="empty" style="border-color:#d33"><strong>${escapeHtml(e.repo || "repo")}</strong><br/>${escapeHtml(String(e.error || "").replace(/^Error:\s*/, ""))}</div>`,
+                )
+                .join("")
+            : "";
           content.innerHTML =
-            '<div class="empty">No open PRs found across repos.<br/>Requires the <code>gh</code> CLI authenticated.</div>';
+            errHtml ||
+            '<div class="empty">No open PRs found.<br/>Make sure the GitHub App is installed on the repos you want to review.</div>';
           return;
         }
         content.innerHTML = "";
+        if (errors.length) {
+          const warn = document.createElement("div");
+          warn.className = "empty";
+          warn.style.borderColor = "#d33";
+          warn.innerHTML = errors
+            .map(
+              (e) =>
+                `${escapeHtml(e.repo || "repo")}: ${escapeHtml(String(e.error || "").replace(/^Error:\s*/, ""))}`,
+            )
+            .join("<br/>");
+          content.appendChild(warn);
+        }
         const list = document.createElement("div");
         list.className = "pr-list";
         groups.forEach((group) => {

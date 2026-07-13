@@ -239,8 +239,20 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
       const requested = url.searchParams.get("repo");
       if (requested) repos.add(requested);
       try {
-        const groups = await Promise.all([...repos].map((slug) => listPullRequests(slug).catch(() => null)));
-        sendJson(res, 200, { groups: groups.filter(Boolean) });
+        const settled = await Promise.all(
+          [...repos].map(async (slug) => {
+            try {
+              return { group: await listPullRequests(slug), error: null };
+            } catch (err) {
+              return { group: null, repo: slug, error: String(err) };
+            }
+          }),
+        );
+        const groups = settled.filter((s) => s.group).map((s) => s.group);
+        const errors = settled
+          .filter((s) => s.error)
+          .map((s) => ({ repo: (s as { repo: string }).repo, error: s.error }));
+        sendJson(res, 200, { groups, errors });
       } catch (err) {
         sendJson(res, 500, { error: String(err) });
       }

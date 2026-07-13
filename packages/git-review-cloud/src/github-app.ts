@@ -50,7 +50,11 @@ async function installationIdForOwner(owner: string): Promise<number> {
   const cached = installationCache.get(owner.toLowerCase());
   if (cached && cached.expiresAt > Date.now()) return cached.id;
   const inst = await appRequest<Installation>(`/orgs/${owner}/installation`).catch(() =>
-    appRequest<Installation>(`/users/${owner}/installation`),
+    appRequest<Installation>(`/users/${owner}/installation`).catch(() => {
+      throw new Error(
+        `GitHub App is not installed on "${owner}". Install it at https://github.com/settings/apps and grant the repos you want to review.`,
+      );
+    }),
   );
   installationCache.set(owner.toLowerCase(), {
     id: inst.id,
