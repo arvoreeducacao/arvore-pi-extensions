@@ -217,6 +217,51 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        color: inherit !important;
+        font-size: 14px !important;
+      }
+      .pr-banner .pr-banner-title:hover {
+        color: var(--accent) !important;
+      }
+      .pr-banner-branch {
+        font-size: 12px;
+        opacity: 0.7;
+        font-family: ui-monospace, monospace;
+        white-space: nowrap;
+      }
+      .pr-description {
+        margin-bottom: 16px;
+        border: 1px solid var(--border, #333);
+        border-radius: var(--radius);
+        background: var(--bg-elev);
+        overflow: hidden;
+      }
+      .pr-description > summary {
+        cursor: pointer;
+        padding: 8px 14px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        user-select: none;
+        list-style: none;
+      }
+      .pr-description > summary::-webkit-details-marker { display: none; }
+      .pr-description > summary::before {
+        content: "▸";
+        opacity: 0.6;
+        transition: transform 0.15s;
+      }
+      .pr-description[open] > summary::before { transform: rotate(90deg); }
+      .pr-desc-author { font-weight: 600; opacity: 0.9; }
+      .pr-desc-label { opacity: 0.5; }
+      .pr-desc-body {
+        padding: 4px 16px 14px;
+        border-top: 1px solid var(--border, #333);
+        font-size: 13px;
+        line-height: 1.55;
+        max-height: 340px;
+        overflow-y: auto;
       }
       .pr-banner a {
         color: var(--accent);
@@ -1183,6 +1228,31 @@
         }
       }
 
+      function prPathMatch(pathname) {
+        const m = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/.exec(pathname || "");
+        if (!m) return null;
+        return { repo: `${m[1]}/${m[2]}`, number: Number(m[3]) };
+      }
+
+      function openPrDirect(repo, number) {
+        appMode = "prs";
+        tabDiff.classList.toggle("active", false);
+        tabPrs.classList.toggle("active", true);
+        diffControls.style.display = "none";
+        openPr({
+          repo,
+          number,
+          title: `#${number}`,
+          url: `https://github.com/${repo}/pull/${number}`,
+          isDraft: false,
+          updatedAt: "",
+          additions: 0,
+          deletions: 0,
+          headRefName: "",
+          baseRefName: "",
+        });
+      }
+
       async function openPrByNumber(number) {
         appMode = "prs";
         tabDiff.classList.toggle("active", false);
@@ -1515,19 +1585,37 @@
 
       function renderPrDiff(pr, groups) {
         content.innerHTML = "";
+        const ctx = pr.context || {};
+        const title = ctx.title || pr.title;
         const banner = document.createElement("div");
         banner.className = "pr-banner";
         const startLabel = pr.started ? "Review started" : "Start review";
         const startCls = pr.started ? "" : "primary";
+        const branchInfo =
+          ctx.headRefName && ctx.baseRefName
+            ? `<span class="pr-banner-branch">${escapeHtml(ctx.headRefName)} → ${escapeHtml(ctx.baseRefName)}</span>`
+            : "";
         banner.innerHTML =
           `<button id="pr-back">← PRs</button>` +
           `<span class="pr-num">#${pr.number}</span>` +
-          `<span class="pr-banner-title">${escapeHtml(pr.title)}</span>` +
-          `<a href="${escapeHtml(pr.url)}" target="_blank" rel="noreferrer">open on GitHub ↗</a>` +
+          `<a class="pr-banner-title" href="${escapeHtml(pr.url)}" target="_blank" rel="noreferrer" title="open on GitHub">${escapeHtml(title)}</a>` +
+          branchInfo +
           `<button id="pr-comments-toggle">Comments</button>` +
           `<button id="pr-merge">Merge…</button>` +
           `<button id="pr-start" class="${startCls}"${pr.started ? " disabled" : ""}>${startLabel}</button>`;
         content.appendChild(banner);
+
+        if (ctx.body && ctx.body.trim()) {
+          const desc = document.createElement("details");
+          desc.className = "pr-description";
+          desc.open = true;
+          const author = ctx.author ? `<span class="pr-desc-author">@${escapeHtml(ctx.author)}</span>` : "";
+          desc.innerHTML =
+            `<summary>${author}<span class="pr-desc-label">description</span></summary>` +
+            `<div class="pr-desc-body body">${renderMarkdown(ctx.body)}</div>`;
+          content.appendChild(desc);
+        }
+
         banner.querySelector("#pr-back").onclick = () => {
           currentPr = null;
           history.pushState({}, "", "/?mode=prs");
@@ -2482,7 +2570,10 @@
 
       connect();
       setMode("prs");
-      if (params.get("mode") === "prs" || true) {
+      const prPath = prPathMatch(location.pathname);
+      if (prPath) {
+        openPrDirect(prPath.repo, prPath.number);
+      } else {
         const prParam = Number(params.get("pr"));
         if (Number.isInteger(prParam) && prParam > 0) {
           openPrByNumber(prParam);
@@ -2490,6 +2581,16 @@
           setMode("prs");
         }
       }
+
+      window.addEventListener("popstate", () => {
+        const p = prPathMatch(location.pathname);
+        if (p) {
+          openPrDirect(p.repo, p.number);
+        } else {
+          currentPr = null;
+          setMode("prs");
+        }
+      });
     </script>
   </body>
 </html>
