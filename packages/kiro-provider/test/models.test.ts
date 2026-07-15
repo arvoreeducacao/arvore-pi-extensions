@@ -25,6 +25,9 @@ describe("Feature 2: Model Definitions", () => {
 			["minimax-m2-1", "minimax-m2.1"],
 			["glm-5", "glm-5"],
 			["qwen3-coder-next", "qwen3-coder-next"],
+			["gpt-5-6-sol", "gpt-5.6-sol"],
+			["gpt-5-6-terra", "gpt-5.6-terra"],
+			["gpt-5-6-luna", "gpt-5.6-luna"],
 		])("maps %s → %s", (piId, kiroId) => {
 			expect(resolveKiroModel(piId)).toBe(kiroId);
 		});
@@ -37,8 +40,8 @@ describe("Feature 2: Model Definitions", () => {
 	});
 
 	describe("KIRO_MODEL_IDS", () => {
-		it("contains 15 model IDs", () => {
-			expect(KIRO_MODEL_IDS.size).toBe(15);
+		it("contains 18 model IDs", () => {
+			expect(KIRO_MODEL_IDS.size).toBe(18);
 		});
 	});
 
@@ -88,8 +91,8 @@ describe("Feature 2: Model Definitions", () => {
 	});
 
 	describe("model catalog", () => {
-		it("defines 15 models", () => {
-			expect(kiroModels).toHaveLength(15);
+		it("defines 18 models", () => {
+			expect(kiroModels).toHaveLength(18);
 		});
 
 		it("claude-haiku-4-5 has reasoning=false", () => {
@@ -109,18 +112,23 @@ describe("Feature 2: Model Definitions", () => {
 			);
 		});
 
-		it("Claude models support text and image input", () => {
-			const claudeModels = kiroModels.filter((m) => m.id.startsWith("claude-"));
+		it("Claude and GPT models support text and image input", () => {
+			const visionModels = kiroModels.filter(
+				(m) => m.id.startsWith("claude-") || m.id.startsWith("gpt-"),
+			);
 			expect(
-				claudeModels.every(
+				visionModels.every(
 					(m) => m.input.includes("text") && m.input.includes("image"),
 				),
 			).toBe(true);
 		});
 
-		it("non-Claude models (except auto) support text only", () => {
+		it("open-weight models (except auto) support text only", () => {
 			const textOnlyModels = kiroModels.filter(
-				(m) => !m.id.startsWith("claude-") && m.id !== "auto",
+				(m) =>
+					!m.id.startsWith("claude-") &&
+					!m.id.startsWith("gpt-") &&
+					m.id !== "auto",
 			);
 			expect(
 				textOnlyModels.every(
@@ -144,9 +152,12 @@ describe("Feature 2: Model Definitions", () => {
 			).toBe(true);
 		});
 
-		it("non-Claude models (except auto) have 8K max tokens", () => {
+		it("open-weight models (except auto) have 8K max tokens", () => {
 			const nonClaudeModels = kiroModels.filter(
-				(m) => !m.id.startsWith("claude-") && m.id !== "auto",
+				(m) =>
+					!m.id.startsWith("claude-") &&
+					!m.id.startsWith("gpt-") &&
+					m.id !== "auto",
 			);
 			expect(nonClaudeModels.every((m) => m.maxTokens === 8192)).toBe(true);
 		});

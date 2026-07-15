@@ -32,7 +32,7 @@ describe("Feature 1: Extension Registration", () => {
 		mod.default(pi);
 
 		const config = registerProvider.mock.calls[0][1];
-		expect(config.models).toHaveLength(15);
+		expect(config.models).toHaveLength(18);
 	});
 
 	it("registers OAuth with name 'Kiro (Builder ID / Google / GitHub)'", async () => {
