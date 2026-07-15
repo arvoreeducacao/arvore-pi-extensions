@@ -326,6 +326,7 @@ describe("Feature 9: Streaming Integration", () => {
 
 		const stream = streamKiro(makeModel({ reasoning: true }), makeContext(), {
 			apiKey: "tok",
+			reasoning: "high",
 		});
 		const events = await collect(stream);
 		const types = events.map((e) => e.type);
@@ -366,6 +367,7 @@ describe("Feature 9: Streaming Integration", () => {
 
 		const stream = streamKiro(makeModel({ reasoning: true }), makeContext(), {
 			apiKey: "tok",
+			reasoning: "high",
 		});
 		const events = await collect(stream);
 		const firstTextDelta = events.find((e) => e.type === "text_delta");
@@ -376,6 +378,54 @@ describe("Feature 9: Streaming Integration", () => {
 
 		vi.unstubAllGlobals();
 	});
+
+	it.each([
+		[undefined, undefined],
+		["minimal", 2048],
+		["low", 2048],
+		["medium", 8192],
+		["high", 16384],
+		["xhigh", 32768],
+		["max", 65536],
+	] as const)(
+		"maps GPT-5.6 reasoning level %s to Kiro budget %s",
+		async (reasoning, expectedBudget) => {
+			const mockFetch = mockFetchOk(
+				'{"content":"ok"}{"contextUsagePercentage":5}',
+			);
+			vi.stubGlobal("fetch", mockFetch);
+			const model = makeModel({
+				id: "gpt-5-6-sol",
+				name: "GPT-5.6 Sol",
+				contextWindow: 372000,
+				maxTokens: 128000,
+				thinkingLevelMap: {
+					minimal: "low",
+					xhigh: "xhigh",
+					max: "max",
+				} as Model<Api>["thinkingLevelMap"],
+			});
+			const stream = streamKiro(model, makeContext(), {
+				apiKey: "tok",
+				...(reasoning
+					? { reasoning: reasoning as NonNullable<Parameters<typeof streamKiro>[2]>["reasoning"] }
+					: {}),
+			});
+			await collect(stream);
+			const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+			const requestContent =
+				body.conversationState.currentMessage.userInputMessage.content;
+			if (expectedBudget === undefined) {
+				expect(requestContent).not.toContain("<thinking_mode>");
+			} else {
+				expect(requestContent).toContain("<thinking_mode>enabled</thinking_mode>");
+				expect(requestContent).toContain(
+					`<max_thinking_length>${expectedBudget}</max_thinking_length>`,
+				);
+			}
+			vi.unstubAllGlobals();
+		},
+	);
 
 	// =========================================================================
 	// Tool call streaming events (pi-mono: stream.test.ts handleToolCall)
@@ -2076,12 +2126,10 @@ describe("Feature 9: Streaming Integration", () => {
 		const done = events.find((e) => e.type === "done");
 		const msg = done?.type === "done" ? done.message : undefined;
 
-		// tiktoken count should differ from chars/4 (which would be ~8)
-		// "Hello there, this is a response." is 8 tokens with cl100k_base
-		expect(msg?.usage.output).toBeGreaterThan(0);
-		// The old method (chars/4) would give ceil(32/4) = 8
-		// tiktoken gives an accurate count that won't be exactly chars/4 for most strings
-		expect(msg?.usage.totalTokens).toBe(msg?.usage.input + msg?.usage.output);
+		expect(msg).toBeDefined();
+		if (!msg) throw new Error("Expected completed assistant message");
+		expect(msg.usage.output).toBeGreaterThan(0);
+		expect(msg.usage.totalTokens).toBe(msg.usage.input + msg.usage.output);
 
 		vi.unstubAllGlobals();
 	});
@@ -2106,7 +2154,9 @@ describe("Feature 9: Streaming Integration", () => {
 
 		// contextPercent should still reflect the API's contextUsagePercentage,
 		// not be derived from the (overwritten) input token count
-		expect((msg?.usage as Record<string, unknown>).contextPercent).toBe(10);
+		expect(
+			(msg?.usage as unknown as Record<string, unknown>).contextPercent,
+		).toBe(10);
 
 		vi.unstubAllGlobals();
 	});
@@ -2122,7 +2172,9 @@ describe("Feature 9: Streaming Integration", () => {
 		const done = events.find((e) => e.type === "done");
 		const msg = done?.type === "done" ? done.message : undefined;
 
-		expect((msg?.usage as Record<string, unknown>).contextPercent).toBe(42);
+		expect(
+			(msg?.usage as unknown as Record<string, unknown>).contextPercent,
+		).toBe(42);
 		// input should be back-calculated from percentage
 		expect(msg?.usage.input).toBe(Math.round(0.42 * 200000));
 

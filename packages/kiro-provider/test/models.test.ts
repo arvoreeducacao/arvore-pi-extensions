@@ -177,6 +177,7 @@ describe("Feature 2: Model Definitions", () => {
 			"medium",
 			"high",
 			"xhigh",
+			"max",
 		] as const;
 		type Level = (typeof EXTENDED_LEVELS)[number];
 
@@ -187,33 +188,34 @@ describe("Feature 2: Model Definitions", () => {
 					model as { thinkingLevelMap?: Partial<Record<Level, string | null>> }
 				).thinkingLevelMap?.[level];
 				if (mapped === null) return false;
-				if (level === "xhigh") return mapped !== undefined;
+				if (level === "xhigh" || level === "max") return mapped !== undefined;
 				return true;
 			});
 		}
 
-		const XHIGH_MODELS = [
+		const EXTENDED_MODELS = [
 			"claude-opus-4-8",
 			"claude-opus-4-7",
 			"claude-opus-4-6",
+			"gpt-5-6-sol",
+			"gpt-5-6-terra",
+			"gpt-5-6-luna",
 		];
 
-		it("Opus 4.7/4.6 models offer xhigh (and all other levels)", () => {
-			for (const m of kiroModels.filter((x) => XHIGH_MODELS.includes(x.id))) {
-				expect(supportedLevels(m), `${m.id} supported levels`).toEqual([
-					"off",
-					"minimal",
-					"low",
-					"medium",
-					"high",
-					"xhigh",
-				]);
+		it("Opus and GPT-5.6 models offer extended thinking levels", () => {
+			for (const m of kiroModels.filter((x) => EXTENDED_MODELS.includes(x.id))) {
+				const levels = supportedLevels(m);
+				expect(levels, `${m.id} supported levels`).toContain("xhigh");
+				if (m.id.startsWith("gpt-5-6-")) {
+					expect(levels, `${m.id} supported levels`).toContain("max");
+					expect(m.thinkingLevelMap?.minimal).toBe("low");
+				}
 			}
 		});
 
-		it("other reasoning models offer up to high (no xhigh)", () => {
+		it("other reasoning models offer up to high", () => {
 			for (const m of kiroModels.filter(
-				(x) => x.reasoning && !XHIGH_MODELS.includes(x.id),
+				(x) => x.reasoning && !EXTENDED_MODELS.includes(x.id),
 			)) {
 				expect(supportedLevels(m), `${m.id} supported levels`).toEqual([
 					"off",
