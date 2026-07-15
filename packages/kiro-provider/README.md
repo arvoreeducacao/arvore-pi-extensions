@@ -57,6 +57,7 @@ If you already use [kiro-cli](https://kiro.dev), the provider can reuse those cr
 | DeepSeek 3.2 | `deepseek-3-2` | 164K | ✓ |
 | MiniMax | `minimax-m2-1`, `minimax-m2-5` | 196K | ✗ |
 | GLM 5 | `glm-5` | 200K | ✓ |
+| GPT-5.6 | `gpt-5-6-luna`, `gpt-5-6-terra`, `gpt-5-6-sol` | 372K | ✓ |
 | Qwen3 Coder | `qwen3-coder-next` | 256K | ✓ |
 | Auto | `auto` | 1M | ✓ |
 
@@ -76,7 +77,7 @@ Or let Kiro pick automatically:
 /model auto
 ```
 
-Reasoning is automatically enabled for supported models. Use `/reasoning` to adjust the thinking budget.
+Reasoning follows pi's selected thinking level. GPT-5.6 supports `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`; `minimal` maps to the model's `low` effort, matching pi's native OpenAI Codex provider. When reasoning is `off`, the provider does not inject Kiro thinking instructions.
 
 ## Retry Behavior
 

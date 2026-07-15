@@ -231,6 +231,40 @@ function emitToolCall(
 	return true;
 }
 
+const GPT_5_6_THINKING_BUDGETS: Record<string, number> = {
+	low: 2048,
+	medium: 8192,
+	high: 16384,
+	xhigh: 32768,
+	max: 65536,
+};
+
+const KIRO_THINKING_BUDGETS: Record<string, number> = {
+	minimal: 10000,
+	low: 10000,
+	medium: 20000,
+	high: 30000,
+	xhigh: 50000,
+	max: 65536,
+};
+
+function resolveThinkingBudget(
+	model: Model<Api>,
+	options?: SimpleStreamOptions,
+): number | undefined {
+	const reasoning = (options as { reasoning?: string } | undefined)?.reasoning;
+	if (!reasoning || reasoning === "off") return undefined;
+	const mappedReasoning =
+		(model.thinkingLevelMap as Record<string, string | null> | undefined)?.[
+			reasoning
+		] ?? reasoning;
+	if (!mappedReasoning || mappedReasoning === "off") return undefined;
+	const budgets = model.id.startsWith("gpt-5-6-")
+		? GPT_5_6_THINKING_BUDGETS
+		: KIRO_THINKING_BUDGETS;
+	return budgets[mappedReasoning];
+}
+
 export function streamKiro(
 	model: Model<Api>,
 	context: Context,
@@ -302,7 +336,8 @@ export function streamKiro(
 			}
 
 			const kiroModelId = resolveKiroModel(model.id);
-			const thinkingEnabled = !!options?.reasoning || model.reasoning;
+			const thinkingBudget = resolveThinkingBudget(model, options);
+			const thinkingEnabled = thinkingBudget !== undefined;
 			debugLog("request.init", {
 				endpoint,
 				model: model.id,
@@ -317,16 +352,8 @@ export function streamKiro(
 				sessionId: options?.sessionId,
 			});
 			let systemPrompt = context.systemPrompt ?? "";
-			if (thinkingEnabled) {
-				const budget =
-					options?.reasoning === "xhigh"
-						? 50000
-						: options?.reasoning === "high"
-							? 30000
-							: options?.reasoning === "medium"
-								? 20000
-								: 10000;
-				systemPrompt = `<thinking_mode>enabled</thinking_mode><max_thinking_length>${budget}</max_thinking_length>${systemPrompt ? `\n${systemPrompt}` : ""}`;
+			if (thinkingBudget !== undefined) {
+				systemPrompt = `<thinking_mode>enabled</thinking_mode><max_thinking_length>${thinkingBudget}</max_thinking_length>${systemPrompt ? `\n${systemPrompt}` : ""}`;
 			}
 			let retryCount = 0;
 			const maxRetries = 3;
