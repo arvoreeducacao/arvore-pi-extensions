@@ -57,6 +57,7 @@ import {
 	type KiroToolSpec,
 	type KiroUserInputMessage,
 	normalizeMessages,
+	normalizeToolUseId,
 	sanitizeSurrogates,
 	TOOL_RESULT_LIMIT,
 	truncate,
@@ -396,7 +397,7 @@ export function streamKiro(
 								const tc = b as ToolCall;
 								armToolUses.push({
 									name: tc.name,
-									toolUseId: tc.id,
+									toolUseId: normalizeToolUseId(tc.id),
 									input:
 										typeof tc.arguments === "string"
 											? JSON.parse(tc.arguments)
@@ -438,7 +439,7 @@ export function streamKiro(
 									{ text: truncate(getContentText(m), toolResultLimit) },
 								],
 								status: trm.isError ? "error" : "success",
-								toolUseId: trm.toolCallId,
+								toolUseId: normalizeToolUseId(trm.toolCallId),
 							});
 							if (Array.isArray(trm.content))
 								for (const c of trm.content)
@@ -466,7 +467,7 @@ export function streamKiro(
 									{ text: truncate(getContentText(m), toolResultLimit) },
 								],
 								status: trm.isError ? "error" : "success",
-								toolUseId: trm.toolCallId,
+								toolUseId: normalizeToolUseId(trm.toolCallId),
 							});
 							if (Array.isArray(trm.content))
 								for (const c of trm.content)
