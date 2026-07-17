@@ -1,6 +1,6 @@
 {
 	"name": "@arvoretech/pi-kiro-provider",
-	"version": "0.8.3",
+	"version": "0.8.4",
 	"description": "Pi extension for the Kiro API, maintained by Arvore",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

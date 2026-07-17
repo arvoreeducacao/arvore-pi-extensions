@@ -1,5 +1,6 @@
 // Feature 5: Message Transformation
 
+import { createHash } from "node:crypto";
 import type {
 	AssistantMessage,
 	ImageContent,
@@ -52,6 +53,12 @@ export interface KiroHistoryEntry {
 }
 
 export const TOOL_RESULT_LIMIT = 250000;
+
+export function normalizeToolUseId(toolUseId: string): string {
+	if (!toolUseId.includes("|")) return toolUseId;
+	const digest = createHash("sha256").update(toolUseId).digest("hex").slice(0, 32);
+	return `call_${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(16, 20)}-${digest.slice(20)}`;
+}
 
 export function sanitizeSurrogates(text: string): string {
 	// Replace unpaired high surrogates (0xD800-0xDBFF not followed by low surrogate)
@@ -189,7 +196,7 @@ export function buildHistory(
 						const tc = block as ToolCall;
 						armToolUses.push({
 							name: tc.name,
-							toolUseId: tc.id,
+							toolUseId: normalizeToolUseId(tc.id),
 							input:
 								typeof tc.arguments === "string"
 									? JSON.parse(tc.arguments)
@@ -211,7 +218,7 @@ export function buildHistory(
 				{
 					content: [{ text: truncate(getContentText(msg), toolResultLimit) }],
 					status: trMsg.isError ? "error" : "success",
-					toolUseId: trMsg.toolCallId,
+					toolUseId: normalizeToolUseId(trMsg.toolCallId),
 				},
 			];
 			const trImages: ImageContent[] = [];
@@ -227,7 +234,7 @@ export function buildHistory(
 				toolResults.push({
 					content: [{ text: truncate(getContentText(next), toolResultLimit) }],
 					status: next.isError ? "error" : "success",
-					toolUseId: next.toolCallId,
+					toolUseId: normalizeToolUseId(next.toolCallId),
 				});
 				if (Array.isArray(next.content))
 					for (const c of next.content)

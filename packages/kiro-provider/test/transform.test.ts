@@ -196,6 +196,50 @@ describe("Feature 5: Message Transformation", () => {
 			expect(entry?.assistantResponseMessage?.toolUses?.[0].name).toBe("bash");
 		});
 
+		it("normalizes OpenAI Responses tool IDs for Kiro history", () => {
+			const firstId = "call_first|fc_first";
+			const secondId = "call_second|fc_second";
+			const a = assistant("", {
+				api: "openai-codex-responses",
+				provider: "openai-codex",
+				model: "gpt-5.6-terra",
+			});
+			a.content = [
+				{ type: "toolCall", id: firstId, name: "read", arguments: { path: "a" } },
+				{ type: "toolCall", id: secondId, name: "read", arguments: { path: "b" } },
+			];
+			const msgs: Message[] = [
+				user("read both"),
+				a,
+				toolResult(firstId, "a"),
+				toolResult(secondId, "b"),
+				user("continue"),
+			];
+
+			const { history } = buildHistory(msgs, "M");
+			const toolUses = history.flatMap(
+				(entry) => entry.assistantResponseMessage?.toolUses ?? [],
+			);
+			const results = history.flatMap(
+				(entry) =>
+					entry.userInputMessage?.userInputMessageContext?.toolResults ?? [],
+			);
+
+			const normalizedToolUseIds = toolUses.map(
+				(toolUse) => toolUse.toolUseId,
+			);
+			expect(normalizedToolUseIds).toHaveLength(2);
+			expect(normalizedToolUseIds[0]).not.toBe(normalizedToolUseIds[1]);
+			for (const toolUseId of normalizedToolUseIds) {
+				expect(toolUseId).toMatch(
+					/^call_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/,
+				);
+			}
+			expect(results.map((result) => result.toolUseId)).toEqual(
+				normalizedToolUseIds,
+			);
+		});
+
 		it("batches consecutive tool results", () => {
 			const a = assistant("");
 			a.content = [
