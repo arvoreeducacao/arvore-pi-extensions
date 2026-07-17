@@ -3,6 +3,7 @@ import { Type } from "@earendil-works/pi-ai";
 import { execSync, spawnSync, spawn } from "node:child_process";
 import { existsSync, readFileSync, appendFileSync, readdirSync, statSync, symlinkSync, writeFileSync, mkdirSync, openSync, closeSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
+import { discoverRepos, findWorkspaceRoot } from "./repository-discovery.js";
 import {
   isOrcaSession,
   runOrca,
@@ -85,7 +86,7 @@ interface SetupConfig {
 }
 
 function getSetupDir(repoPath: string): string {
-  const root = findHubRoot(repoPath) || repoPath;
+  const root = findWorkspaceRoot(repoPath) || repoPath;
   return join(root, SETUP_DIR);
 }
 
@@ -128,32 +129,6 @@ function ensureGitignore(repoPath: string): void {
   }
 }
 
-function isGitRepo(dir: string): boolean {
-  return existsSync(join(dir, ".git"));
-}
-
-function discoverRepos(cwd: string): string[] {
-  const hubRoot = findHubRoot(cwd);
-  if (!hubRoot) return isGitRepo(cwd) ? [cwd] : [];
-
-  const repos: string[] = [];
-  for (const entry of readdirSync(hubRoot)) {
-    const full = join(hubRoot, entry);
-    if (statSync(full).isDirectory() && isGitRepo(full)) repos.push(full);
-  }
-  return repos.sort((a, b) => basename(a).localeCompare(basename(b)));
-}
-
-function findHubRoot(cwd: string): string | null {
-  let dir = cwd;
-  let prev = "";
-  while (dir !== prev) {
-    if (existsSync(join(dir, "AGENTS.md")) || existsSync(join(dir, "hub.config.ts"))) return dir;
-    prev = dir;
-    dir = resolve(dir, "..");
-  }
-  return null;
-}
 
 function getCurrentBranch(repoPath: string): string {
   try {
@@ -465,7 +440,7 @@ interface WorktreeState {
 }
 
 function getStatePath(cwd: string, sessionId: string): string | null {
-  const root = findHubRoot(cwd);
+  const root = findWorkspaceRoot(cwd);
   return root ? join(root, STATE_DIR, `${sessionId}.json`) : null;
 }
 
