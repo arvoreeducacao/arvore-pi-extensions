@@ -7,7 +7,7 @@ import {
 	type AskUserPromptEventPayload,
 } from "./events.js";
 import { externalAnswerToResult } from "./tool/external-answer.js";
-import { displayLabel } from "./state/i18n-bridge.js";
+import { displayLabel, initializeI18n } from "./state/i18n-bridge.js";
 import { sentinelsToAppend } from "./state/row-intent.js";
 import { buildQuestionnaireResponse, buildToolResult } from "./tool/response-envelope.js";
 import {
@@ -102,6 +102,8 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 					error: validation.error,
 				});
 			}
+
+			await initializeI18n();
 
 			// Emit event for external listeners (e.g., Slack bridge). The promptId
 			// correlates an external answer back to this specific invocation.
