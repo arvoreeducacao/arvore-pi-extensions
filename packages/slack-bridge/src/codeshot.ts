@@ -1,5 +1,3 @@
-import sharp from "sharp";
-
 interface DiffRow {
   kind: "add" | "del" | "ctx";
   text: string;
@@ -128,6 +126,7 @@ export function buildDiffShot(toolName: string, args: unknown): DiffShot | undef
 }
 
 export async function renderCodeshot(title: string, diff: string): Promise<Buffer> {
+  const { default: sharp } = await import("sharp");
   let rows = parseDiffRows(diff);
   let truncatedRows = false;
   if (rows.length > MAX_ROWS) {
