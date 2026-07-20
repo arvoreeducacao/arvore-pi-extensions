@@ -1,11 +1,33 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { SlackBridgeConfig } from "./config.js";
 import { loadConfig } from "./config.js";
-import { SlackBridge } from "./bridge.js";
+import type { SlackBridge } from "./bridge.js";
 
-export default function (pi: ExtensionAPI): void {
+type Bridge = Pick<
+  SlackBridge,
+  | "bindContext"
+  | "restoreFromEntries"
+  | "start"
+  | "stop"
+  | "mirrorUserInput"
+  | "beginTurn"
+  | "recordTool"
+  | "recordToolResult"
+  | "recordAssistantMessage"
+  | "finishTurn"
+  | "handlePromptEvent"
+>;
+type SlackBridgeConstructor = new (pi: ExtensionAPI, config: SlackBridgeConfig) => Bridge;
+type BridgeModule = { SlackBridge: SlackBridgeConstructor };
+export type BridgeLoader = () => Promise<BridgeModule>;
+
+const defaultBridgeLoader: BridgeLoader = () => import("./bridge.js");
+
+export default function (pi: ExtensionAPI, bridgeLoader: BridgeLoader = defaultBridgeLoader): void {
   const { config, missing } = loadConfig();
 
-  let bridge: SlackBridge | undefined;
+  let bridge: Bridge | undefined;
+  let bridgeModulePromise: Promise<BridgeModule> | undefined;
   let lastContext: ExtensionContext | undefined;
   let starting: Promise<void> | undefined;
 
@@ -17,17 +39,29 @@ export default function (pi: ExtensionAPI): void {
     lastContext?.ui.setStatus("slack-bridge", on ? "\ud83d\udfe2 Slack" : undefined);
   }
 
+  async function loadBridgeModule(): Promise<BridgeModule> {
+    if (!bridgeModulePromise) {
+      bridgeModulePromise = bridgeLoader().catch((error) => {
+        bridgeModulePromise = undefined;
+        throw error;
+      });
+    }
+    return bridgeModulePromise;
+  }
+
   async function startBridge(ctx: ExtensionContext): Promise<void> {
     if (!config) return;
     captureContext(ctx);
-    if (bridge) return;
     if (starting) return starting;
-    const instance = new SlackBridge(pi, config);
-    instance.bindContext(() => lastContext);
-    instance.restoreFromEntries(ctx);
-    bridge = instance;
-    starting = instance
-      .start()
+    if (bridge) return;
+    starting = loadBridgeModule()
+      .then(({ SlackBridge }) => {
+        const instance = new SlackBridge(pi, config);
+        instance.bindContext(() => lastContext);
+        instance.restoreFromEntries(ctx);
+        bridge = instance;
+        return instance.start();
+      })
       .then(() => {
         setIndicator(true);
         ctx.ui.notify("Slack bridge conectada para esta sessão.", "info");
@@ -43,6 +77,7 @@ export default function (pi: ExtensionAPI): void {
   }
 
   async function stopBridge(): Promise<void> {
+    await starting?.catch(() => {});
     await bridge?.stop().catch(() => {});
     bridge = undefined;
     setIndicator(false);
@@ -104,7 +139,7 @@ export default function (pi: ExtensionAPI): void {
       }
       const action = args.trim().toLowerCase();
       if (action === "off" || action === "stop") {
-        if (!bridge) {
+        if (!bridge && !starting) {
           ctx.ui.notify("Slack bridge já está desligada.", "info");
           return;
         }

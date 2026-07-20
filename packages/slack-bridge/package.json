@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
@@ -26,7 +27,8 @@
     "@earendil-works/pi-coding-agent": "latest",
     "@earendil-works/pi-ai": "latest",
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^3.2.6"
   },
   "pi": {
     "extensions": [
