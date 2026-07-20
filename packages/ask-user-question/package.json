@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-ask-user-question",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI extension. A structured questionnaire the model can put to the user, answerable from the terminal overlay OR externally (e.g. Slack buttons) via an event channel. Fork of @juicesharp/rpiv-ask-user-question (MIT) with an external-answer race.",
   "type": "module",
   "exports": {
