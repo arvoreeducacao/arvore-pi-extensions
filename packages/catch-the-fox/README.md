@@ -47,15 +47,17 @@ Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da 
 
 - `/fox` — mostra personagem, tamanho e estados atuais
 - `/fox <estado>` — força um estado (`sleep`, `sniff`, `dig`, `run`, `jump`, `caught`, `error`, `sad`, `swim`)
-- `/fox character` ou `/fox characters` — alterna entre raposa e capivara
-- `/fox character fox` — usa a raposa
-- `/fox character capybara` — usa a capivara
-- `/fox size large|medium|small` — troca o tamanho durante a sessão
+- `/fox character` ou `/fox characters` — alterna entre raposa e capivara e salva a escolha
+- `/fox character fox` — usa a raposa e salva a escolha
+- `/fox character capybara` — usa a capivara e salva a escolha
+- `/fox size large|medium|small` — troca o tamanho e salva a escolha para próximas sessões
 - `/fox hide` — esconde a personagem
 - `/fox show` — traz de volta
 - `pi --fox-character capybara` — inicia com a capivara
 - `pi --fox-size medium` — inicia no tamanho médio
 - `pi --fox-reduced-motion` — mantém as mudanças de estado, mas usa quadros estáticos sem movimento contínuo
+
+Personagem e tamanho são persistidos globalmente em `~/.config/pi/catch-the-fox.json`. Flags de CLI têm prioridade somente enquanto aquele processo do Pi estiver aberto e não substituem as preferências salvas. `hide` e `show` continuam valendo apenas para a sessão atual.
 
 ## Preview
 

@@ -8,6 +8,12 @@ import {
 import { ANIMS, type FoxState } from "./fox-art.js";
 import { FoxWidget } from "./fox-widget.js";
 import {
+  DEFAULT_FOX_PREFERENCES,
+  loadFoxPreferences,
+  saveFoxPreferences,
+  type FoxPreferences,
+} from "./preferences.js";
+import {
   isSpriteSize,
   SPRITE_SIZE_IDS,
   type SpriteSize,
@@ -31,19 +37,32 @@ function stateForTool(toolName: string): FoxState {
   return "sniff";
 }
 
-function configuredCharacter(value: unknown): CharacterId {
-  if (typeof value !== "string") return "fox";
+function configuredCharacter(value: unknown): CharacterId | undefined {
+  if (typeof value !== "string") return undefined;
   const character = value.toLowerCase();
-  return isCharacterId(character) ? character : "fox";
+  return isCharacterId(character) ? character : undefined;
 }
 
-function configuredSize(value: unknown): SpriteSize {
-  if (typeof value !== "string") return "large";
+function configuredSize(value: unknown): SpriteSize | undefined {
+  if (typeof value !== "string") return undefined;
   const size = value.toLowerCase();
-  return isSpriteSize(size) ? size : "large";
+  return isSpriteSize(size) ? size : undefined;
 }
 
-export default function catchTheFoxExtension(pi: ExtensionAPI): void {
+export interface FoxPreferenceStore {
+  load(): Promise<FoxPreferences>;
+  save(preferences: FoxPreferences): Promise<void>;
+}
+
+const defaultPreferenceStore: FoxPreferenceStore = {
+  load: loadFoxPreferences,
+  save: saveFoxPreferences,
+};
+
+export default function catchTheFoxExtension(
+  pi: ExtensionAPI,
+  preferenceStore: FoxPreferenceStore = defaultPreferenceStore,
+): void {
   pi.registerFlag("fox-reduced-motion", {
     description: "Mantém a personagem estática, sem animações contínuas",
     type: "boolean",
@@ -58,14 +77,39 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
     type: "string",
   });
 
+  const configuredCharacterFlag = configuredCharacter(
+    pi.getFlag("fox-character"),
+  );
+  const configuredSizeFlag = configuredSize(pi.getFlag("fox-size"));
   const fox = new FoxWidget(
     pi.getFlag("fox-reduced-motion") === true,
-    configuredCharacter(pi.getFlag("fox-character")),
-    configuredSize(pi.getFlag("fox-size")),
+    configuredCharacterFlag ?? DEFAULT_FOX_PREFERENCES.character,
+    configuredSizeFlag ?? DEFAULT_FOX_PREFERENCES.size,
   );
+  let persistedPreferences = { ...DEFAULT_FOX_PREFERENCES };
   let errorStreak = 0;
 
+  const persistPreferences = async (
+    context: { ui: { notify(message: string, level: "warning"): void } },
+  ): Promise<boolean> => {
+    try {
+      await preferenceStore.save({ ...persistedPreferences });
+      return true;
+    } catch {
+      context.ui.notify(
+        "Preferência aplicada nesta sessão, mas não foi possível salvá-la",
+        "warning",
+      );
+      return false;
+    }
+  };
+
   pi.on("session_start", async (_event, context) => {
+    persistedPreferences = await preferenceStore.load();
+    fox.setCharacter(
+      configuredCharacterFlag ?? persistedPreferences.character,
+    );
+    fox.setSize(configuredSizeFlag ?? persistedPreferences.size);
     fox.setUI(context.ui);
     fox.setState("sleep");
   });
@@ -142,17 +186,26 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
           return;
         }
         fox.setSize(value);
-        context.ui.notify(`Tamanho: ${value}`, "info");
+        persistedPreferences = { ...persistedPreferences, size: value };
+        if (await persistPreferences(context)) {
+          context.ui.notify(`Tamanho salvo: ${value}`, "info");
+        }
         return;
       }
       if (command === "character" || command === "characters") {
         if (!value) {
           const nextCharacter = fox.getCharacter() === "fox" ? "capybara" : "fox";
           fox.setCharacter(nextCharacter);
-          context.ui.notify(
-            `Personagem: ${CHARACTERS[nextCharacter].name}`,
-            "info",
-          );
+          persistedPreferences = {
+            ...persistedPreferences,
+            character: nextCharacter,
+          };
+          if (await persistPreferences(context)) {
+            context.ui.notify(
+              `Personagem salva: ${CHARACTERS[nextCharacter].name}`,
+              "info",
+            );
+          }
           return;
         }
         if (!isCharacterId(value)) {
@@ -163,7 +216,13 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
           return;
         }
         fox.setCharacter(value);
-        context.ui.notify(`Personagem: ${CHARACTERS[value].name}`, "info");
+        persistedPreferences = { ...persistedPreferences, character: value };
+        if (await persistPreferences(context)) {
+          context.ui.notify(
+            `Personagem salva: ${CHARACTERS[value].name}`,
+            "info",
+          );
+        }
         return;
       }
       if (command && command in ANIMS) {

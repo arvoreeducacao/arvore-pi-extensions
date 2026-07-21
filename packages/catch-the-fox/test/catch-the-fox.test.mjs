@@ -13,7 +13,22 @@ function visibleWidth(line) {
   return line.replace(ANSI_SEQUENCE, "").length;
 }
 
-function extensionHarness(flags = {}) {
+function createMemoryPreferenceStore(initial = { character: "fox", size: "large" }) {
+  let preferences = { ...initial };
+  return {
+    async load() {
+      return { ...preferences };
+    },
+    async save(nextPreferences) {
+      preferences = { ...nextPreferences };
+    },
+    current() {
+      return { ...preferences };
+    },
+  };
+}
+
+function extensionHarness(flags = {}, preferenceStore = createMemoryPreferenceStore()) {
   const timeoutCallbacks = [];
   const handlers = new Map();
   const commands = new Map();
@@ -33,7 +48,7 @@ function extensionHarness(flags = {}) {
     getFlag(name) {
       return flags[name];
     },
-  });
+  }, preferenceStore);
 
   const context = {
     hasUI: true,
@@ -53,6 +68,7 @@ function extensionHarness(flags = {}) {
     context,
     handlers,
     notifications,
+    preferenceStore,
     timeoutCallbacks,
     getWidget() {
       return widgetFactory({
@@ -163,8 +179,66 @@ test("the fox command switches character and size", async () => {
   assert.equal(visibleWidth(lines[1]), SPRITE_SIZES.medium.width);
   assert.equal(
     harness.notifications.at(-1)?.message,
-    "Tamanho: medium",
+    "Tamanho salvo: medium",
   );
+  assert.deepEqual(harness.preferenceStore.current(), {
+    character: "capybara",
+    size: "medium",
+  });
+});
+
+test("character and size preferences survive a new session", async () => {
+  const preferenceStore = createMemoryPreferenceStore();
+  const firstSession = extensionHarness(
+    { "fox-reduced-motion": true },
+    preferenceStore,
+  );
+  await firstSession.handlers.get("session_start")({}, firstSession.context);
+  const command = firstSession.commands.get("fox");
+  await command.handler("character capybara", firstSession.context);
+  await command.handler("size small", firstSession.context);
+
+  const nextSession = extensionHarness(
+    { "fox-reduced-motion": true },
+    preferenceStore,
+  );
+  await nextSession.handlers.get("session_start")({}, nextSession.context);
+  await nextSession.handlers.get("tool_execution_start")(
+    { toolName: "exec_command" },
+    nextSession.context,
+  );
+
+  const lines = nextSession.getWidget().render(80);
+  assert.match(lines[0], /capivarando atrás/);
+  assert.equal(visibleWidth(lines[1]), SPRITE_SIZES.small.width);
+});
+
+test("CLI flags override saved preferences without replacing them", async () => {
+  const preferenceStore = createMemoryPreferenceStore({
+    character: "capybara",
+    size: "small",
+  });
+  const harness = extensionHarness(
+    {
+      "fox-character": "fox",
+      "fox-reduced-motion": true,
+      "fox-size": "large",
+    },
+    preferenceStore,
+  );
+  await harness.handlers.get("session_start")({}, harness.context);
+  await harness.handlers.get("tool_execution_start")(
+    { toolName: "exec_command" },
+    harness.context,
+  );
+
+  const lines = harness.getWidget().render(80);
+  assert.match(lines[0], /correndo atrás/);
+  assert.equal(visibleWidth(lines[1]), SPRITE_SIZES.large.width);
+  assert.deepEqual(preferenceStore.current(), {
+    character: "capybara",
+    size: "small",
+  });
 });
 
 test("the capybara preserves all animations and frames", () => {
