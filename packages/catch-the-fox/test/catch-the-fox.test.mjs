@@ -3,7 +3,7 @@ import test from "node:test";
 import catchTheFoxExtension, {
   CHARACTERS,
   SPRITE_SIZES,
-  scaleGrid,
+  scaleGridToDimensions,
 } from "../dist/index.js";
 import { CAPYBARA_SOURCE } from "../dist/capybara-art.js";
 
@@ -157,8 +157,9 @@ test("reduced motion keeps the selected character and size static", async () => 
 
     const lines = harness.getWidget().render(80);
     assert.match(lines[0], /capivarando atrás/);
-    assert.equal(visibleWidth(lines[1]), SPRITE_SIZES.small.width);
-    assert.equal(lines.length - 1, SPRITE_SIZES.small.height / 2);
+    const smallDimensions = CHARACTERS.capybara.spriteDimensions.small;
+    assert.equal(visibleWidth(lines[1]), smallDimensions.width);
+    assert.equal(lines.length - 1, smallDimensions.height / 2);
     assert.equal(timeoutCallbacks.length, 0);
   } finally {
     globalThis.setTimeout = originalSetTimeout;
@@ -176,7 +177,10 @@ test("the fox command switches character and size", async () => {
 
   const lines = harness.getWidget().render(80);
   assert.match(lines[0], /capivarando atrás/);
-  assert.equal(visibleWidth(lines[1]), SPRITE_SIZES.medium.width);
+  assert.equal(
+    visibleWidth(lines[1]),
+    CHARACTERS.capybara.spriteDimensions.medium.width,
+  );
   assert.equal(
     harness.notifications.at(-1)?.message,
     "Tamanho salvo: medium",
@@ -210,7 +214,10 @@ test("character and size preferences survive a new session", async () => {
 
   const lines = nextSession.getWidget().render(80);
   assert.match(lines[0], /capivarando atrás/);
-  assert.equal(visibleWidth(lines[1]), SPRITE_SIZES.small.width);
+  assert.equal(
+    visibleWidth(lines[1]),
+    CHARACTERS.capybara.spriteDimensions.small.width,
+  );
 });
 
 test("CLI flags override saved preferences without replacing them", async () => {
@@ -258,7 +265,10 @@ test("the capybara preserves all animations and frames", () => {
   assert.equal(CHARACTERS.capybara.animations.swim.grids.length, 7);
   for (const size of ["large", "medium", "small"]) {
     const swimFrames = CHARACTERS.capybara.animations.swim.grids.map((grid) =>
-      scaleGrid(grid, size).join("\n"),
+      scaleGridToDimensions(
+        grid,
+        CHARACTERS.capybara.spriteDimensions[size],
+      ).join("\n"),
     );
     assert.equal(new Set(swimFrames).size, 7, `swim ${size}`);
   }

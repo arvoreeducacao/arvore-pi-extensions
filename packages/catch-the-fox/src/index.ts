@@ -21,7 +21,12 @@ import {
 
 export { CHARACTER_IDS, CHARACTERS } from "./characters.js";
 export { gridToAnsi } from "./fox-widget.js";
-export { scaleGrid, SPRITE_SIZE_IDS, SPRITE_SIZES } from "./sprite-size.js";
+export {
+  scaleGrid,
+  scaleGridToDimensions,
+  SPRITE_SIZE_IDS,
+  SPRITE_SIZES,
+} from "./sprite-size.js";
 
 function stateForTool(toolName: string): FoxState {
   const normalizedToolName = toolName.toLowerCase();

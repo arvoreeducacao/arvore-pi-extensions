@@ -5,8 +5,7 @@ import {
 } from "./characters.js";
 import { FoxRunMotion, renderRunGrid } from "./fox-run-motion.js";
 import {
-  scaleGrid,
-  SPRITE_SIZES,
+  scaleGridToDimensions,
   type SpriteSize,
 } from "./sprite-size.js";
 
@@ -72,9 +71,10 @@ function animationGrids(
   size: SpriteSize,
   state: FoxState,
 ): string[][] {
+  const dimensions = CHARACTERS[character].spriteDimensions[size];
   return trimLeadingBlankRows(
     CHARACTERS[character].animations[state].grids.map((grid) =>
-      scaleGrid(grid, size),
+      scaleGridToDimensions(grid, dimensions),
     ),
   );
 }
@@ -96,7 +96,8 @@ export class FoxWidget {
     private character: CharacterId = "fox",
     private size: SpriteSize = "large",
   ) {
-    const spriteWidth = SPRITE_SIZES[size].width;
+    const spriteWidth =
+      CHARACTERS[character].spriteDimensions[size].width;
     this.runMotion = new FoxRunMotion(spriteWidth);
     this.terminalWidth = spriteWidth;
   }
@@ -205,7 +206,9 @@ export class FoxWidget {
   }
 
   private resetRunMotion(): void {
-    this.runMotion = new FoxRunMotion(SPRITE_SIZES[this.size].width);
+    this.runMotion = new FoxRunMotion(
+      CHARACTERS[this.character].spriteDimensions[this.size].width,
+    );
   }
 
   private clearTimers(): void {

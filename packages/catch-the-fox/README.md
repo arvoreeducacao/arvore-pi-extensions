@@ -4,13 +4,13 @@ Extensão do PI que mostra uma **personagem em pixel-art animada** (half-block t
 
 A raposa grande continua sendo o padrão. Os tamanhos `medium` e `small` reduzem largura e altura do sprite para ocupar menos espaço no terminal.
 
-A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os três tamanhos disponíveis são:
+A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os quadros são extraídos pixel a pixel dos spritesheets do pack **8bit Capibaras** (14 Collective) e renderizados 1:1 no tamanho `large`, sem rescale. Cada personagem tem sua própria grade nativa:
 
-| Tamanho | Grade | Altura renderizada |
-|---------|-------|--------------------|
-| `large` | 24 × 20 | 10 linhas |
-| `medium` | 18 × 16 | 8 linhas |
-| `small` | 12 × 10 | 5 linhas |
+| Tamanho | Raposa | Capivara | Altura renderizada |
+|---------|--------|----------|--------------------|
+| `large` | 24 × 20 | 26 × 24 | 10–12 linhas |
+| `medium` | 18 × 16 | 20 × 18 | 8–9 linhas |
+| `small` | 12 × 10 | 13 × 12 | 5–6 linhas |
 
 > Requer terminal com **truecolor** (Warp ✓, iTerm2 ✓, kitty ✓, ghostty ✓).
 
