@@ -18,13 +18,13 @@ interface Skid {
   steps: number[];
 }
 
-function buildSkidSteps(distance: number): number[] {
+function buildSkidSteps(distance: number, maximumStep: number): number[] {
   if (distance <= 0) return [0, 0];
 
   const steps: number[] = [];
   let remaining = distance;
   while (remaining > 0) {
-    const step = Math.min(RUN_STEP, remaining);
+    const step = Math.min(maximumStep, remaining);
     steps.push(step);
     remaining -= step;
   }
@@ -87,7 +87,11 @@ export class FoxRunMotion {
   private phase: FoxRunPhase = "running";
   private skid: Skid | null = null;
 
-  constructor(private readonly spriteWidth = FOX_WIDTH) {}
+  constructor(
+    private readonly spriteWidth = FOX_WIDTH,
+    private readonly step = RUN_STEP,
+    private readonly skidDistance = SKID_DISTANCE,
+  ) {}
 
   snapshot(terminalWidth: number): FoxRunPlacement {
     this.fitToWidth(terminalWidth);
@@ -102,17 +106,17 @@ export class FoxRunMotion {
 
     const target = this.direction === "right" ? this.maximumOffset : 0;
     const remainingDistance = Math.abs(target - this.offset);
-    if (remainingDistance <= SKID_DISTANCE) {
+    if (remainingDistance <= this.skidDistance) {
       this.phase = "skidding";
       this.skid = {
         frame: 0,
         target,
-        steps: buildSkidSteps(remainingDistance),
+        steps: buildSkidSteps(remainingDistance, this.step),
       };
       return this.advanceSkid();
     }
 
-    this.offset += this.direction === "right" ? RUN_STEP : -RUN_STEP;
+    this.offset += this.direction === "right" ? this.step : -this.step;
     return this.placement();
   }
 

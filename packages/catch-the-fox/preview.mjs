@@ -4,10 +4,23 @@ import {
   CHARACTER_IDS,
   CHARACTERS,
   gridToAnsi,
-  scaleGrid,
+  orientFoxGrid,
+  scaleGridToDimensions,
   SPRITE_SIZE_IDS,
-  SPRITE_SIZES,
+  SwimJourney,
 } from "./dist/index.js";
+
+const spriteDimensions = (character, size) =>
+  CHARACTERS[character].spriteDimensions[size];
+
+const largestDimensions = () => ({
+  width: Math.max(
+    ...CHARACTER_IDS.map((character) => spriteDimensions(character, "large").width),
+  ),
+  height: Math.max(
+    ...CHARACTER_IDS.map((character) => spriteDimensions(character, "large").height),
+  ),
+});
 import { FOX_STATES } from "./dist/fox-art.js";
 import {
   FoxRunMotion,
@@ -42,11 +55,49 @@ function assertChoice(value, choices, label) {
   return value;
 }
 
-function createFrame(character, size, state, frameIndex, terminalWidth, runMotion) {
+function createStateMotion(character, size, state) {
   const animation = CHARACTERS[character].animations[state];
-  let grid = scaleGrid(
+  const dimensions = spriteDimensions(character, size);
+  if (animation.motion === "swim-journey" && animation.journey) {
+    const scale = (grids) =>
+      grids.map((grid) => scaleGridToDimensions(grid, dimensions));
+    return {
+      journey: new SwimJourney(
+        {
+          walkGrids: scale(animation.journey.walkGrids),
+          walkDurationsMs: animation.journey.walkDurationsMs,
+          diveGrids: scale(animation.journey.diveGrids),
+          diveDurationsMs: animation.journey.diveDurationsMs,
+          swimGrids: scale(animation.journey.swimGrids),
+          swimDurationsMs: animation.journey.swimDurationsMs,
+        },
+        CHARACTERS[character].sourceFacing,
+      ),
+      patrol: null,
+    };
+  }
+  if (animation.motion === "patrol") {
+    return { journey: null, patrol: new FoxRunMotion(dimensions.width, 1, 0) };
+  }
+  return { journey: null, patrol: null };
+}
+
+function createFrame(character, size, state, frameIndex, terminalWidth, runMotion, stateMotion) {
+  const animation = CHARACTERS[character].animations[state];
+  if (stateMotion?.journey) {
+    return {
+      animation,
+      lines: gridToAnsi(
+        stateMotion.journey.composeGrid(terminalWidth),
+        terminalWidth,
+        CHARACTERS[character].palette,
+      ),
+      offset: 0,
+    };
+  }
+  let grid = scaleGridToDimensions(
     animation.grids[frameIndex % animation.grids.length],
-    size,
+    spriteDimensions(character, size),
   );
   let offset = 0;
   if (state === "run") {
@@ -54,6 +105,14 @@ function createFrame(character, size, state, frameIndex, terminalWidth, runMotio
     grid = renderRunGrid(
       grid,
       placement,
+      CHARACTERS[character].sourceFacing,
+    );
+    offset = placement.offset;
+  } else if (stateMotion?.patrol) {
+    const placement = stateMotion.patrol.snapshot(terminalWidth);
+    grid = orientFoxGrid(
+      grid,
+      placement.direction,
       CHARACTERS[character].sourceFacing,
     );
     offset = placement.offset;
@@ -69,7 +128,7 @@ function createFrame(character, size, state, frameIndex, terminalWidth, runMotio
   };
 }
 
-function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotion) {
+function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotion, stateMotion) {
   const { animation, lines, offset } = createFrame(
     character,
     size,
@@ -77,15 +136,9 @@ function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotio
     frameIndex,
     terminalWidth,
     runMotion,
+    stateMotion,
   );
   const padding = " ".repeat(offset);
-  const renderedWidth = Math.min(
-    SPRITE_SIZES[size].width,
-    terminalWidth - offset,
-  );
-  const trailingPadding = " ".repeat(
-    terminalWidth - offset - renderedWidth,
-  );
   const innerWidth = terminalWidth + 3;
   const title = ` catch-the-fox · ${character} · ${size} `;
   const fitLine = (line) => line.slice(0, innerWidth).padEnd(innerWidth);
@@ -96,7 +149,10 @@ function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotio
   output += `  │${fitLine(`   ${animation.label}`)}│\n`;
   output += `  │${" ".repeat(innerWidth)}│\n`;
   for (const line of lines) {
-    output += `  │   ${padding}${line}${trailingPadding}│\n`;
+    const lineTrailing = " ".repeat(
+      Math.max(0, terminalWidth - offset - visibleWidth(line)),
+    );
+    output += `  │   ${padding}${line}${lineTrailing}│\n`;
   }
   output += `  ╰${"─".repeat(innerWidth)}╯\n`;
   return output;
@@ -115,7 +171,7 @@ function comparisonPreview(state, frameIndex) {
   for (const character of CHARACTER_IDS) {
     sections.push(`\x1b[1m${CHARACTERS[character].name.toUpperCase()}\x1b[22m`);
     const rendered = SPRITE_SIZE_IDS.map((size) => {
-      const width = SPRITE_SIZES[size].width;
+      const width = spriteDimensions(character, size).width;
       const runMotion = new FoxRunMotion(width);
       const { animation, lines } = createFrame(
         character,
@@ -130,7 +186,8 @@ function comparisonPreview(state, frameIndex) {
     const columnGap = "     ";
     sections.push(
       rendered
-        .map(({ size, width }) => `${size} (${width}×${SPRITE_SIZES[size].height})`.padEnd(width))
+        .map(({ size, width }) =>
+          `${size} (${width}×${spriteDimensions(character, size).height})`.padEnd(width))
         .join(columnGap),
     );
     sections.push(
@@ -153,13 +210,14 @@ function comparisonPreview(state, frameIndex) {
 
 async function animateState(character, size, state, continuous) {
   const animation = CHARACTERS[character].animations[state];
-  const runMotion = new FoxRunMotion(SPRITE_SIZES[size].width);
-  const frameCount = continuous
+  const runMotion = new FoxRunMotion(spriteDimensions(character, size).width);
+  const stateMotion = createStateMotion(character, size, state);
+  const frameCount = continuous || stateMotion.journey
     ? Number.POSITIVE_INFINITY
     : Math.max(animation.grids.length * 3, 8);
   for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
     const terminalWidth = Math.max(
-      SPRITE_SIZES[size].width,
+      spriteDimensions(character, size).width,
       (process.stdout.columns ?? 80) - 7,
     );
     process.stdout.write(
@@ -170,13 +228,21 @@ async function animateState(character, size, state, continuous) {
         frameIndex,
         terminalWidth,
         runMotion,
+        stateMotion,
       ),
     );
     if (state === "run") runMotion.advance(terminalWidth);
+    stateMotion.journey?.advance(terminalWidth);
+    stateMotion.patrol?.advance(terminalWidth);
+    if (!continuous && stateMotion.journey?.getPhase() === "water" && frameIndex > 8) {
+      await delay(1200);
+      break;
+    }
     await delay(
-      animation.frameDurationsMs?.[
-        frameIndex % animation.grids.length
-      ] ?? animation.intervalMs,
+      stateMotion.journey?.frameDurationMs() ??
+        animation.frameDurationsMs?.[
+          frameIndex % animation.grids.length
+        ] ?? animation.intervalMs,
     );
   }
 }
@@ -218,7 +284,7 @@ async function renderSheet(outputArgument) {
   const pixelSize = 4;
   const cellPadding = 12;
   const titleHeight = 34;
-  const largest = SPRITE_SIZES.large;
+  const largest = largestDimensions();
   const cellWidth = largest.width * pixelSize + cellPadding * 2;
   const cellHeight = largest.height * pixelSize + titleHeight + cellPadding * 2;
   const columns = FOX_STATES.length;
@@ -231,10 +297,10 @@ async function renderSheet(outputArgument) {
       for (const [stateIndex, state] of FOX_STATES.entries()) {
         const cellX = stateIndex * cellWidth;
         const cellY = row * cellHeight;
-        const dimensions = SPRITE_SIZES[size];
-        const frame = scaleGrid(
+        const dimensions = spriteDimensions(character, size);
+        const frame = scaleGridToDimensions(
           CHARACTERS[character].animations[state].grids[0],
-          size,
+          dimensions,
         );
         const frameX = cellX + Math.floor((cellWidth - dimensions.width * pixelSize) / 2);
         const frameY = cellY + titleHeight + cellPadding;
@@ -259,7 +325,7 @@ async function renderAllFrames(outputArgument) {
   const pixelSize = 4;
   const gap = 8;
   const titleHeight = 22;
-  const largest = SPRITE_SIZES.large;
+  const largest = largestDimensions();
   const cellWidth = largest.width * pixelSize;
   const cellHeight = largest.height * pixelSize;
   const animations = CHARACTER_IDS.flatMap((character) =>
@@ -280,14 +346,14 @@ async function renderAllFrames(outputArgument) {
 
   for (const { character, state, animation } of animations) {
     for (const size of SPRITE_SIZE_IDS) {
-      const dimensions = SPRITE_SIZES[size];
+      const dimensions = spriteDimensions(character, size);
       const rowY = gap + row * (cellHeight + titleHeight + gap);
       row += 1;
       cells.push(
         `<text x="${gap}" y="${rowY + 15}" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#2b1f1a">${escapeXml(`${character} · ${state} · ${size}`)}</text>`,
       );
       animation.grids.forEach((sourceFrame, frameIndex) => {
-        const frame = scaleGrid(sourceFrame, size);
+        const frame = scaleGridToDimensions(sourceFrame, dimensions);
         const cellX = gap + frameIndex * (cellWidth + gap);
         const frameX = cellX + Math.floor(
           (cellWidth - dimensions.width * pixelSize) / 2,

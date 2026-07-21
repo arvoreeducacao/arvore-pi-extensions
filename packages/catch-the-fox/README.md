@@ -4,13 +4,13 @@ Extensão do PI que mostra uma **personagem em pixel-art animada** (half-block t
 
 A raposa grande continua sendo o padrão. Os tamanhos `medium` e `small` reduzem largura e altura do sprite para ocupar menos espaço no terminal.
 
-A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os três tamanhos disponíveis são:
+A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os quadros são extraídos pixel a pixel dos spritesheets do pack **8bit Capibaras** (14 Collective) e renderizados 1:1 no tamanho `large`, sem rescale. Cada personagem tem sua própria grade nativa:
 
-| Tamanho | Grade | Altura renderizada |
-|---------|-------|--------------------|
-| `large` | 24 × 20 | 10 linhas |
-| `medium` | 18 × 16 | 8 linhas |
-| `small` | 12 × 10 | 5 linhas |
+| Tamanho | Raposa | Capivara | Altura renderizada |
+|---------|--------|----------|--------------------|
+| `large` | 24 × 20 | 26 × 24 | 10–12 linhas |
+| `medium` | 18 × 16 | 20 × 18 | 8–9 linhas |
+| `small` | 12 × 10 | 13 × 12 | 5–6 linhas |
 
 > Requer terminal com **truecolor** (Warp ✓, iTerm2 ✓, kitty ✓, ghostty ✓).
 
@@ -19,14 +19,14 @@ A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, n
 | Estado | Quando | Visual |
 |--------|--------|--------|
 | `sleep` | ocioso (turno terminou) | raposa dormindo, `zzz` cinza |
-| `sniff` | `read`, `grep`, `find`, `search`, `list` | raposa farejando, rastro cinza |
+| `sniff` | `read`, `grep`, `find`, `search`, `list` | raposa farejando, rastro cinza; capivara passeia de um lado para o outro do terminal |
 | `dig` | `edit`, `write`, `patch`, `replace` | raposa de costas cavando, terra saindo |
 | `run` | `bash`, `shell`, `fetch`, `web`, `curl` | raposa corre entre as bordas, derrapa e volta na direção oposta |
 | `jump` | fim do turno (sucesso) | raposa pulando com brilhos amarelos |
 | `caught` | após o pulo | raposa de frente celebrando com brilhos, 1.6s → `sleep` |
 | `error` | uma tool retornou erro | flash vermelho, 1.2s |
 | `sad` | 3+ erros seguidos no turno | reação triste; capivara reproduz a animação de morte e segura o último quadro |
-| `swim` | acionado manualmente | capivara reproduz a animação original de nado |
+| `swim` | acionado manualmente | capivara faz a jornada da água: caminha até a margem que surge à frente, mergulha com o salto e atravessa nadando até a borda direita enquanto a água preenche o terminal atrás dela; volta nadando sobre a água completa e, ao chegar à esquerda, submerge — resta apenas a água ondulando |
 
 A animação roda quadro a quadro via `setTimeout`, respeitando a duração original de cada quadro quando disponível. A factory do widget é registrada uma vez com `ctx.ui.setWidget`, e cada tick solicita uma nova renderização com `tui.requestRender()`. No estado `run`, `render(width)` fornece a largura real do terminal para calcular a trajetória. A personagem desacelera nos últimos passos, levanta poeira, para sem ultrapassar a borda, espelha o sprite e retoma a corrida. Resize e terminais mais estreitos que o sprite são limitados sem provocar quebra de linha.
 

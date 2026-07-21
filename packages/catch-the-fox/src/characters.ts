@@ -1,6 +1,8 @@
 import {
+  CAPYBARA_HEIGHT,
   CAPYBARA_PALETTE,
   CAPYBARA_SOURCE,
+  CAPYBARA_WIDTH,
   type CapybaraSourceAnimation,
 } from "./capybara-art.js";
 import {
@@ -10,6 +12,11 @@ import {
   type FoxState,
   type RGB,
 } from "./fox-art.js";
+import {
+  SPRITE_SIZES,
+  type SpriteDimensions,
+  type SpriteSize,
+} from "./sprite-size.js";
 
 export type CharacterId = "fox" | "capybara";
 export type CharacterFacing = "left" | "right";
@@ -20,6 +27,7 @@ export interface CharacterDefinition {
   name: string;
   palette: Record<string, RGB>;
   sourceFacing: CharacterFacing;
+  spriteDimensions: Record<SpriteSize, SpriteDimensions>;
 }
 
 function animationDuration(animation: CapybaraSourceAnimation): number {
@@ -65,10 +73,10 @@ const CAPYBARA_ANIMS: Record<FoxState, FoxAnimation> = {
     CAPYBARA_SOURCE.breathe,
     "respirando sem pressa…",
   ),
-  sniff: sourcedAnimation(
-    CAPYBARA_SOURCE.walk,
-    "passeando pelo código",
-  ),
+  sniff: {
+    ...sourcedAnimation(CAPYBARA_SOURCE.walk, "passeando pelo código"),
+    motion: "patrol",
+  },
   dig: {
     label: "cavando com os dentinhos",
     intervalMs: capybaraDigDurations[0] ?? 100,
@@ -100,10 +108,24 @@ const CAPYBARA_ANIMS: Record<FoxState, FoxAnimation> = {
     "vou deitar um pouquinho…",
     { holdLastFrame: true },
   ),
-  swim: sourcedAnimation(
-    CAPYBARA_SOURCE.swim,
-    "nadando no código",
-  ),
+  swim: {
+    ...sourcedAnimation(CAPYBARA_SOURCE.swim, "nadando no código"),
+    motion: "swim-journey",
+    journey: {
+      walkGrids: CAPYBARA_SOURCE.walk.grids,
+      walkDurationsMs: CAPYBARA_SOURCE.walk.durationsMs,
+      diveGrids: CAPYBARA_SOURCE.jumpSolo.grids,
+      diveDurationsMs: CAPYBARA_SOURCE.jumpSolo.durationsMs,
+      swimGrids: CAPYBARA_SOURCE.swim.grids,
+      swimDurationsMs: CAPYBARA_SOURCE.swim.durationsMs,
+    },
+  },
+};
+
+const CAPYBARA_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
+  large: { width: CAPYBARA_WIDTH, height: CAPYBARA_HEIGHT },
+  medium: { width: 20, height: 18 },
+  small: { width: 13, height: 12 },
 };
 
 export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
@@ -113,6 +135,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
     animations: FOX_ANIMS,
     palette: FOX_PALETTE,
     sourceFacing: "left",
+    spriteDimensions: SPRITE_SIZES,
   },
   capybara: {
     id: "capybara",
@@ -120,6 +143,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
     animations: CAPYBARA_ANIMS,
     palette: { ...FOX_PALETTE, ...CAPYBARA_PALETTE },
     sourceFacing: "right",
+    spriteDimensions: CAPYBARA_DIMENSIONS,
   },
 };
 
