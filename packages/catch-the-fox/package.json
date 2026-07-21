@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-catch-the-fox",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "PI extension: raposa ou capivara em pixel-art que reage ao que o agente está fazendo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
