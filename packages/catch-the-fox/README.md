@@ -26,7 +26,7 @@ A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, n
 | `caught` | após o pulo | raposa de frente celebrando com brilhos, 1.6s → `sleep` |
 | `error` | uma tool retornou erro | flash vermelho, 1.2s |
 | `sad` | 3+ erros seguidos no turno | reação triste; capivara reproduz a animação de morte e segura o último quadro |
-| `swim` | acionado manualmente | capivara faz a jornada da água: caminha até a margem que surge à frente, mergulha com o salto, atravessa nadando até a borda direita e volta alagando o caminho — no final resta apenas a água ondulando |
+| `swim` | acionado manualmente | capivara faz a jornada da água: caminha até a margem que surge à frente, mergulha com o salto e atravessa nadando até a borda direita enquanto a água preenche o terminal atrás dela; volta nadando sobre a água completa e, ao chegar à esquerda, submerge — resta apenas a água ondulando |
 
 A animação roda quadro a quadro via `setTimeout`, respeitando a duração original de cada quadro quando disponível. A factory do widget é registrada uma vez com `ctx.ui.setWidget`, e cada tick solicita uma nova renderização com `tui.requestRender()`. No estado `run`, `render(width)` fornece a largura real do terminal para calcular a trajetória. A personagem desacelera nos últimos passos, levanta poeira, para sem ultrapassar a borda, espelha o sprite e retoma a corrida. Resize e terminais mais estreitos que o sprite são limitados sem provocar quebra de linha.
 

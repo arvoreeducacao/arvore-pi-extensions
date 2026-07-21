@@ -27,6 +27,7 @@ export class SwimJourney {
   private offset = 0;
   private phase: SwimJourneyPhase = "walk";
   private shimmer = 0;
+  private swimStartOffset = 0;
   private readonly height: number;
   private readonly spriteWidth: number;
   private readonly surfaceRow: number;
@@ -72,16 +73,30 @@ export class SwimJourney {
       case "dive":
         this.frame += 1;
         this.offset = Math.min(this.offset + DIVE_STEP, maximumOffset);
-        if (this.frame >= this.sources.diveGrids.length) this.enterPhase("swim");
+        if (this.frame >= this.sources.diveGrids.length) {
+          this.swimStartOffset = this.offset;
+          this.enterPhase("swim");
+        }
         break;
-      case "swim":
+      case "swim": {
         this.frame += 1;
         this.offset = Math.min(this.offset + SWIM_STEP, maximumOffset);
+        const crossingDistance = Math.max(
+          1,
+          maximumOffset - this.swimStartOffset,
+        );
+        this.floodEdge = Math.min(
+          this.floodEdge ?? shore,
+          Math.round(
+            (shore * (maximumOffset - this.offset)) / crossingDistance,
+          ),
+        );
         if (this.offset >= maximumOffset) {
-          this.floodEdge = Math.min(shore, this.offset);
+          this.floodEdge = 0;
           this.enterPhase("flood");
         }
         break;
+      }
       case "flood":
         this.frame += 1;
         this.offset = Math.max(0, this.offset - SWIM_STEP);
@@ -104,7 +119,7 @@ export class SwimJourney {
     const waterStart =
       this.phase === "water"
         ? 0
-        : this.phase === "flood"
+        : this.phase === "swim" || this.phase === "flood"
           ? Math.min(this.floodEdge ?? shore, offset)
           : shore;
 

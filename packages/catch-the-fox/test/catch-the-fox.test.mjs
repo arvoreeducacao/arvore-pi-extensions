@@ -343,14 +343,33 @@ test("the swim journey walks, dives, crosses, floods back, and leaves only water
   assert.ok(bodyPixels(initialGrid) > 0);
   assert.ok(initialGrid.some((row) => /d/.test(row)));
 
+  const surfaceDryColumns = (grid) => {
+    const surfaceRow = grid.find((row) => /[dk]/.test(row));
+    return surfaceRow ? surfaceRow.match(/^\.*/)[0].length : width;
+  };
+
+  const swimFill = [];
   for (let tick = 0; tick < 400 && journey.getPhase() !== "water"; tick += 1) {
     journey.advance(width);
     seenPhases.add(journey.getPhase());
+    if (journey.getPhase() === "swim") {
+      swimFill.push(surfaceDryColumns(journey.composeGrid(width)));
+    }
+    if (journey.getPhase() === "flood" && swimFill.at(-1) !== 0) {
+      swimFill.push(surfaceDryColumns(journey.composeGrid(width)));
+    }
   }
 
   assert.deepEqual(
     [...seenPhases].sort(),
     ["dive", "flood", "swim", "walk", "water"],
+  );
+  assert.ok(swimFill[0] > 0);
+  assert.ok(swimFill.at(-1) === 0);
+  assert.ok(
+    swimFill.every(
+      (dryColumns, index) => index === 0 || dryColumns <= swimFill[index - 1],
+    ),
   );
   const finalGrid = journey.composeGrid(width);
   assert.equal(bodyPixels(finalGrid), 0);
