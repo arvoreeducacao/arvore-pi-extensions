@@ -1,7 +1,7 @@
 {
   "name": "@arvoretech/pi-catch-the-fox",
-  "version": "0.6.0",
-  "description": "PI extension: uma raposa em pixel-art que reage ao que o agente está fazendo (farejando, cavando, executando, dormindo)",
+  "version": "0.7.0",
+  "description": "PI extension: raposa ou capivara em pixel-art que reage ao que o agente está fazendo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -14,7 +14,9 @@
     "lint": "tsc --noEmit",
     "test": "pnpm build && node --test test/*.test.mjs",
     "preview": "pnpm build && node preview.mjs",
-    "preview:sheet": "pnpm build && node preview.mjs --sheet fox-preview.png"
+    "preview:compare": "pnpm build && node preview.mjs --compare",
+    "preview:frames": "pnpm build && node preview.mjs --frames /tmp/catch-the-fox-frames.png",
+    "preview:sheet": "pnpm build && node preview.mjs --sheet /tmp/catch-the-fox-preview.png"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
@@ -23,6 +25,7 @@
     "@earendil-works/pi-coding-agent": "latest",
     "@earendil-works/pi-tui": "latest",
     "@types/node": "^20.10.0",
+    "sharp": "0.34.5",
     "typescript": "^5.3.0"
   },
   "pi": {
@@ -35,6 +38,7 @@
     "pi",
     "extension",
     "fox",
+    "capybara",
     "widget",
     "pixel-art",
     "fun"

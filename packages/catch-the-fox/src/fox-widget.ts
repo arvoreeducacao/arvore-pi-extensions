@@ -1,11 +1,14 @@
+import { type FoxState, type RGB, PALETTE } from "./fox-art.js";
 import {
-  ANIMS,
-  FOX_WIDTH,
-  PALETTE,
-  type FoxState,
-  type RGB,
-} from "./fox-art.js";
+  CHARACTERS,
+  type CharacterId,
+} from "./characters.js";
 import { FoxRunMotion, renderRunGrid } from "./fox-run-motion.js";
+import {
+  scaleGrid,
+  SPRITE_SIZES,
+  type SpriteSize,
+} from "./sprite-size.js";
 
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
@@ -15,6 +18,7 @@ const bg = ([r, g, b]: RGB) => `${ESC}48;2;${r};${g};${b}m`;
 export function gridToAnsi(
   grid: string[],
   maximumWidth = Number.POSITIVE_INFINITY,
+  palette: Record<string, RGB> = PALETTE,
 ): string[] {
   const lines: string[] = [];
   for (let row = 0; row < grid.length; row += 2) {
@@ -28,9 +32,9 @@ export function gridToAnsi(
     );
     let line = "";
     for (let column = 0; column < width; column++) {
-      const topColor = top[column] === "." ? null : PALETTE[top[column]];
+      const topColor = top[column] === "." ? null : palette[top[column]];
       const bottomColor =
-        bottom[column] === "." ? null : PALETTE[bottom[column]];
+        bottom[column] === "." ? null : palette[bottom[column]];
       if (!topColor && !bottomColor) {
         line += `${RESET} `;
       } else if (topColor && bottomColor) {
@@ -63,26 +67,39 @@ function trimLeadingBlankRows(grids: string[][]): string[][] {
   return grids.map((grid) => grid.slice(evenBlankRows));
 }
 
-const TRIMMED_GRIDS = Object.fromEntries(
-  Object.entries(ANIMS).map(([state, animation]) => [
-    state,
-    trimLeadingBlankRows(animation.grids),
-  ]),
-) as Record<FoxState, string[][]>;
+function animationGrids(
+  character: CharacterId,
+  size: SpriteSize,
+  state: FoxState,
+): string[][] {
+  return trimLeadingBlankRows(
+    CHARACTERS[character].animations[state].grids.map((grid) =>
+      scaleGrid(grid, size),
+    ),
+  );
+}
 
 export class FoxWidget {
-  private animationTimer: ReturnType<typeof setInterval> | null = null;
+  private animationTimer: ReturnType<typeof setTimeout> | null = null;
   private frameIndex = 0;
   private hidden = false;
-  private runMotion = new FoxRunMotion();
+  private runMotion: FoxRunMotion;
   private state: FoxState = "sleep";
-  private terminalWidth = FOX_WIDTH;
+  private terminalWidth: number;
   private transitionTimer: ReturnType<typeof setTimeout> | null = null;
   private ui: any = null;
   private widgetRegistered = false;
   private widgetTui: any = null;
 
-  constructor(private readonly reducedMotion: boolean) {}
+  constructor(
+    private readonly reducedMotion: boolean,
+    private character: CharacterId = "fox",
+    private size: SpriteSize = "large",
+  ) {
+    const spriteWidth = SPRITE_SIZES[size].width;
+    this.runMotion = new FoxRunMotion(spriteWidth);
+    this.terminalWidth = spriteWidth;
+  }
 
   setUI(nextUI: any): void {
     if (this.ui === nextUI) return;
@@ -96,34 +113,54 @@ export class FoxWidget {
     this.clearTimers();
     this.state = nextState;
     this.frameIndex = 0;
-    if (enteringRun) this.runMotion = new FoxRunMotion();
+    if (enteringRun) this.resetRunMotion();
     this.render();
     if (this.hidden) return;
 
-    if (!this.reducedMotion) {
-      this.animationTimer = setInterval(() => {
-        this.frameIndex += 1;
-        if (this.state === "run") {
-          this.runMotion.advance(this.terminalWidth);
-        }
-        this.render();
-      }, ANIMS[this.state].intervalMs);
-      this.animationTimer.unref?.();
-    }
+    const animation = CHARACTERS[this.character].animations[this.state];
+    if (!this.reducedMotion) this.scheduleNextFrame(animation);
 
-    const transition = ANIMS[this.state].once;
-    if (transition) {
+    if (animation.once) {
       this.transitionTimer = setTimeout(
-        () => this.setState(transition.then),
-        transition.durationMs,
+        () => this.setState(animation.once?.then ?? "sleep"),
+        animation.once.durationMs,
       );
       this.transitionTimer.unref?.();
     }
   }
 
+  setCharacter(character: CharacterId): void {
+    if (character === this.character) return;
+    this.character = character;
+    this.resetRunMotion();
+    this.setState(this.state);
+  }
+
+  setSize(size: SpriteSize): void {
+    if (size === this.size) return;
+    this.size = size;
+    this.resetRunMotion();
+    this.setState(this.state);
+  }
+
+  getCharacter(): CharacterId {
+    return this.character;
+  }
+
+  getSize(): SpriteSize {
+    return this.size;
+  }
+
   completeTurn(): void {
     this.setState("jump");
-    this.transitionTimer = setTimeout(() => this.setState("caught"), 1400);
+    const animation = CHARACTERS[this.character].animations.jump;
+    const duration = this.character === "fox"
+      ? 1400
+      : animation.frameDurationsMs?.reduce(
+          (total, frameDuration) => total + frameDuration,
+          0,
+        ) ?? animation.intervalMs * animation.grids.length;
+    this.transitionTimer = setTimeout(() => this.setState("caught"), duration);
     this.transitionTimer.unref?.();
   }
 
@@ -148,9 +185,32 @@ export class FoxWidget {
     this.ui = null;
   }
 
+  private scheduleNextFrame(animation: (typeof CHARACTERS)[CharacterId]["animations"][FoxState]): void {
+    if (animation.holdLastFrame && this.frameIndex >= animation.grids.length - 1) {
+      return;
+    }
+    const duration =
+      animation.frameDurationsMs?.[this.frameIndex] ?? animation.intervalMs;
+    this.animationTimer = setTimeout(() => {
+      this.frameIndex = animation.holdLastFrame
+        ? Math.min(this.frameIndex + 1, animation.grids.length - 1)
+        : (this.frameIndex + 1) % animation.grids.length;
+      if (this.state === "run") {
+        this.runMotion.advance(this.terminalWidth);
+      }
+      this.render();
+      this.scheduleNextFrame(animation);
+    }, duration);
+    this.animationTimer.unref?.();
+  }
+
+  private resetRunMotion(): void {
+    this.runMotion = new FoxRunMotion(SPRITE_SIZES[this.size].width);
+  }
+
   private clearTimers(): void {
     if (this.animationTimer) {
-      clearInterval(this.animationTimer);
+      clearTimeout(this.animationTimer);
       this.animationTimer = null;
     }
     if (this.transitionTimer) {
@@ -161,20 +221,26 @@ export class FoxWidget {
 
   private renderLines = (width: number): string[] => {
     this.terminalWidth = Math.max(0, Math.floor(width));
-    const grids = TRIMMED_GRIDS[this.state];
+    const animation = CHARACTERS[this.character].animations[this.state];
+    const grids = animationGrids(this.character, this.size, this.state);
     let grid = grids[this.frameIndex % grids.length];
     let offset = 0;
     if (this.state === "run") {
       const placement = this.runMotion.snapshot(this.terminalWidth);
-      grid = renderRunGrid(grid, placement);
+      grid = renderRunGrid(
+        grid,
+        placement,
+        CHARACTERS[this.character].sourceFacing,
+      );
       offset = placement.offset;
     }
-    const frame = gridToAnsi(grid, this.terminalWidth - offset);
-    const padding = " ".repeat(offset);
-    const label = ` ${ANIMS[this.state].label}`.slice(
-      0,
-      this.terminalWidth,
+    const frame = gridToAnsi(
+      grid,
+      this.terminalWidth - offset,
+      CHARACTERS[this.character].palette,
     );
+    const padding = " ".repeat(offset);
+    const label = ` ${animation.label}`.slice(0, this.terminalWidth);
     return [label, ...frame.map((line) => `${padding}${line}`)];
   };
 

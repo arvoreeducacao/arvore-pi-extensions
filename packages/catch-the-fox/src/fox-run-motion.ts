@@ -39,16 +39,22 @@ type DustPixel = readonly [x: number, y: number, color: "H" | "Q"];
 export function orientFoxGrid(
   grid: string[],
   direction: FoxRunDirection,
+  sourceFacing: FoxRunDirection = "left",
 ): string[] {
-  if (direction === "left") return grid;
+  if (direction === sourceFacing) return grid;
   return grid.map((row) => [...row].reverse().join(""));
 }
 
 export function renderRunGrid(
   grid: string[],
   placement: Pick<FoxRunPlacement, "direction" | "phase">,
+  sourceFacing: FoxRunDirection = "left",
 ): string[] {
-  const orientedGrid = orientFoxGrid(grid, placement.direction);
+  const orientedGrid = orientFoxGrid(
+    grid,
+    placement.direction,
+    sourceFacing,
+  );
   if (placement.phase === "running" || orientedGrid.length < 3) {
     return orientedGrid;
   }
@@ -80,6 +86,8 @@ export class FoxRunMotion {
   private offset = 0;
   private phase: FoxRunPhase = "running";
   private skid: Skid | null = null;
+
+  constructor(private readonly spriteWidth = FOX_WIDTH) {}
 
   snapshot(terminalWidth: number): FoxRunPlacement {
     this.fitToWidth(terminalWidth);
@@ -129,7 +137,7 @@ export class FoxRunMotion {
   private fitToWidth(terminalWidth: number): void {
     const nextMaximumOffset = Math.max(
       0,
-      Math.floor(terminalWidth) - FOX_WIDTH,
+      Math.floor(terminalWidth) - this.spriteWidth,
     );
     if (nextMaximumOffset === this.maximumOffset) return;
 
