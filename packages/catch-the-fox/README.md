@@ -4,7 +4,7 @@ Extensão do PI que mostra uma **personagem em pixel-art animada** (half-block t
 
 A raposa grande continua sendo o padrão. Os tamanhos `medium` e `small` reduzem largura e altura do sprite para ocupar menos espaço no terminal.
 
-A capivara usa 81 quadros importados diretamente dos 11 spritesheets do pacote `8bit - Capibaras`: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. As sequências e durações vêm dos arquivos Aseprite; a conversão apenas recorta a transparência e reduz para a grade do terminal com nearest-neighbor. Os três tamanhos disponíveis são:
+A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os três tamanhos disponíveis são:
 
 | Tamanho | Grade | Altura renderizada |
 |---------|-------|--------------------|
@@ -41,7 +41,7 @@ Widget persistente (`ctx.ui.setWidget`, array de linhas ANSI) dirigido pelos hoo
 - `agent_end` → `jump` → `caught` → `sleep` (ou `sad` se a maré foi ruim)
 - `session_shutdown` → limpa os timers
 
-Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da personagem. O renderer `gridToAnsi` junta 2 linhas de pixels em 1 linha de texto usando half-blocks (`▀` com cor de frente = pixel de cima, cor de fundo = pixel de baixo), dobrando a resolução vertical. A arte da raposa fica em `src/fox-art.ts`; a capivara importada fica em `src/capybara-art.ts`. Extensão e preview compartilham os mesmos módulos para impedir divergências.
+Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da personagem. O renderer `gridToAnsi` junta 2 linhas de pixels em 1 linha de texto usando half-blocks (`▀` com cor de frente = pixel de cima, cor de fundo = pixel de baixo), dobrando a resolução vertical. A arte da raposa fica em `src/fox-art.ts`; a capivara fica em `src/capybara-art.ts`. Extensão e preview compartilham os mesmos módulos para impedir divergências.
 
 ## Comandos
 
@@ -88,7 +88,7 @@ pnpm preview:frames
 
 Esse é o preview de regressão recomendado antes de abrir PR: ele expõe cortes, poses fundidas e mudanças de escala entre quadros.
 
-Para gerar `fox-preview.png` com o primeiro quadro de cada estado:
+Para gerar `/tmp/catch-the-fox-preview.png` com o primeiro quadro de cada estado:
 
 ```bash
 pnpm preview:sheet
@@ -96,17 +96,10 @@ pnpm preview:sheet
 
 Todos os comandos compilam a extensão antes de renderizar, portanto o resultado sempre corresponde aos sprites executados pelo PI.
 
-## Origem da capivara
-
-Os sprites foram importados do pacote pago **8bit - Capibaras**, da 14 Collective. O arquivo de licença fornecido permite uso e modificação em projetos gratuitos e comerciais, mas proíbe reempacotar, redistribuir ou revender os assets, mesmo modificados.
-
-O uso local e os previews estão prontos. Antes de publicar `src/capybara-art.ts` em PR ou npm, confirme por escrito com a 14 Collective que distribuir as grades convertidas dentro da extensão é permitido.
-
 ## Desenvolvimento
 
 ```bash
 pnpm install
-pnpm import:capybara -- "/caminho/para/8 bit Capibaras/Capibara"
 pnpm build   # tsc → dist/
 pnpm dev     # tsc --watch
 pnpm test    # trajetória, resize, orientação e integração ANSI

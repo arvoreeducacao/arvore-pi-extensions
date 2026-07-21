@@ -11,13 +11,12 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "import:capybara": "node scripts/import-capybara.mjs",
     "lint": "tsc --noEmit",
     "test": "pnpm build && node --test test/*.test.mjs",
     "preview": "pnpm build && node preview.mjs",
     "preview:compare": "pnpm build && node preview.mjs --compare",
     "preview:frames": "pnpm build && node preview.mjs --frames /tmp/catch-the-fox-frames.png",
-    "preview:sheet": "pnpm build && node preview.mjs --sheet fox-preview.png"
+    "preview:sheet": "pnpm build && node preview.mjs --sheet /tmp/catch-the-fox-preview.png"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"

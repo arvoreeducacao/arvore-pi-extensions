@@ -167,7 +167,7 @@ test("the fox command switches character and size", async () => {
   );
 });
 
-test("the imported capybara preserves all source animations and frames", () => {
+test("the capybara preserves all animations and frames", () => {
   const sourceAnimations = Object.values(CAPYBARA_SOURCE);
   const frameCount = sourceAnimations.reduce(
     (total, animation) => total + animation.grids.length,
