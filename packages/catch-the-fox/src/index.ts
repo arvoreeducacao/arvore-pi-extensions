@@ -1,8 +1,21 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+  CHARACTER_IDS,
+  CHARACTERS,
+  isCharacterId,
+  type CharacterId,
+} from "./characters.js";
 import { ANIMS, type FoxState } from "./fox-art.js";
 import { FoxWidget } from "./fox-widget.js";
+import {
+  isSpriteSize,
+  SPRITE_SIZE_IDS,
+  type SpriteSize,
+} from "./sprite-size.js";
 
+export { CHARACTER_IDS, CHARACTERS } from "./characters.js";
 export { gridToAnsi } from "./fox-widget.js";
+export { scaleGrid, SPRITE_SIZE_IDS, SPRITE_SIZES } from "./sprite-size.js";
 
 function stateForTool(toolName: string): FoxState {
   const normalizedToolName = toolName.toLowerCase();
@@ -18,14 +31,38 @@ function stateForTool(toolName: string): FoxState {
   return "sniff";
 }
 
+function configuredCharacter(value: unknown): CharacterId {
+  if (typeof value !== "string") return "fox";
+  const character = value.toLowerCase();
+  return isCharacterId(character) ? character : "fox";
+}
+
+function configuredSize(value: unknown): SpriteSize {
+  if (typeof value !== "string") return "large";
+  const size = value.toLowerCase();
+  return isSpriteSize(size) ? size : "large";
+}
+
 export default function catchTheFoxExtension(pi: ExtensionAPI): void {
   pi.registerFlag("fox-reduced-motion", {
-    description: "Mantém a raposa estática, sem animações contínuas",
+    description: "Mantém a personagem estática, sem animações contínuas",
     type: "boolean",
     default: false,
   });
+  pi.registerFlag("fox-character", {
+    description: `Personagem do widget: ${CHARACTER_IDS.join(" ou ")}`,
+    type: "string",
+  });
+  pi.registerFlag("fox-size", {
+    description: `Tamanho do widget: ${SPRITE_SIZE_IDS.join(", ")}`,
+    type: "string",
+  });
 
-  const fox = new FoxWidget(pi.getFlag("fox-reduced-motion") === true);
+  const fox = new FoxWidget(
+    pi.getFlag("fox-reduced-motion") === true,
+    configuredCharacter(pi.getFlag("fox-character")),
+    configuredSize(pi.getFlag("fox-size")),
+  );
   let errorStreak = 0;
 
   pi.on("session_start", async (_event, context) => {
@@ -69,33 +106,72 @@ export default function catchTheFoxExtension(pi: ExtensionAPI): void {
 
   pi.registerCommand("fox", {
     description:
-      "Controla a raposa: /fox <sleep|sniff|dig|run|jump|caught|error|sad|hide|show>",
+      "Controla a personagem: /fox <estado|hide|show|size <large|medium|small>|character <fox|capybara>|characters>",
     handler: async (args, context) => {
       if (!context.hasUI) {
         context.ui.notify("/fox requer modo interativo", "error");
         return;
       }
       fox.setUI(context.ui);
-      const requestedState = (args ?? "").trim().toLowerCase();
-      if (requestedState === "hide") {
+      const [command = "", value = ""] = (args ?? "")
+        .trim()
+        .toLowerCase()
+        .split(/\s+/);
+      if (command === "hide") {
         fox.hide();
         context.ui.notify(
-          "raposa escondida (/fox show pra voltar)",
+          `${CHARACTERS[fox.getCharacter()].name} escondida (/fox show pra voltar)`,
           "info",
         );
         return;
       }
-      if (requestedState === "show") {
+      if (command === "show") {
         fox.show();
-        context.ui.notify("raposa on!", "info");
+        context.ui.notify(
+          `${CHARACTERS[fox.getCharacter()].name} on!`,
+          "info",
+        );
         return;
       }
-      if (requestedState && requestedState in ANIMS) {
-        fox.showState(requestedState as FoxState);
+      if (command === "size") {
+        if (!isSpriteSize(value)) {
+          context.ui.notify(
+            `Tamanhos: ${SPRITE_SIZE_IDS.join(", ")}`,
+            "warning",
+          );
+          return;
+        }
+        fox.setSize(value);
+        context.ui.notify(`Tamanho: ${value}`, "info");
+        return;
+      }
+      if (command === "character" || command === "characters") {
+        if (!value) {
+          const nextCharacter = fox.getCharacter() === "fox" ? "capybara" : "fox";
+          fox.setCharacter(nextCharacter);
+          context.ui.notify(
+            `Personagem: ${CHARACTERS[nextCharacter].name}`,
+            "info",
+          );
+          return;
+        }
+        if (!isCharacterId(value)) {
+          context.ui.notify(
+            `Personagens: ${CHARACTER_IDS.join(", ")}`,
+            "warning",
+          );
+          return;
+        }
+        fox.setCharacter(value);
+        context.ui.notify(`Personagem: ${CHARACTERS[value].name}`, "info");
+        return;
+      }
+      if (command && command in ANIMS) {
+        fox.showState(command as FoxState);
         return;
       }
       context.ui.notify(
-        `Estados: ${Object.keys(ANIMS).join(", ")} · hide · show`,
+        `Personagem: ${fox.getCharacter()} · tamanho: ${fox.getSize()} · estados: ${Object.keys(ANIMS).join(", ")} · /fox characters alterna personagem · hide · show`,
         "info",
       );
     },

@@ -6,13 +6,16 @@ export type FoxState =
   | "jump"
   | "caught"
   | "error"
-  | "sad";
+  | "sad"
+  | "swim";
 
 export type RGB = readonly [number, number, number];
 
 export interface FoxAnimation {
   label: string;
   intervalMs: number;
+  frameDurationsMs?: number[];
+  holdLastFrame?: boolean;
   once?: { durationMs: number; then: FoxState };
   grids: string[][];
 }
@@ -641,6 +644,11 @@ export const ANIMS: Record<FoxState, FoxAnimation> = {
     label: "tá difícil hoje…",
     intervalMs: 580,
     grids: sadFrames,
+  },
+  swim: {
+    label: "nadando no código",
+    intervalMs: 200,
+    grids: runFrames,
   },
 };
 
