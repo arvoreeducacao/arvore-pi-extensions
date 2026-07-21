@@ -4,6 +4,7 @@ import catchTheFoxExtension, {
   CHARACTERS,
   SPRITE_SIZES,
   scaleGridToDimensions,
+  SwimJourney,
 } from "../dist/index.js";
 import { CAPYBARA_SOURCE } from "../dist/capybara-art.js";
 
@@ -277,4 +278,89 @@ test("the capybara preserves all animations and frames", () => {
   );
   assert.ok(Math.max(...jumpTopRows) > Math.min(...jumpTopRows));
   assert.equal(CHARACTERS.capybara.sourceFacing, "right");
+});
+
+test("the capybara strolls from side to side while sniffing", async () => {
+  const originalSetTimeout = globalThis.setTimeout;
+  const originalClearTimeout = globalThis.clearTimeout;
+  const timeoutCallbacks = [];
+  globalThis.setTimeout = (callback) => {
+    timeoutCallbacks.push(callback);
+    return { unref() {} };
+  };
+  globalThis.clearTimeout = () => {};
+
+  try {
+    const harness = extensionHarness({ "fox-character": "capybara" });
+    await harness.handlers.get("session_start")({}, harness.context);
+    await harness.handlers.get("tool_execution_start")(
+      { toolName: "read_file" },
+      harness.context,
+    );
+
+    const widget = harness.getWidget();
+    const spriteWidth = CHARACTERS.capybara.spriteDimensions.large.width;
+    const initialLines = widget.render(80);
+    assert.match(initialLines[0], /passeando pelo código/);
+    assert.equal(visibleWidth(initialLines[2]), spriteWidth);
+
+    for (let frame = 0; frame < 10; frame += 1) timeoutCallbacks.shift()?.();
+    const strolledLines = widget.render(80);
+    assert.equal(visibleWidth(strolledLines[2]), spriteWidth + 10);
+    assert.ok(strolledLines.every((line) => visibleWidth(line) <= 80));
+  } finally {
+    globalThis.setTimeout = originalSetTimeout;
+    globalThis.clearTimeout = originalClearTimeout;
+  }
+});
+
+function journeyFromCharacter(size) {
+  const animation = CHARACTERS.capybara.animations.swim;
+  const dimensions = CHARACTERS.capybara.spriteDimensions[size];
+  const scale = (grids) =>
+    grids.map((grid) => scaleGridToDimensions(grid, dimensions));
+  return new SwimJourney(
+    {
+      walkGrids: scale(animation.journey.walkGrids),
+      walkDurationsMs: animation.journey.walkDurationsMs,
+      diveGrids: scale(animation.journey.diveGrids),
+      diveDurationsMs: animation.journey.diveDurationsMs,
+      swimGrids: scale(animation.journey.swimGrids),
+      swimDurationsMs: animation.journey.swimDurationsMs,
+    },
+    CHARACTERS.capybara.sourceFacing,
+  );
+}
+
+test("the swim journey walks, dives, crosses, floods back, and leaves only water", () => {
+  const width = 70;
+  const journey = journeyFromCharacter("large");
+  const seenPhases = new Set([journey.getPhase()]);
+  assert.equal(journey.getPhase(), "walk");
+
+  const bodyPixels = (grid) => grid.join("").replace(/[.cdefijkln]/g, "").length;
+  const initialGrid = journey.composeGrid(width);
+  assert.ok(bodyPixels(initialGrid) > 0);
+  assert.ok(initialGrid.some((row) => /d/.test(row)));
+
+  for (let tick = 0; tick < 400 && journey.getPhase() !== "water"; tick += 1) {
+    journey.advance(width);
+    seenPhases.add(journey.getPhase());
+  }
+
+  assert.deepEqual(
+    [...seenPhases].sort(),
+    ["dive", "flood", "swim", "walk", "water"],
+  );
+  const finalGrid = journey.composeGrid(width);
+  assert.equal(bodyPixels(finalGrid), 0);
+  assert.ok(finalGrid.every((row) => row.length === width));
+  assert.ok(finalGrid.some((row) => /^[dkl]+$/.test(row)));
+});
+
+test("the swim journey survives tiny widths", () => {
+  const journey = journeyFromCharacter("small");
+  for (let tick = 0; tick < 200; tick += 1) journey.advance(8);
+  const grid = journey.composeGrid(8);
+  assert.ok(grid.every((row) => row.length === 8));
 });

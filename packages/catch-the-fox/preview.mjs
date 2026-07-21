@@ -4,8 +4,10 @@ import {
   CHARACTER_IDS,
   CHARACTERS,
   gridToAnsi,
+  orientFoxGrid,
   scaleGridToDimensions,
   SPRITE_SIZE_IDS,
+  SwimJourney,
 } from "./dist/index.js";
 
 const spriteDimensions = (character, size) =>
@@ -53,8 +55,46 @@ function assertChoice(value, choices, label) {
   return value;
 }
 
-function createFrame(character, size, state, frameIndex, terminalWidth, runMotion) {
+function createStateMotion(character, size, state) {
   const animation = CHARACTERS[character].animations[state];
+  const dimensions = spriteDimensions(character, size);
+  if (animation.motion === "swim-journey" && animation.journey) {
+    const scale = (grids) =>
+      grids.map((grid) => scaleGridToDimensions(grid, dimensions));
+    return {
+      journey: new SwimJourney(
+        {
+          walkGrids: scale(animation.journey.walkGrids),
+          walkDurationsMs: animation.journey.walkDurationsMs,
+          diveGrids: scale(animation.journey.diveGrids),
+          diveDurationsMs: animation.journey.diveDurationsMs,
+          swimGrids: scale(animation.journey.swimGrids),
+          swimDurationsMs: animation.journey.swimDurationsMs,
+        },
+        CHARACTERS[character].sourceFacing,
+      ),
+      patrol: null,
+    };
+  }
+  if (animation.motion === "patrol") {
+    return { journey: null, patrol: new FoxRunMotion(dimensions.width, 1, 0) };
+  }
+  return { journey: null, patrol: null };
+}
+
+function createFrame(character, size, state, frameIndex, terminalWidth, runMotion, stateMotion) {
+  const animation = CHARACTERS[character].animations[state];
+  if (stateMotion?.journey) {
+    return {
+      animation,
+      lines: gridToAnsi(
+        stateMotion.journey.composeGrid(terminalWidth),
+        terminalWidth,
+        CHARACTERS[character].palette,
+      ),
+      offset: 0,
+    };
+  }
   let grid = scaleGridToDimensions(
     animation.grids[frameIndex % animation.grids.length],
     spriteDimensions(character, size),
@@ -65,6 +105,14 @@ function createFrame(character, size, state, frameIndex, terminalWidth, runMotio
     grid = renderRunGrid(
       grid,
       placement,
+      CHARACTERS[character].sourceFacing,
+    );
+    offset = placement.offset;
+  } else if (stateMotion?.patrol) {
+    const placement = stateMotion.patrol.snapshot(terminalWidth);
+    grid = orientFoxGrid(
+      grid,
+      placement.direction,
       CHARACTERS[character].sourceFacing,
     );
     offset = placement.offset;
@@ -80,7 +128,7 @@ function createFrame(character, size, state, frameIndex, terminalWidth, runMotio
   };
 }
 
-function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotion) {
+function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotion, stateMotion) {
   const { animation, lines, offset } = createFrame(
     character,
     size,
@@ -88,15 +136,9 @@ function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotio
     frameIndex,
     terminalWidth,
     runMotion,
+    stateMotion,
   );
   const padding = " ".repeat(offset);
-  const renderedWidth = Math.min(
-    spriteDimensions(character, size).width,
-    terminalWidth - offset,
-  );
-  const trailingPadding = " ".repeat(
-    terminalWidth - offset - renderedWidth,
-  );
   const innerWidth = terminalWidth + 3;
   const title = ` catch-the-fox · ${character} · ${size} `;
   const fitLine = (line) => line.slice(0, innerWidth).padEnd(innerWidth);
@@ -107,7 +149,10 @@ function widgetFrame(character, size, state, frameIndex, terminalWidth, runMotio
   output += `  │${fitLine(`   ${animation.label}`)}│\n`;
   output += `  │${" ".repeat(innerWidth)}│\n`;
   for (const line of lines) {
-    output += `  │   ${padding}${line}${trailingPadding}│\n`;
+    const lineTrailing = " ".repeat(
+      Math.max(0, terminalWidth - offset - visibleWidth(line)),
+    );
+    output += `  │   ${padding}${line}${lineTrailing}│\n`;
   }
   output += `  ╰${"─".repeat(innerWidth)}╯\n`;
   return output;
@@ -166,7 +211,8 @@ function comparisonPreview(state, frameIndex) {
 async function animateState(character, size, state, continuous) {
   const animation = CHARACTERS[character].animations[state];
   const runMotion = new FoxRunMotion(spriteDimensions(character, size).width);
-  const frameCount = continuous
+  const stateMotion = createStateMotion(character, size, state);
+  const frameCount = continuous || stateMotion.journey
     ? Number.POSITIVE_INFINITY
     : Math.max(animation.grids.length * 3, 8);
   for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
@@ -182,13 +228,21 @@ async function animateState(character, size, state, continuous) {
         frameIndex,
         terminalWidth,
         runMotion,
+        stateMotion,
       ),
     );
     if (state === "run") runMotion.advance(terminalWidth);
+    stateMotion.journey?.advance(terminalWidth);
+    stateMotion.patrol?.advance(terminalWidth);
+    if (!continuous && stateMotion.journey?.getPhase() === "water" && frameIndex > 8) {
+      await delay(1200);
+      break;
+    }
     await delay(
-      animation.frameDurationsMs?.[
-        frameIndex % animation.grids.length
-      ] ?? animation.intervalMs,
+      stateMotion.journey?.frameDurationMs() ??
+        animation.frameDurationsMs?.[
+          frameIndex % animation.grids.length
+        ] ?? animation.intervalMs,
     );
   }
 }

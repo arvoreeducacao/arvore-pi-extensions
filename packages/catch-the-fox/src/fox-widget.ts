@@ -3,11 +3,18 @@ import {
   CHARACTERS,
   type CharacterId,
 } from "./characters.js";
-import { FoxRunMotion, renderRunGrid } from "./fox-run-motion.js";
+import {
+  FoxRunMotion,
+  orientFoxGrid,
+  renderRunGrid,
+} from "./fox-run-motion.js";
 import {
   scaleGridToDimensions,
   type SpriteSize,
 } from "./sprite-size.js";
+import { SwimJourney } from "./swim-journey.js";
+
+const PATROL_STEP = 1;
 
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
@@ -83,8 +90,10 @@ export class FoxWidget {
   private animationTimer: ReturnType<typeof setTimeout> | null = null;
   private frameIndex = 0;
   private hidden = false;
+  private patrolMotion: FoxRunMotion | null = null;
   private runMotion: FoxRunMotion;
   private state: FoxState = "sleep";
+  private swimJourney: SwimJourney | null = null;
   private terminalWidth: number;
   private transitionTimer: ReturnType<typeof setTimeout> | null = null;
   private ui: any = null;
@@ -115,6 +124,7 @@ export class FoxWidget {
     this.state = nextState;
     this.frameIndex = 0;
     if (enteringRun) this.resetRunMotion();
+    this.resetStateMotion();
     this.render();
     if (this.hidden) return;
 
@@ -190,14 +200,19 @@ export class FoxWidget {
     if (animation.holdLastFrame && this.frameIndex >= animation.grids.length - 1) {
       return;
     }
-    const duration =
-      animation.frameDurationsMs?.[this.frameIndex] ?? animation.intervalMs;
+    const duration = this.swimJourney
+      ? this.swimJourney.frameDurationMs()
+      : animation.frameDurationsMs?.[this.frameIndex] ?? animation.intervalMs;
     this.animationTimer = setTimeout(() => {
       this.frameIndex = animation.holdLastFrame
         ? Math.min(this.frameIndex + 1, animation.grids.length - 1)
         : (this.frameIndex + 1) % animation.grids.length;
       if (this.state === "run") {
         this.runMotion.advance(this.terminalWidth);
+      } else if (this.swimJourney) {
+        this.swimJourney.advance(this.terminalWidth);
+      } else if (this.patrolMotion) {
+        this.patrolMotion.advance(this.terminalWidth);
       }
       this.render();
       this.scheduleNextFrame(animation);
@@ -209,6 +224,32 @@ export class FoxWidget {
     this.runMotion = new FoxRunMotion(
       CHARACTERS[this.character].spriteDimensions[this.size].width,
     );
+  }
+
+  private resetStateMotion(): void {
+    this.patrolMotion = null;
+    this.swimJourney = null;
+    const animation = CHARACTERS[this.character].animations[this.state];
+    const dimensions = CHARACTERS[this.character].spriteDimensions[this.size];
+    if (animation.motion === "patrol") {
+      this.patrolMotion = new FoxRunMotion(dimensions.width, PATROL_STEP, 0);
+      return;
+    }
+    if (animation.motion === "swim-journey" && animation.journey) {
+      const scale = (grids: string[][]) =>
+        grids.map((grid) => scaleGridToDimensions(grid, dimensions));
+      this.swimJourney = new SwimJourney(
+        {
+          walkGrids: scale(animation.journey.walkGrids),
+          walkDurationsMs: animation.journey.walkDurationsMs,
+          diveGrids: scale(animation.journey.diveGrids),
+          diveDurationsMs: animation.journey.diveDurationsMs,
+          swimGrids: scale(animation.journey.swimGrids),
+          swimDurationsMs: animation.journey.swimDurationsMs,
+        },
+        CHARACTERS[this.character].sourceFacing,
+      );
+    }
   }
 
   private clearTimers(): void {
@@ -225,6 +266,15 @@ export class FoxWidget {
   private renderLines = (width: number): string[] => {
     this.terminalWidth = Math.max(0, Math.floor(width));
     const animation = CHARACTERS[this.character].animations[this.state];
+    const label = ` ${animation.label}`.slice(0, this.terminalWidth);
+    if (this.swimJourney) {
+      const frame = gridToAnsi(
+        this.swimJourney.composeGrid(this.terminalWidth),
+        this.terminalWidth,
+        CHARACTERS[this.character].palette,
+      );
+      return [label, ...frame];
+    }
     const grids = animationGrids(this.character, this.size, this.state);
     let grid = grids[this.frameIndex % grids.length];
     let offset = 0;
@@ -236,6 +286,14 @@ export class FoxWidget {
         CHARACTERS[this.character].sourceFacing,
       );
       offset = placement.offset;
+    } else if (this.patrolMotion) {
+      const placement = this.patrolMotion.snapshot(this.terminalWidth);
+      grid = orientFoxGrid(
+        grid,
+        placement.direction,
+        CHARACTERS[this.character].sourceFacing,
+      );
+      offset = placement.offset;
     }
     const frame = gridToAnsi(
       grid,
@@ -243,7 +301,6 @@ export class FoxWidget {
       CHARACTERS[this.character].palette,
     );
     const padding = " ".repeat(offset);
-    const label = ` ${animation.label}`.slice(0, this.terminalWidth);
     return [label, ...frame.map((line) => `${padding}${line}`)];
   };
 

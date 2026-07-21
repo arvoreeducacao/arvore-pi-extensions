@@ -20,7 +20,9 @@ import {
 } from "./sprite-size.js";
 
 export { CHARACTER_IDS, CHARACTERS } from "./characters.js";
+export { orientFoxGrid } from "./fox-run-motion.js";
 export { gridToAnsi } from "./fox-widget.js";
+export { SwimJourney } from "./swim-journey.js";
 export {
   scaleGrid,
   scaleGridToDimensions,

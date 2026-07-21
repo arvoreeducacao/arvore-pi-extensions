@@ -11,12 +11,25 @@ export type FoxState =
 
 export type RGB = readonly [number, number, number];
 
+export type FoxMotion = "patrol" | "swim-journey";
+
+export interface SwimJourneySources {
+  walkGrids: string[][];
+  walkDurationsMs: number[];
+  diveGrids: string[][];
+  diveDurationsMs: number[];
+  swimGrids: string[][];
+  swimDurationsMs: number[];
+}
+
 export interface FoxAnimation {
   label: string;
   intervalMs: number;
   frameDurationsMs?: number[];
   holdLastFrame?: boolean;
   once?: { durationMs: number; then: FoxState };
+  motion?: FoxMotion;
+  journey?: SwimJourneySources;
   grids: string[][];
 }
 

@@ -73,10 +73,10 @@ const CAPYBARA_ANIMS: Record<FoxState, FoxAnimation> = {
     CAPYBARA_SOURCE.breathe,
     "respirando sem pressa…",
   ),
-  sniff: sourcedAnimation(
-    CAPYBARA_SOURCE.walk,
-    "passeando pelo código",
-  ),
+  sniff: {
+    ...sourcedAnimation(CAPYBARA_SOURCE.walk, "passeando pelo código"),
+    motion: "patrol",
+  },
   dig: {
     label: "cavando com os dentinhos",
     intervalMs: capybaraDigDurations[0] ?? 100,
@@ -108,10 +108,18 @@ const CAPYBARA_ANIMS: Record<FoxState, FoxAnimation> = {
     "vou deitar um pouquinho…",
     { holdLastFrame: true },
   ),
-  swim: sourcedAnimation(
-    CAPYBARA_SOURCE.swim,
-    "nadando no código",
-  ),
+  swim: {
+    ...sourcedAnimation(CAPYBARA_SOURCE.swim, "nadando no código"),
+    motion: "swim-journey",
+    journey: {
+      walkGrids: CAPYBARA_SOURCE.walk.grids,
+      walkDurationsMs: CAPYBARA_SOURCE.walk.durationsMs,
+      diveGrids: CAPYBARA_SOURCE.jumpSolo.grids,
+      diveDurationsMs: CAPYBARA_SOURCE.jumpSolo.durationsMs,
+      swimGrids: CAPYBARA_SOURCE.swim.grids,
+      swimDurationsMs: CAPYBARA_SOURCE.swim.durationsMs,
+    },
+  },
 };
 
 const CAPYBARA_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
