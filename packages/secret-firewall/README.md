@@ -43,6 +43,36 @@ model sees `... read it in bash as "$SECRET_JWT"` and can use it via
 `curl -H "Authorization: Bearer $SECRET_JWT"` without ever seeing the value.
 Captured names show up under `/secret-firewall` status.
 
+### Custom patterns
+
+The built-in pattern list can be extended with your own regexes via a JSON
+config file, so internal or vendor-specific token shapes are also caught and
+auto-exported. Config is read from, in order of precedence (both are merged;
+global first, then project):
+
+- `~/.pi/agent/secret-firewall.json` — global, applies to every project.
+- `<cwd>/.pi/secret-firewall.json` — project-local.
+
+```json
+{
+  "patterns": [
+    { "name": "ACME", "regex": "acme-[0-9a-f]{12}" },
+    { "name": "INTERNAL_TOKEN", "regex": "int_[A-Za-z0-9]{24}", "flags": "i" }
+  ]
+}
+```
+
+- `name` — used to build the exported shell var (`$SECRET_ACME`,
+  `$SECRET_ACME_2` for a second distinct match). Sanitized to `[A-Za-z0-9_]`.
+- `regex` — the pattern to match. The `g` flag is always applied.
+- `flags` — optional extra RegExp flags (e.g. `i`).
+
+Invalid regexes and malformed entries are skipped silently rather than crashing
+the firewall. Custom patterns behave exactly like the built-in ones: matches are
+masked, captured, and exported to the shell. Keep patterns specific — a
+too-broad regex will redact large chunks of normal output and degrade the agent,
+and a pathological regex runs on every tool result (ReDoS risk).
+
 ### Standing guidance in the system prompt
 
 A `before_agent_start` hook appends a short section to the system prompt every

@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { discoverSecrets } from "../dist/secrets.js";
+import { discoverSecrets, loadCustomPatterns } from "../dist/secrets.js";
 import { createRedactor } from "../dist/redact.js";
 
 function fakeJwt(seed: string): string {
@@ -117,4 +117,48 @@ test("distinct pattern matches get distinct placeholders", () => {
   assert.ok(out.text.includes('"$SECRET_JWT_2"'));
   const captured = r.drainCaptured();
   assert.equal(captured.length, 2);
+});
+
+test("loads custom patterns from .pi/secret-firewall.json", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sf-test-"));
+  try {
+    mkdirSync(join(dir, ".pi"));
+    writeFileSync(
+      join(dir, ".pi", "secret-firewall.json"),
+      JSON.stringify({ patterns: [{ name: "ACME", regex: "acme-[0-9a-f]{12}" }] }),
+    );
+    const patterns = loadCustomPatterns(dir);
+    assert.equal(patterns.length, 1);
+    assert.equal(patterns[0].name, "ACME");
+    assert.equal(patterns[0].regex, "acme-[0-9a-f]{12}");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("redactor catches and captures custom pattern matches", () => {
+  const r = createRedactor([], [{ name: "ACME", regex: "acme-[0-9a-f]{12}" }]);
+  const token = "acme-0123456789ab";
+  const out = r.redactString(`token is ${token} ok`);
+  assert.ok(!out.text.includes(token));
+  assert.ok(out.text.includes('"$SECRET_ACME"'));
+  const captured = r.drainCaptured();
+  assert.equal(captured.length, 1);
+  assert.equal(captured[0].name, "SECRET_ACME");
+  assert.equal(captured[0].value, token);
+});
+
+test("custom patterns are forced to global and coexist with defaults", () => {
+  const r = createRedactor([], [{ name: "ACME", regex: "acme-[0-9a-f]{12}", flags: "i" }]);
+  const out = r.redactString("acme-aaaaaaaaaaaa and acme-bbbbbbbbbbbb");
+  assert.ok(out.text.includes('"$SECRET_ACME"'));
+  assert.ok(out.text.includes('"$SECRET_ACME_2"'));
+  assert.equal(r.drainCaptured().length, 2);
+});
+
+test("invalid custom regex is skipped without throwing", () => {
+  const r = createRedactor([], [{ name: "BAD", regex: "([" }]);
+  const out = r.redactString("nothing to redact here");
+  assert.equal(out.hits, 0);
+  assert.equal(out.text, "nothing to redact here");
 });

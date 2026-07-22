@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TextContent, ImageContent } from "@earendil-works/pi-ai";
-import { discoverSecrets, type SecretEntry } from "./secrets.js";
+import { discoverSecrets, loadCustomPatterns, type SecretEntry } from "./secrets.js";
 import { createRedactor } from "./redact.js";
 
 type ContentBlock = TextContent | ImageContent;
@@ -27,6 +27,7 @@ export default function (pi: ExtensionAPI) {
 
   function rescan(cwd: string): void {
     entries = discoverSecrets(cwd);
+    redactor.refreshPatterns(loadCustomPatterns(cwd));
     redactor.refresh(entries);
     exportToShell(entries);
     stats.lastScan = entries.length;

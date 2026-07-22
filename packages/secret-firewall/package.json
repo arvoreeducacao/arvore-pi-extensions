@@ -1,6 +1,6 @@
 {
   "name": "@arvoretech/pi-secret-firewall",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Redacts secrets (env vars, .env files, token patterns) from the model context and tool outputs, exposing them only as $SECRET_* shell env vars the model can reference but never read",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
