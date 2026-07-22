@@ -1,11 +1,22 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { homedir } from "node:os";
 
 export interface SecretEntry {
   name: string;
   placeholder: string;
   value: string;
   source: "env" | "dotenv" | "pattern";
+}
+
+export interface CustomPatternConfig {
+  name: string;
+  regex: string;
+  flags?: string;
+}
+
+export interface FirewallConfig {
+  patterns: CustomPatternConfig[];
 }
 
 const SENSITIVE_NAME = /(SECRET|TOKEN|PASSWORD|PASSWD|PWD|API[_-]?KEY|APIKEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET|AUTH|CREDENTIAL|DSN|DATABASE_URL|CONNECTION_STRING|SESSION|COOKIE|SIGNING|ENCRYPT|SALT|BEARER)/i;
@@ -66,6 +77,43 @@ function parseDotenv(path: string): Map<string, string> {
     /* unreadable file, skip */
   }
   return out;
+}
+
+const CONFIG_FILENAME = "secret-firewall.json";
+
+function configPaths(cwd: string): string[] {
+  return [join(homedir(), ".pi", "agent", CONFIG_FILENAME), join(cwd, ".pi", CONFIG_FILENAME)];
+}
+
+function parsePatterns(raw: unknown): CustomPatternConfig[] {
+  if (!raw || typeof raw !== "object") return [];
+  const list = (raw as Record<string, unknown>).patterns;
+  if (!Array.isArray(list)) return [];
+  const out: CustomPatternConfig[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const p = item as Record<string, unknown>;
+    if (typeof p.regex !== "string" || p.regex.length === 0) continue;
+    out.push({
+      name: typeof p.name === "string" && p.name.length > 0 ? p.name : "CUSTOM",
+      regex: p.regex,
+      flags: typeof p.flags === "string" ? p.flags : undefined,
+    });
+  }
+  return out;
+}
+
+export function loadCustomPatterns(cwd: string): CustomPatternConfig[] {
+  const merged: CustomPatternConfig[] = [];
+  for (const path of configPaths(cwd)) {
+    if (!existsSync(path)) continue;
+    try {
+      merged.push(...parsePatterns(JSON.parse(readFileSync(path, "utf8"))));
+    } catch {
+      /* unreadable or invalid JSON, skip */
+    }
+  }
+  return merged;
 }
 
 export function discoverSecrets(cwd: string): SecretEntry[] {
