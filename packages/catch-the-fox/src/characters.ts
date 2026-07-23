@@ -18,6 +18,13 @@ import {
   type SpriteSize,
 } from "./sprite-size.js";
 import {
+  CAT_HEIGHT,
+  CAT_PALETTE,
+  CAT_SOURCE,
+  CAT_WIDTH,
+  type CatSourceAnimation,
+} from "./cat-art.js";
+import {
   WARRIOR_HEIGHT,
   WARRIOR_PALETTE,
   WARRIOR_SOURCE,
@@ -25,7 +32,7 @@ import {
   type WarriorSourceAnimation,
 } from "./warrior-art.js";
 
-export type CharacterId = "fox" | "capybara" | "warrior";
+export type CharacterId = "fox" | "capybara" | "warrior" | "cat";
 export type CharacterFacing = "left" | "right";
 
 export interface CharacterDefinition {
@@ -75,6 +82,56 @@ function warriorAnimation(
 function warriorAnimationDuration(source: WarriorSourceAnimation): number {
   return source.durationsMs.reduce((total, duration) => total + duration, 0);
 }
+
+function catAnimation(
+  source: CatSourceAnimation,
+  label: string,
+  options: Pick<FoxAnimation, "holdLastFrame" | "motion" | "once"> = {},
+): FoxAnimation {
+  return {
+    label,
+    intervalMs: source.durationsMs[0] ?? 100,
+    frameDurationsMs: source.durationsMs,
+    grids: source.grids,
+    ...options,
+  };
+}
+
+function catAnimationDuration(source: CatSourceAnimation): number {
+  return source.durationsMs.reduce((total, duration) => total + duration, 0);
+}
+
+const CAT_ANIMS: Record<FoxState, FoxAnimation> = {
+  sleep: catAnimation(CAT_SOURCE.sleep, "sonhando com sachê…"),
+  sniff: catAnimation(CAT_SOURCE.dance, "passeando pelo código", {
+    motion: "patrol",
+  }),
+  dig: catAnimation(CAT_SOURCE.eating, "devorando o código"),
+  run: catAnimation(CAT_SOURCE.dance, "correndo atrás do laser"),
+  jump: catAnimation(CAT_SOURCE.excited, "saltitando de alegria!"),
+  caught: catAnimation(CAT_SOURCE.box, "brincando com o resultado!", {
+    once: {
+      durationMs: catAnimationDuration(CAT_SOURCE.box),
+      then: "sleep",
+    },
+  }),
+  error: catAnimation(CAT_SOURCE.surprised, "ai! que susto", {
+    once: { durationMs: catAnimationDuration(CAT_SOURCE.surprised), then: "sleep" },
+  }),
+  sad: catAnimation(CAT_SOURCE.cry, "miando baixinho…"),
+  swim: catAnimation(CAT_SOURCE.dance, "nadando no código"),
+};
+
+const CAT_NATIVE_DIMENSIONS: SpriteDimensions = {
+  width: CAT_WIDTH,
+  height: CAT_HEIGHT,
+};
+
+const CAT_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
+  large: CAT_NATIVE_DIMENSIONS,
+  medium: CAT_NATIVE_DIMENSIONS,
+  small: CAT_NATIVE_DIMENSIONS,
+};
 
 const WARRIOR_ANIMS: Record<FoxState, FoxAnimation> = {
   sleep: warriorAnimation(WARRIOR_SOURCE.idle, "descansando a espada…"),
@@ -209,6 +266,14 @@ export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
     palette: WARRIOR_PALETTE,
     sourceFacing: "right",
     spriteDimensions: WARRIOR_DIMENSIONS,
+  },
+  cat: {
+    id: "cat",
+    name: "gato",
+    animations: CAT_ANIMS,
+    palette: CAT_PALETTE,
+    sourceFacing: "left",
+    spriteDimensions: CAT_DIMENSIONS,
   },
 };
 

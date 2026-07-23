@@ -157,7 +157,7 @@ export default function catchTheFoxExtension(
 
   pi.registerCommand("fox", {
     description:
-      "Controla a personagem: /fox <estado|hide|show|size <large|medium|small>|character <fox|capybara|warrior>|characters>",
+      "Controla a personagem: /fox <estado|hide|show|size <large|medium|small>|character <fox|capybara|warrior|cat>|characters>",
     handler: async (args, context) => {
       if (!context.hasUI) {
         context.ui.notify("/fox requer modo interativo", "error");
