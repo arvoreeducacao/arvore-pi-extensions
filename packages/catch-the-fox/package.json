@@ -1,7 +1,7 @@
 {
   "name": "@arvoretech/pi-catch-the-fox",
-  "version": "0.7.1",
-  "description": "PI extension: raposa ou capivara em pixel-art que reage ao que o agente está fazendo",
+  "version": "0.8.0",
+  "description": "PI extension: raposa, capivara ou raposa guerreira em pixel-art que reage ao que o agente está fazendo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -39,6 +39,7 @@
     "extension",
     "fox",
     "capybara",
+    "warrior",
     "widget",
     "pixel-art",
     "fun"

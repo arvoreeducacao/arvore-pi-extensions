@@ -1,16 +1,18 @@
 # catch-the-fox
 
-Extensão do PI que mostra uma **personagem em pixel-art animada** (half-block truecolor) acima do editor. Você pode escolher entre a raposa original e uma capivara mais tranquila. A personagem muda de pose conforme o que o agente está fazendo — farejando, cavando, correndo, pulando, celebrando ou dormindo enquanto espera você. Durante execuções, ela atravessa o terminal, derrapa junto à borda, vira e corre de volta.
+Extensão do PI que mostra uma **personagem em pixel-art animada** (half-block truecolor) acima do editor. Você pode escolher entre a raposa original, uma capivara mais tranquila e uma raposa guerreira de espada. A personagem muda de pose conforme o que o agente está fazendo — farejando, cavando, correndo, pulando, celebrando ou dormindo enquanto espera você. Durante execuções, ela atravessa o terminal, derrapa junto à borda, vira e corre de volta.
 
 A raposa grande continua sendo o padrão. Os tamanhos `medium` e `small` reduzem largura e altura do sprite para ocupar menos espaço no terminal.
 
 A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os quadros são extraídos pixel a pixel dos spritesheets do pack **8bit Capibaras** (14 Collective) e renderizados 1:1 no tamanho `large`, sem rescale. Cada personagem tem sua própria grade nativa:
 
-| Tamanho | Raposa | Capivara | Altura renderizada |
-|---------|--------|----------|--------------------|
-| `large` | 24 × 20 | 26 × 24 | 10–12 linhas |
-| `medium` | 18 × 16 | 20 × 18 | 8–9 linhas |
-| `small` | 12 × 10 | 13 × 12 | 5–6 linhas |
+A raposa guerreira usa 46 quadros em 7 animações (idle, caminhar, correr, corte rápido, dash, corte com arco e dano), extraídas do spritesheet em `assets/warrior-fox.png` pelo script `scripts/generate_warrior_art.py`: cada animação é recortada na bounding box unida dos seus quadros, removidos rastros que vazam das células vizinhas, reamostrada por bloco dominante (bordas pixel-art preservadas), quantizada numa paleta de 24 cores e alinhada pelos pés numa grade uniforme.
+
+| Tamanho | Raposa | Capivara | Guerreira | Altura renderizada |
+|---------|--------|----------|-----------|--------------------|
+| `large` | 24 × 20 | 26 × 24 | 28 × 24 | 10–12 linhas |
+| `medium` | 18 × 16 | 20 × 18 | 21 × 18 | 8–9 linhas |
+| `small` | 12 × 10 | 13 × 12 | 14 × 12 | 5–6 linhas |
 
 > Requer terminal com **truecolor** (Warp ✓, iTerm2 ✓, kitty ✓, ghostty ✓).
 
@@ -19,12 +21,12 @@ A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, n
 | Estado | Quando | Visual |
 |--------|--------|--------|
 | `sleep` | ocioso (turno terminou) | raposa dormindo, `zzz` cinza |
-| `sniff` | `read`, `grep`, `find`, `search`, `list` | raposa farejando, rastro cinza; capivara passeia de um lado para o outro do terminal |
-| `dig` | `edit`, `write`, `patch`, `replace` | raposa de costas cavando, terra saindo |
+| `sniff` | `read`, `grep`, `find`, `search`, `list` | raposa farejando, rastro cinza; capivara passeia de um lado para o outro do terminal; guerreira patrulha com a espada |
+| `dig` | `edit`, `write`, `patch`, `replace` | raposa de costas cavando, terra saindo; guerreira desfere cortes rápidos |
 | `run` | `bash`, `shell`, `fetch`, `web`, `curl` | raposa corre entre as bordas, derrapa e volta na direção oposta |
-| `jump` | fim do turno (sucesso) | raposa pulando com brilhos amarelos |
-| `caught` | após o pulo | raposa de frente celebrando com brilhos, 1.6s → `sleep` |
-| `error` | uma tool retornou erro | flash vermelho, 1.2s |
+| `jump` | fim do turno (sucesso) | raposa pulando com brilhos amarelos; guerreira avança num dash |
+| `caught` | após o pulo | raposa de frente celebrando com brilhos, 1.6s → `sleep`; guerreira desfere o corte com arco |
+| `error` | uma tool retornou erro | flash vermelho, 1.2s; guerreira toma um contra-ataque |
 | `sad` | 3+ erros seguidos no turno | reação triste; capivara reproduz a animação de morte e segura o último quadro |
 | `swim` | acionado manualmente | capivara faz a jornada da água: caminha até a margem que surge à frente, mergulha com o salto e atravessa nadando até a borda direita enquanto a água preenche o terminal atrás dela; volta nadando sobre a água completa e, ao chegar à esquerda, submerge — resta apenas a água ondulando |
 
@@ -41,19 +43,21 @@ Widget persistente (`ctx.ui.setWidget`, array de linhas ANSI) dirigido pelos hoo
 - `agent_end` → `jump` → `caught` → `sleep` (ou `sad` se a maré foi ruim)
 - `session_shutdown` → limpa os timers
 
-Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da personagem. O renderer `gridToAnsi` junta 2 linhas de pixels em 1 linha de texto usando half-blocks (`▀` com cor de frente = pixel de cima, cor de fundo = pixel de baixo), dobrando a resolução vertical. A arte da raposa fica em `src/fox-art.ts`; a capivara fica em `src/capybara-art.ts`. Extensão e preview compartilham os mesmos módulos para impedir divergências.
+Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da personagem. O renderer `gridToAnsi` junta 2 linhas de pixels em 1 linha de texto usando half-blocks (`▀` com cor de frente = pixel de cima, cor de fundo = pixel de baixo), dobrando a resolução vertical. A arte da raposa fica em `src/fox-art.ts`; a capivara fica em `src/capybara-art.ts`; a guerreira fica em `src/warrior-art.ts` (gerado — edite `scripts/generate_warrior_art.py`, não o `.ts`). Extensão e preview compartilham os mesmos módulos para impedir divergências.
 
 ## Comandos
 
 - `/fox` — mostra personagem, tamanho e estados atuais
 - `/fox <estado>` — força um estado (`sleep`, `sniff`, `dig`, `run`, `jump`, `caught`, `error`, `sad`, `swim`)
-- `/fox character` ou `/fox characters` — alterna entre raposa e capivara e salva a escolha
+- `/fox character` ou `/fox characters` — alterna entre raposa, capivara e guerreira e salva a escolha
 - `/fox character fox` — usa a raposa e salva a escolha
 - `/fox character capybara` — usa a capivara e salva a escolha
+- `/fox character warrior` — usa a raposa guerreira e salva a escolha
 - `/fox size large|medium|small` — troca o tamanho e salva a escolha para próximas sessões
 - `/fox hide` — esconde a personagem
 - `/fox show` — traz de volta
 - `pi --fox-character capybara` — inicia com a capivara
+- `pi --fox-character warrior` — inicia com a raposa guerreira
 - `pi --fox-size medium` — inicia no tamanho médio
 - `pi --fox-reduced-motion` — mantém as mudanças de estado, mas usa quadros estáticos sem movimento contínuo
 

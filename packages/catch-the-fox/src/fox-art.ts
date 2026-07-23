@@ -565,6 +565,17 @@ const sideWithoutShadow = sideFrames.map((frame) =>
   removeColors(frame, new Set(["Q"])),
 );
 
+const sleepingZzz: Pixel[][] = [
+  [[14, 9, "S"], [15, 8, "S"]],
+  [[15, 8, "S"], [16, 7, "S"]],
+  [[16, 7, "H"], [17, 6, "S"], [15, 8, "S"]],
+  [[17, 6, "H"], [18, 5, "S"], [16, 7, "S"]],
+];
+
+const sleepingWithZzz = sleepingFrames.map((frame, index) =>
+  setPixels(frame, sleepingZzz[index]),
+);
+
 const runFrames = sideWithoutShadow.map((frame, index) =>
   setPixels(shiftFrame(frame, index % 2 === 0 ? 0 : -1), [
     [22 - index, 17 + (index % 2), "Q"],
@@ -577,6 +588,18 @@ const jumpFrames = sideWithoutShadow.map((frame, index) =>
   setPixels(shiftFrame(frame, jumpOffsets[index]), [
     [index < 2 ? 21 : 2, index === 2 ? 5 : 3 + index, "Y"],
     [index === 2 ? 22 : -1, 9, "Y"],
+  ]),
+);
+
+const swimFrames = sideWithoutShadow.map((frame, index) =>
+  setPixels(shiftFrame(frame, index % 2 === 0 ? 0 : -1), [
+    [1 + (index % 2), 16, "C"],
+    [22 - (index % 2), 16, "C"],
+    [22, 18 + (index % 2), "C"],
+    [3 + index, 19, "C"],
+    [8 + index, 19, "C"],
+    [13 + (index % 3), 19, "C"],
+    [18 + (index % 2), 19, "C"],
   ]),
 );
 
@@ -619,7 +642,7 @@ export const ANIMS: Record<FoxState, FoxAnimation> = {
   sleep: {
     label: "esperando você…",
     intervalMs: 700,
-    grids: sleepingFrames,
+    grids: sleepingWithZzz,
   },
   sniff: {
     label: "farejando o código",
@@ -661,7 +684,7 @@ export const ANIMS: Record<FoxState, FoxAnimation> = {
   swim: {
     label: "nadando no código",
     intervalMs: 200,
-    grids: runFrames,
+    grids: swimFrames,
   },
 };
 
