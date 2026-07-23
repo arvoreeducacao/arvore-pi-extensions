@@ -12,6 +12,11 @@ import {
   WARRIOR_SOURCE,
   WARRIOR_WIDTH,
 } from "../dist/warrior-art.js";
+import {
+  CAT_HEIGHT,
+  CAT_SOURCE,
+  CAT_WIDTH,
+} from "../dist/cat-art.js";
 
 const ANSI_SEQUENCE = /\x1b\[[0-9;]*m/g;
 
@@ -312,6 +317,34 @@ test("the warrior preserves all animations and frames", () => {
   );
   assert.ok(Math.max(...idleTops) - Math.min(...idleTops) <= 2);
   assert.equal(CHARACTERS.warrior.sourceFacing, "right");
+});
+
+test("the cat preserves all animations and frames at native size", () => {
+  const sourceAnimations = Object.values(CAT_SOURCE);
+
+  assert.equal(sourceAnimations.length, 8);
+  assert.ok(
+    sourceAnimations.every(
+      (animation) => animation.grids.length === animation.durationsMs.length,
+    ),
+  );
+  for (const [state, animation] of Object.entries(CHARACTERS.cat.animations)) {
+    assert.ok(animation.grids.length > 0, state);
+    for (const grid of animation.grids) {
+      assert.equal(grid.length, CAT_HEIGHT, state);
+      assert.ok(
+        grid.every((row) => row.length === CAT_WIDTH),
+        `${state} width`,
+      );
+      assert.ok(grid.some((row) => /[^.]/.test(row)), `${state} not blank`);
+    }
+  }
+  const dimensions = new Set(
+    Object.values(CHARACTERS.cat.spriteDimensions).map(
+      ({ width, height }) => `${width}x${height}`,
+    ),
+  );
+  assert.deepEqual([...dimensions], [`${CAT_WIDTH}x${CAT_HEIGHT}`]);
 });
 
 test("the capybara strolls from side to side while sniffing", async () => {
