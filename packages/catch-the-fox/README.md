@@ -6,7 +6,7 @@ A raposa grande continua sendo o padrão. Os tamanhos `medium` e `small` reduzem
 
 A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os quadros são extraídos pixel a pixel dos spritesheets do pack **8bit Capibaras** (14 Collective) e renderizados 1:1 no tamanho `large`, sem rescale. Cada personagem tem sua própria grade nativa:
 
-A raposa guerreira usa 46 quadros em 7 animações (idle, caminhar, correr, corte rápido, dash, corte com arco e dano), extraídas do spritesheet em `assets/warrior-fox.png` pelo script `scripts/generate_warrior_art.py`: cada animação é recortada na bounding box unida dos seus quadros, removidos rastros que vazam das células vizinhas, reamostrada por bloco dominante (bordas pixel-art preservadas), quantizada numa paleta de 24 cores e alinhada pelos pés numa grade uniforme.
+A raposa guerreira usa 46 quadros em 7 animações (idle, caminhar, correr, corte rápido, dash, corte com arco e dano), extraídas de um spritesheet externo: cada animação foi recortada na bounding box unida dos seus quadros, reamostrada por bloco dominante (bordas pixel-art preservadas), quantizada numa paleta de 24 cores e alinhada pelos pés numa grade uniforme.
 
 | Tamanho | Raposa | Capivara | Guerreira | Altura renderizada |
 |---------|--------|----------|-----------|--------------------|
@@ -43,7 +43,7 @@ Widget persistente (`ctx.ui.setWidget`, array de linhas ANSI) dirigido pelos hoo
 - `agent_end` → `jump` → `caught` → `sleep` (ou `sad` se a maré foi ruim)
 - `session_shutdown` → limpa os timers
 
-Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da personagem. O renderer `gridToAnsi` junta 2 linhas de pixels em 1 linha de texto usando half-blocks (`▀` com cor de frente = pixel de cima, cor de fundo = pixel de baixo), dobrando a resolução vertical. A arte da raposa fica em `src/fox-art.ts`; a capivara fica em `src/capybara-art.ts`; a guerreira fica em `src/warrior-art.ts` (gerado — edite `scripts/generate_warrior_art.py`, não o `.ts`). Extensão e preview compartilham os mesmos módulos para impedir divergências.
+Cada sprite é uma grade de pixels (`grids`) com uma letra por cor da paleta da personagem. O renderer `gridToAnsi` junta 2 linhas de pixels em 1 linha de texto usando half-blocks (`▀` com cor de frente = pixel de cima, cor de fundo = pixel de baixo), dobrando a resolução vertical. A arte da raposa fica em `src/fox-art.ts`; a capivara fica em `src/capybara-art.ts`; a guerreira fica em `src/warrior-art.ts`. Extensão e preview compartilham os mesmos módulos para impedir divergências.
 
 ## Comandos
 
