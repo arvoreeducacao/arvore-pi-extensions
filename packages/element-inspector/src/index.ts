@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { WebSocketServer, type WebSocket } from "ws";
+import { basename } from "node:path";
 
 interface ElementData {
   tag: string;
@@ -12,6 +13,19 @@ interface ElementData {
   props?: Record<string, unknown>;
   computedStyles?: Record<string, string>;
   boundingBox?: { width: number; height: number };
+}
+
+interface SessionState {
+  lastActivityAt: number;
+  taskPreview: string;
+}
+
+const PREVIEW_MAX_LENGTH = 40;
+
+function toPreview(text: string): string {
+  const firstLine = text.split("\n")[0].trim();
+  if (firstLine.length <= PREVIEW_MAX_LENGTH) return firstLine;
+  return firstLine.slice(0, PREVIEW_MAX_LENGTH).trimEnd() + "…";
 }
 
 const PORT_RANGE_START = 9876;
@@ -60,17 +74,39 @@ function formatElement(data: ElementData): string {
   return lines.join("\n");
 }
 
+function sessionLabel(pi: ExtensionAPI): string {
+  return pi.getSessionName() || basename(process.cwd());
+}
+
+function handshakeMessage(pi: ExtensionAPI, port: number | null, state: SessionState): string {
+  return JSON.stringify({
+    type: "session",
+    name: sessionLabel(pi),
+    cwd: process.cwd(),
+    port,
+    lastActivityAt: state.lastActivityAt,
+    taskPreview: state.taskPreview,
+  });
+}
+
+function broadcast(clients: Set<WebSocket>, payload: string): void {
+  for (const client of clients) {
+    if (client.readyState === client.OPEN) client.send(payload);
+  }
+}
+
 export default function (pi: ExtensionAPI) {
   let wss: WebSocketServer | null = null;
-  let clients: Set<WebSocket> = new Set();
+  const clients: Set<WebSocket> = new Set();
   let boundPort: number | null = null;
+  const state: SessionState = { lastActivityAt: Date.now(), taskPreview: "" };
 
   pi.on("session_start", async (_event, ctx) => {
     if (wss) return;
 
     for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
       try {
-        wss = await startServer(port, pi, ctx, clients);
+        wss = await startServer(port, pi, ctx, clients, state);
         boundPort = port;
         break;
       } catch {}
@@ -79,6 +115,23 @@ export default function (pi: ExtensionAPI) {
     if (!wss) {
       ctx.ui.notify("Element Inspector: no available port", "warning");
     }
+  });
+
+  pi.on("input", (event) => {
+    if (event.text?.trim()) {
+      state.taskPreview = toPreview(event.text);
+      state.lastActivityAt = Date.now();
+      broadcast(clients, handshakeMessage(pi, boundPort, state));
+    }
+  });
+
+  pi.on("turn_start", (event) => {
+    state.lastActivityAt = event.timestamp ?? Date.now();
+    broadcast(clients, handshakeMessage(pi, boundPort, state));
+  });
+
+  pi.on("session_info_changed", () => {
+    broadcast(clients, handshakeMessage(pi, boundPort, state));
   });
 
   pi.on("session_shutdown", async () => {
@@ -95,6 +148,7 @@ function startServer(
   pi: ExtensionAPI,
   ctx: any,
   clients: Set<WebSocket>,
+  state: SessionState,
 ): Promise<WebSocketServer> {
   return new Promise((resolve, reject) => {
     const server = new WebSocketServer({ port, host: "127.0.0.1" });
@@ -103,8 +157,7 @@ function startServer(
       server.on("connection", (ws) => {
         clients.add(ws);
 
-        const sessionName = pi.getSessionName() || "Pi";
-        ws.send(JSON.stringify({ type: "session", name: sessionName, port }));
+        ws.send(handshakeMessage(pi, port, state));
 
         ws.on("close", () => clients.delete(ws));
 
