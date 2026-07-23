@@ -17,8 +17,15 @@ import {
   type SpriteDimensions,
   type SpriteSize,
 } from "./sprite-size.js";
+import {
+  WARRIOR_HEIGHT,
+  WARRIOR_PALETTE,
+  WARRIOR_SOURCE,
+  WARRIOR_WIDTH,
+  type WarriorSourceAnimation,
+} from "./warrior-art.js";
 
-export type CharacterId = "fox" | "capybara";
+export type CharacterId = "fox" | "capybara" | "warrior";
 export type CharacterFacing = "left" | "right";
 
 export interface CharacterDefinition {
@@ -50,6 +57,56 @@ function sourcedAnimation(
     ...options,
   };
 }
+
+function warriorAnimation(
+  source: WarriorSourceAnimation,
+  label: string,
+  options: Pick<FoxAnimation, "holdLastFrame" | "motion" | "once"> = {},
+): FoxAnimation {
+  return {
+    label,
+    intervalMs: source.durationsMs[0] ?? 100,
+    frameDurationsMs: source.durationsMs,
+    grids: source.grids,
+    ...options,
+  };
+}
+
+function warriorAnimationDuration(source: WarriorSourceAnimation): number {
+  return source.durationsMs.reduce((total, duration) => total + duration, 0);
+}
+
+const WARRIOR_ANIMS: Record<FoxState, FoxAnimation> = {
+  sleep: warriorAnimation(WARRIOR_SOURCE.idle, "descansando a espada…"),
+  sniff: warriorAnimation(WARRIOR_SOURCE.walk, "patrulhando o código", {
+    motion: "patrol",
+  }),
+  dig: warriorAnimation(WARRIOR_SOURCE.slash, "cortando o problema"),
+  run: warriorAnimation(WARRIOR_SOURCE.run, "investindo atrás"),
+  jump: warriorAnimation(WARRIOR_SOURCE.dash, "avançando com tudo!"),
+  caught: warriorAnimation(WARRIOR_SOURCE.bigSlash, "golpe final!", {
+    once: {
+      durationMs: warriorAnimationDuration(WARRIOR_SOURCE.bigSlash),
+      then: "sleep",
+    },
+  }),
+  error: warriorAnimation(WARRIOR_SOURCE.hurt, "ai! tomou um contra-ataque", {
+    once: { durationMs: 420, then: "sleep" },
+  }),
+  sad: {
+    label: "recuando pra se recompor…",
+    intervalMs: 650,
+    frameDurationsMs: [650, 650],
+    grids: WARRIOR_SOURCE.hurt.grids,
+  },
+  swim: warriorAnimation(WARRIOR_SOURCE.run, "nadando no código"),
+};
+
+const WARRIOR_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
+  large: { width: WARRIOR_WIDTH, height: WARRIOR_HEIGHT },
+  medium: { width: 21, height: 18 },
+  small: { width: 14, height: 12 },
+};
 
 const capybaraDigGrids = [
   ...CAPYBARA_SOURCE.crouch.grids,
@@ -144,6 +201,14 @@ export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
     palette: { ...FOX_PALETTE, ...CAPYBARA_PALETTE },
     sourceFacing: "right",
     spriteDimensions: CAPYBARA_DIMENSIONS,
+  },
+  warrior: {
+    id: "warrior",
+    name: "raposa guerreira",
+    animations: WARRIOR_ANIMS,
+    palette: WARRIOR_PALETTE,
+    sourceFacing: "right",
+    spriteDimensions: WARRIOR_DIMENSIONS,
   },
 };
 

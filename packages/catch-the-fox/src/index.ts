@@ -157,7 +157,7 @@ export default function catchTheFoxExtension(
 
   pi.registerCommand("fox", {
     description:
-      "Controla a personagem: /fox <estado|hide|show|size <large|medium|small>|character <fox|capybara>|characters>",
+      "Controla a personagem: /fox <estado|hide|show|size <large|medium|small>|character <fox|capybara|warrior>|characters>",
     handler: async (args, context) => {
       if (!context.hasUI) {
         context.ui.notify("/fox requer modo interativo", "error");
@@ -201,7 +201,9 @@ export default function catchTheFoxExtension(
       }
       if (command === "character" || command === "characters") {
         if (!value) {
-          const nextCharacter = fox.getCharacter() === "fox" ? "capybara" : "fox";
+          const currentIndex = CHARACTER_IDS.indexOf(fox.getCharacter());
+          const nextCharacter =
+            CHARACTER_IDS[(currentIndex + 1) % CHARACTER_IDS.length];
           fox.setCharacter(nextCharacter);
           persistedPreferences = {
             ...persistedPreferences,
@@ -237,7 +239,7 @@ export default function catchTheFoxExtension(
         return;
       }
       context.ui.notify(
-        `Personagem: ${fox.getCharacter()} · tamanho: ${fox.getSize()} · estados: ${Object.keys(ANIMS).join(", ")} · /fox characters alterna personagem · hide · show`,
+        `Personagem: ${fox.getCharacter()} · tamanho: ${fox.getSize()} · estados: ${Object.keys(ANIMS).join(", ")} · /fox characters troca de personagem · hide · show`,
         "info",
       );
     },

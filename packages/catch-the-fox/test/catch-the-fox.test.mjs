@@ -7,6 +7,11 @@ import catchTheFoxExtension, {
   SwimJourney,
 } from "../dist/index.js";
 import { CAPYBARA_SOURCE } from "../dist/capybara-art.js";
+import {
+  WARRIOR_HEIGHT,
+  WARRIOR_SOURCE,
+  WARRIOR_WIDTH,
+} from "../dist/warrior-art.js";
 
 const ANSI_SEQUENCE = /\x1b\[[0-9;]*m/g;
 
@@ -278,6 +283,35 @@ test("the capybara preserves all animations and frames", () => {
   );
   assert.ok(Math.max(...jumpTopRows) > Math.min(...jumpTopRows));
   assert.equal(CHARACTERS.capybara.sourceFacing, "right");
+});
+
+test("the warrior preserves all animations and frames", () => {
+  const sourceAnimations = Object.values(WARRIOR_SOURCE);
+
+  assert.equal(sourceAnimations.length, 7);
+  assert.ok(
+    sourceAnimations.every(
+      (animation) => animation.grids.length === animation.durationsMs.length,
+    ),
+  );
+  for (const [state, animation] of Object.entries(
+    CHARACTERS.warrior.animations,
+  )) {
+    assert.ok(animation.grids.length > 0, state);
+    for (const grid of animation.grids) {
+      assert.equal(grid.length, WARRIOR_HEIGHT, state);
+      assert.ok(
+        grid.every((row) => row.length === WARRIOR_WIDTH),
+        `${state} width`,
+      );
+      assert.ok(grid.some((row) => /[^.]/.test(row)), `${state} not blank`);
+    }
+  }
+  const idleTops = WARRIOR_SOURCE.idle.grids.map((grid) =>
+    grid.findIndex((row) => /[^.]/.test(row)),
+  );
+  assert.ok(Math.max(...idleTops) - Math.min(...idleTops) <= 2);
+  assert.equal(CHARACTERS.warrior.sourceFacing, "right");
 });
 
 test("the capybara strolls from side to side while sniffing", async () => {
