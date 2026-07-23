@@ -103,7 +103,9 @@ function catAnimationDuration(source: CatSourceAnimation): number {
 
 const CAT_ANIMS: Record<FoxState, FoxAnimation> = {
   sleep: catAnimation(CAT_SOURCE.sleep, "sonhando com sachê…"),
-  sniff: catAnimation(CAT_SOURCE.idle, "de olho no código"),
+  sniff: catAnimation(CAT_SOURCE.dance, "passeando pelo código", {
+    motion: "patrol",
+  }),
   dig: catAnimation(CAT_SOURCE.eating, "devorando o código"),
   run: catAnimation(CAT_SOURCE.dance, "correndo atrás do laser"),
   jump: catAnimation(CAT_SOURCE.excited, "saltitando de alegria!"),
