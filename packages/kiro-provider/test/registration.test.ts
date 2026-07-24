@@ -26,13 +26,13 @@ describe("Feature 1: Extension Registration", () => {
 		expect(registerProvider.mock.calls[0][0]).toBe("kiro");
 	});
 
-	it("registers 14 models", async () => {
+	it("registers 19 models", async () => {
 		const mod = await import("../src/index.js");
 		const { pi, registerProvider } = mockPi();
 		mod.default(pi);
 
 		const config = registerProvider.mock.calls[0][1];
-		expect(config.models).toHaveLength(18);
+		expect(config.models).toHaveLength(19);
 	});
 
 	it("registers OAuth with name 'Kiro (Builder ID / Google / GitHub)'", async () => {

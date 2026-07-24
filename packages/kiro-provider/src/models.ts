@@ -8,6 +8,7 @@ const CACHE_PATH = join(homedir(), ".kiro-models-cache.json");
 
 // Valid Kiro model IDs - API accepts friendly names directly
 export const KIRO_MODEL_IDS = new Set([
+	"claude-opus-5",
 	"claude-opus-4.8",
 	"claude-opus-4.7",
 	"claude-opus-4.6",
@@ -231,6 +232,7 @@ export function resolveApiRegion(ssoRegion: string | undefined): string {
  */
 const MODELS_BY_REGION: Record<string, Set<string>> = {
 	"us-east-1": new Set([
+		"claude-opus-5",
 		"claude-opus-4-8",
 		"claude-opus-4-7",
 		"claude-opus-4-6",
@@ -252,6 +254,7 @@ const MODELS_BY_REGION: Record<string, Set<string>> = {
 	]),
 	// API-verified 2026-04-14 (eu-west-1 IdC token), glm-5 removed 2026-05-05 (us-east-1 only)
 	"eu-central-1": new Set([
+		"claude-opus-5",
 		"claude-opus-4-8",
 		"claude-opus-4-7",
 		"claude-opus-4-6",
@@ -295,6 +298,20 @@ const ZERO_COST = Object.freeze({
 });
 
 export const kiroModels = [
+	{
+		id: "claude-opus-5",
+		name: "Claude Opus 5",
+		api: "kiro-api" as const,
+		provider: "kiro" as const,
+		baseUrl: BASE_URL,
+		reasoning: true,
+		thinkingLevelMap: { xhigh: "xhigh" },
+		input: ["text", "image"] as ("text" | "image")[],
+		cost: ZERO_COST,
+		contextWindow: 1000000,
+		maxTokens: 128000,
+		firstTokenTimeout: 180_000,
+	},
 	{
 		id: "claude-opus-4-8",
 		name: "Claude Opus 4.8",
