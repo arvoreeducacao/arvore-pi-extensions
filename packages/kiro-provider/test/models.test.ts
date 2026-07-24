@@ -11,6 +11,7 @@ describe("Feature 2: Model Definitions", () => {
 	describe("resolveKiroModel", () => {
 		it.each([
 			// Claude models - dash to dot conversion
+			["claude-opus-5", "claude-opus-5"],
 			["claude-opus-4-8", "claude-opus-4.8"],
 			["claude-opus-4-7", "claude-opus-4.7"],
 			["claude-opus-4-6", "claude-opus-4.6"],
@@ -40,8 +41,8 @@ describe("Feature 2: Model Definitions", () => {
 	});
 
 	describe("KIRO_MODEL_IDS", () => {
-		it("contains 18 model IDs", () => {
-			expect(KIRO_MODEL_IDS.size).toBe(18);
+		it("contains 19 model IDs", () => {
+			expect(KIRO_MODEL_IDS.size).toBe(19);
 		});
 	});
 
@@ -91,8 +92,8 @@ describe("Feature 2: Model Definitions", () => {
 	});
 
 	describe("model catalog", () => {
-		it("defines 18 models", () => {
-			expect(kiroModels).toHaveLength(18);
+		it("defines 19 models", () => {
+			expect(kiroModels).toHaveLength(19);
 		});
 
 		it("claude-haiku-4-5 has reasoning=false", () => {
@@ -194,6 +195,7 @@ describe("Feature 2: Model Definitions", () => {
 		}
 
 		const EXTENDED_MODELS = [
+			"claude-opus-5",
 			"claude-opus-4-8",
 			"claude-opus-4-7",
 			"claude-opus-4-6",
