@@ -133,6 +133,16 @@ const CAT_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
   small: CAT_NATIVE_DIMENSIONS,
 };
 
+const WARRIOR_NATIVE_DIMENSIONS: SpriteDimensions = {
+  width: WARRIOR_WIDTH,
+  height: WARRIOR_HEIGHT,
+};
+
+const CAPYBARA_NATIVE_DIMENSIONS: SpriteDimensions = {
+  width: CAPYBARA_WIDTH,
+  height: CAPYBARA_HEIGHT,
+};
+
 const WARRIOR_ANIMS: Record<FoxState, FoxAnimation> = {
   sleep: warriorAnimation(WARRIOR_SOURCE.idle, "descansando a espada…"),
   sniff: warriorAnimation(WARRIOR_SOURCE.walk, "patrulhando o código", {
@@ -150,19 +160,14 @@ const WARRIOR_ANIMS: Record<FoxState, FoxAnimation> = {
   error: warriorAnimation(WARRIOR_SOURCE.hurt, "ai! tomou um contra-ataque", {
     once: { durationMs: 420, then: "sleep" },
   }),
-  sad: {
-    label: "recuando pra se recompor…",
-    intervalMs: 650,
-    frameDurationsMs: [650, 650],
-    grids: WARRIOR_SOURCE.hurt.grids,
-  },
+  sad: warriorAnimation(WARRIOR_SOURCE.sad, "recuando pra se recompor…"),
   swim: warriorAnimation(WARRIOR_SOURCE.run, "nadando no código"),
 };
 
 const WARRIOR_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
-  large: { width: WARRIOR_WIDTH, height: WARRIOR_HEIGHT },
-  medium: { width: 21, height: 18 },
-  small: { width: 14, height: 12 },
+  large: WARRIOR_NATIVE_DIMENSIONS,
+  medium: WARRIOR_NATIVE_DIMENSIONS,
+  small: WARRIOR_NATIVE_DIMENSIONS,
 };
 
 const capybaraDigGrids = [
@@ -237,9 +242,9 @@ const CAPYBARA_ANIMS: Record<FoxState, FoxAnimation> = {
 };
 
 const CAPYBARA_DIMENSIONS: Record<SpriteSize, SpriteDimensions> = {
-  large: { width: CAPYBARA_WIDTH, height: CAPYBARA_HEIGHT },
-  medium: { width: 20, height: 18 },
-  small: { width: 13, height: 12 },
+  large: CAPYBARA_NATIVE_DIMENSIONS,
+  medium: CAPYBARA_NATIVE_DIMENSIONS,
+  small: CAPYBARA_NATIVE_DIMENSIONS,
 };
 
 export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
@@ -263,7 +268,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
     id: "warrior",
     name: "raposa guerreira",
     animations: WARRIOR_ANIMS,
-    palette: WARRIOR_PALETTE,
+    palette: { ...FOX_PALETTE, ...WARRIOR_PALETTE },
     sourceFacing: "right",
     spriteDimensions: WARRIOR_DIMENSIONS,
   },
@@ -271,7 +276,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDefinition> = {
     id: "cat",
     name: "gato",
     animations: CAT_ANIMS,
-    palette: CAT_PALETTE,
+    palette: { ...FOX_PALETTE, ...CAT_PALETTE },
     sourceFacing: "left",
     spriteDimensions: CAT_DIMENSIONS,
   },

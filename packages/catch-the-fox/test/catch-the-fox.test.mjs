@@ -293,7 +293,7 @@ test("the capybara preserves all animations and frames", () => {
 test("the warrior preserves all animations and frames", () => {
   const sourceAnimations = Object.values(WARRIOR_SOURCE);
 
-  assert.equal(sourceAnimations.length, 7);
+  assert.equal(sourceAnimations.length, 8);
   assert.ok(
     sourceAnimations.every(
       (animation) => animation.grids.length === animation.durationsMs.length,
