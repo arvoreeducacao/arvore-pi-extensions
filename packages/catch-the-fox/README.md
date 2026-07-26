@@ -2,19 +2,19 @@
 
 Extensão do PI que mostra uma **personagem em pixel-art animada** (half-block truecolor) acima do editor. Você pode escolher entre a raposa original, uma capivara mais tranquila, uma raposa guerreira de espada e um gato. A personagem muda de pose conforme o que o agente está fazendo — farejando, cavando, correndo, pulando, celebrando ou dormindo enquanto espera você. Durante execuções, ela atravessa o terminal, derrapa junto à borda, vira e corre de volta.
 
-A raposa grande continua sendo o padrão. Os tamanhos `medium` e `small` reduzem largura e altura do sprite para ocupar menos espaço no terminal.
+A raposa grande continua sendo o padrão e os tamanhos `medium` e `small` reduzem o sprite dela. Capivara, guerreira e gato usam um **canvas único de 32 × 24** em todos os tamanhos — cada quadro é composto na grade nativa da arte, sem rescale por tamanho, para o melhor resultado visual possível.
 
-A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os quadros são extraídos pixel a pixel dos spritesheets do pack **8bit Capibaras** (14 Collective) e renderizados 1:1 no tamanho `large`, sem rescale. Cada personagem tem sua própria grade nativa:
+A capivara usa 81 quadros distribuídos em 11 animações: respirar, caminhar, nadar, agachar, dois ataques, correr, dano, morte e dois saltos. Os quadros são copiados pixel a pixel dos spritesheets do pack **8bit Capibaras** (14 Collective), 1:1 e com a paleta original. Animações mais largas que o canvas (ataques, saltos, morte) usam uma janela que acompanha o sprite quadro a quadro, mantendo a linha do chão da animação.
 
-A raposa guerreira usa 46 quadros em 7 animações (idle, caminhar, correr, corte rápido, dash, corte com arco e dano), extraídas de um spritesheet externo: cada animação foi recortada na bounding box unida dos seus quadros, reamostrada por bloco dominante (bordas pixel-art preservadas), quantizada numa paleta de 24 cores e alinhada pelos pés numa grade uniforme.
+A raposa guerreira usa 47 quadros em 8 animações (idle, caminhar, correr, corte rápido, dash, corte com arco, dano e desânimo) extraídas de um spritesheet externo de 64×64 por quadro. A arte nativa é grande demais para o terminal, então cada célula inteira é reduzida para 50% com Lanczos e requantizada por cor mais próxima na paleta original do sheet — o que preserva o alinhamento entre quadros e evita as linhas grossas e desalinhadas da amostragem por bloco dominante usada antes.
 
-O gato usa 69 quadros em 8 animações do pack **CatPack** (dormir, sentado, comendo, dançando, animado, caixa de papelão, susto e choro), recortados quadro a quadro dos strips individuais 32×32 e renderizados 1:1 em todos os tamanhos — o gato não tem downscale propositalmente, para preservar a qualidade nativa da arte.
+O gato usa 69 quadros em 8 animações do pack **CatPack** (dormir, sentado, comendo, dançando, animado, caixa de papelão, susto e choro), recortados dos strips individuais 32×32 e reduzidos para 75% com a mesma técnica de Lanczos + requantização, para caber no canvas comum sem dominar o terminal.
 
 | Tamanho | Raposa | Capivara | Guerreira | Gato | Altura renderizada |
 |---------|--------|----------|-----------|------|--------------------|
-| `large` | 24 × 20 | 26 × 24 | 28 × 24 | 32 × 32 | 10–16 linhas |
-| `medium` | 18 × 16 | 20 × 18 | 21 × 18 | 32 × 32 | 8–16 linhas |
-| `small` | 12 × 10 | 13 × 12 | 14 × 12 | 32 × 32 | 5–16 linhas |
+| `large` | 24 × 20 | 32 × 24 | 32 × 24 | 32 × 24 | 10–12 linhas |
+| `medium` | 18 × 16 | 32 × 24 | 32 × 24 | 32 × 24 | 8–12 linhas |
+| `small` | 12 × 10 | 32 × 24 | 32 × 24 | 32 × 24 | 5–12 linhas |
 
 > Requer terminal com **truecolor** (Warp ✓, iTerm2 ✓, kitty ✓, ghostty ✓).
 
