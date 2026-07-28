@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { randomUUID } from "node:crypto";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { clearCredentials, getCredentials, saveCredentials } from "./auth.js";
 import { getConfig } from "./config.js";
 import { registerMemoryTools } from "./tools.js";
@@ -47,6 +47,20 @@ let sessionId = "";
 let lastFlushedTurn = -1;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let lastSearchResults: SearchResult[] = [];
+
+function isStaleCtxError(error: unknown): boolean {
+  return /stale after session replacement/.test(String(error));
+}
+
+function staleSafeSetStatus(ctx: ExtensionContext): (key: string, text: string) => void {
+  return (key, text) => {
+    try {
+      ctx.ui.setStatus(key, text);
+    } catch (error) {
+      if (!isStaleCtxError(error)) throw error;
+    }
+  };
+}
 
 function openBrowser(url: string): void {
   if (process.platform === "darwin") {
@@ -318,7 +332,14 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
       clearTimeout(flushTimer);
     }
     flushTimer = setTimeout(() => {
-      void flush(ctx.sessionManager.getEntries(), false, (k, t) => ctx.ui.setStatus(k, t));
+      let entries: unknown[];
+      try {
+        entries = ctx.sessionManager.getEntries();
+      } catch (error) {
+        if (isStaleCtxError(error)) return;
+        throw error;
+      }
+      void flush(entries, false, staleSafeSetStatus(ctx));
     }, FLUSH_DEBOUNCE_MS);
   });
 
@@ -326,8 +347,12 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
     if (flushTimer) {
       clearTimeout(flushTimer);
     }
-    await flush(ctx.sessionManager.getEntries(), true, (k, t) => ctx.ui.setStatus(k, t));
-    disposeMemoryWidget(ctx);
+    try {
+      await flush(ctx.sessionManager.getEntries(), true, staleSafeSetStatus(ctx));
+      disposeMemoryWidget(ctx);
+    } catch (error) {
+      if (!isStaleCtxError(error)) throw error;
+    }
   });
 
   pi.registerCommand("memory-login", {
