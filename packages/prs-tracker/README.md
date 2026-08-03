@@ -35,8 +35,8 @@ Set the default per project in `.pi/prs-tracker.json` at the hub root:
 Or via the `PI_PRS_TRACKER_MODE` env var, which wins over the file. `/prs on|off|widget|context`
 changes the mode for the current session only.
 
-`/prs track <url|owner/repo#N|N>` opts a single PR in without enabling auto-detection —
-it switches to `widget` if the extension was `off`.
+`/prs track <url|owner/repo#N|N>` adds that PR explicitly. If the extension was `off`,
+it switches to `widget`, which enables polling and auto-detection for the rest of the session.
 
 ## How it works
 
@@ -63,6 +63,7 @@ The production deploy run is matched by the `push` event on the merge commit, pi
 - `/prs` — show the current mode and usage
 - `/prs on` — enable full tracking (`context` mode) for this session
 - `/prs widget` — enable tracking without context injection
+- `/prs context` — enable full tracking with context injection
 - `/prs off` — stop polling, hide the widget and inject nothing
 - `/prs track <pr>` — track one PR explicitly (url, `owner/repo#N` or `N`)
 - `/prs hide` — hide the widget (keeps tracking)

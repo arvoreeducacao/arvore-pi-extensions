@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { tmpdir } from "node:os";
@@ -42,7 +42,8 @@ const MERGED_RETENTION_MS = 24 * 60 * 60 * 1000;
 const GIT_REVIEW_DISCOVERY_FILE = join(tmpdir(), `pi-git-review-${process.pid}.json`);
 const GIT_REVIEW_REQUEST_FILE = join(tmpdir(), `pi-git-review-request-${process.pid}.json`);
 const PR_URL_RE = /https?:\/\/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/g;
-const PR_REF_RE = /^(?:https?:\/\/github\.com\/)?([^/\s]+\/[^/\s]+?)(?:\/pull\/|#)(\d+)$/;
+const GITHUB_REPO_RE = /^[\w.-]+\/[\w.-]+$/;
+const PR_REF_RE = /^(?:https?:\/\/github\.com\/)?([\w.-]+\/[\w.-]+?)(?:\/pull\/|#)(\d+)$/;
 const STATE_DIR = ".pi/prs-tracker-sessions";
 const CONFIG_FILE = ".pi/prs-tracker.json";
 const DEFAULT_MODE: Mode = "off";
@@ -196,9 +197,9 @@ function keyOf(repo: string, number: number): string {
   return `${repo}#${number}`;
 }
 
-function runGh(args: string): string | null {
+function runGh(args: string[]): string | null {
   try {
-    return execSync(`gh ${args}`, { encoding: "utf-8", timeout: 30_000 }).trim();
+    return execFileSync("gh", args, { encoding: "utf-8", timeout: 30_000 }).trim();
   } catch {
     return null;
   }
@@ -256,7 +257,7 @@ function findDeployJob(
   repo: string,
   databaseId: number,
 ): { name: string; status: string; conclusion: string } | null {
-  const out = runGh(`run view ${databaseId} --repo ${repo} --json jobs`);
+  const out = runGh(["run", "view", String(databaseId), "--repo", repo, "--json", "jobs"]);
   if (!out) return null;
   try {
     const data = JSON.parse(out) as {
@@ -273,9 +274,18 @@ function findDeployJob(
 }
 
 function fetchDeploy(repo: string, sha: string): DeployInfo | null {
-  const out = runGh(
-    `run list --repo ${repo} --commit ${sha} --json databaseId,name,status,conclusion,url,event --limit 20`,
-  );
+  const out = runGh([
+    "run",
+    "list",
+    "--repo",
+    repo,
+    "--commit",
+    sha,
+    "--json",
+    "databaseId,name,status,conclusion,url,event",
+    "--limit",
+    "20",
+  ]);
   if (!out) return null;
   try {
     const runs = JSON.parse(out) as Array<{
@@ -318,9 +328,15 @@ function fetchDeploy(repo: string, sha: string): DeployInfo | null {
 }
 
 function fetchPrDetails(number: number, repo: string): TrackedPr | null {
-  const out = runGh(
-    `pr view ${number} --repo ${repo} --json number,title,state,url,isDraft,mergedAt,mergeCommit,statusCheckRollup`,
-  );
+  const out = runGh([
+    "pr",
+    "view",
+    String(number),
+    "--repo",
+    repo,
+    "--json",
+    "number,title,state,url,isDraft,mergedAt,mergeCommit,statusCheckRollup",
+  ]);
   if (!out) return null;
   try {
     const data = JSON.parse(out) as {
@@ -368,8 +384,8 @@ function parsePrRef(input: string): { repo: string; number: number } | null {
   if (full) return { repo: full[1], number: Number(full[2]) };
   const bare = /^#?(\d+)$/.exec(trimmed);
   if (!bare) return null;
-  const repo = runGh("repo view --json nameWithOwner -q .nameWithOwner");
-  if (!repo) return null;
+  const repo = runGh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]);
+  if (!repo || !GITHUB_REPO_RE.test(repo)) return null;
   return { repo, number: Number(bare[1]) };
 }
 
@@ -775,7 +791,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
 
   pi.registerCommand("prs", {
     description:
-      "PR tracking (opt-in). Usage: /prs [on|off|widget|track <pr>|show|hide|merged|refresh]",
+      "PR tracking (opt-in). Usage: /prs [on|off|widget|context|track <pr>|show|hide|merged|refresh]",
     handler: async (args, ctx) => {
       const raw = (args ?? "").trim();
       const [rawSub, ...rest] = raw.split(/\s+/);
@@ -788,13 +804,16 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
           ctx.ui.notify("Usage: /prs track <url|owner/repo#N|N>", "warning");
           return;
         }
-        if (mode === "off") mode = "widget";
+        const cwd = ctx?.cwd ?? process.cwd();
+        const wasOff = mode === "off";
+        if (wasOff) loadState(cwd);
         if (!trackPr(ref.number, ref.repo)) {
           ctx.ui.notify(`Não consegui ler ${ref.repo}#${ref.number} via gh.`, "error");
           return;
         }
+        if (wasOff) mode = "widget";
         hidden = false;
-        saveState(ctx?.cwd ?? process.cwd());
+        saveState(cwd);
         startPolling(ctx);
         updateWidget(ctx);
         requestGitReviewServer();
@@ -848,7 +867,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
             ctx.ui.notify(`PRs atualizados (${tracked.size} rastreado(s)).`, "info");
           } else {
             ctx.ui.notify(
-              `Modo atual: ${mode}. Usage: /prs [on|off|widget|track <pr>|show|hide|merged|refresh]`,
+              `Modo atual: ${mode}. Usage: /prs [on|off|widget|context|track <pr>|show|hide|merged|refresh]`,
               "info",
             );
           }
@@ -867,7 +886,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
 
         default:
           ctx.ui.notify(
-            "Usage: /prs [on|off|widget|track <pr>|show|hide|merged|refresh]",
+            "Usage: /prs [on|off|widget|context|track <pr>|show|hide|merged|refresh]",
             "warning",
           );
       }
