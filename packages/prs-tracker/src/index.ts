@@ -1,9 +1,10 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { tmpdir } from "node:os";
 
+type Mode = "off" | "widget" | "context";
 type CiState = "PENDING" | "PASS" | "FAIL" | "NONE";
 type DeployState = "QUEUED" | "IN_PROGRESS" | "SUCCESS" | "FAILURE" | "SKIPPED" | "NONE";
 
@@ -41,7 +42,11 @@ const MERGED_RETENTION_MS = 24 * 60 * 60 * 1000;
 const GIT_REVIEW_DISCOVERY_FILE = join(tmpdir(), `pi-git-review-${process.pid}.json`);
 const GIT_REVIEW_REQUEST_FILE = join(tmpdir(), `pi-git-review-request-${process.pid}.json`);
 const PR_URL_RE = /https?:\/\/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/g;
+const GITHUB_REPO_RE = /^[\w.-]+\/[\w.-]+$/;
+const PR_REF_RE = /^(?:https?:\/\/github\.com\/)?([\w.-]+\/[\w.-]+?)(?:\/pull\/|#)(\d+)$/;
 const STATE_DIR = ".pi/prs-tracker-sessions";
+const CONFIG_FILE = ".pi/prs-tracker.json";
+const DEFAULT_MODE: Mode = "off";
 const DEPLOY_WORKFLOW_RE = /deploy|publish|release/i;
 const DEPLOY_STAGING_RE = /staging/i;
 
@@ -49,6 +54,7 @@ const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", 
 const SPINNER_INTERVAL_MS = 120;
 
 const tracked = new Map<string, TrackedPr>();
+let mode: Mode = DEFAULT_MODE;
 let hidden = false;
 let hideMerged = false;
 let widgetVisible = false;
@@ -90,6 +96,25 @@ function findHubRoot(cwd: string): string | null {
 function getStatePath(cwd: string): string | null {
   const root = findHubRoot(cwd);
   return root ? join(root, STATE_DIR, `${sessionId}.json`) : null;
+}
+
+function parseMode(value: unknown): Mode | null {
+  return value === "off" || value === "widget" || value === "context" ? value : null;
+}
+
+function loadMode(cwd: string): Mode {
+  const fromEnv = parseMode(process.env.PI_PRS_TRACKER_MODE);
+  if (fromEnv) return fromEnv;
+  const root = findHubRoot(cwd);
+  if (!root) return DEFAULT_MODE;
+  const path = join(root, CONFIG_FILE);
+  if (!existsSync(path)) return DEFAULT_MODE;
+  try {
+    const raw = JSON.parse(readFileSync(path, "utf-8")) as { mode?: unknown };
+    return parseMode(raw.mode) ?? DEFAULT_MODE;
+  } catch {
+    return DEFAULT_MODE;
+  }
 }
 
 interface GitReviewInfo {
@@ -172,9 +197,9 @@ function keyOf(repo: string, number: number): string {
   return `${repo}#${number}`;
 }
 
-function runGh(args: string): string | null {
+function runGh(args: string[]): string | null {
   try {
-    return execSync(`gh ${args}`, { encoding: "utf-8", timeout: 30_000 }).trim();
+    return execFileSync("gh", args, { encoding: "utf-8", timeout: 30_000 }).trim();
   } catch {
     return null;
   }
@@ -232,7 +257,7 @@ function findDeployJob(
   repo: string,
   databaseId: number,
 ): { name: string; status: string; conclusion: string } | null {
-  const out = runGh(`run view ${databaseId} --repo ${repo} --json jobs`);
+  const out = runGh(["run", "view", String(databaseId), "--repo", repo, "--json", "jobs"]);
   if (!out) return null;
   try {
     const data = JSON.parse(out) as {
@@ -249,9 +274,18 @@ function findDeployJob(
 }
 
 function fetchDeploy(repo: string, sha: string): DeployInfo | null {
-  const out = runGh(
-    `run list --repo ${repo} --commit ${sha} --json databaseId,name,status,conclusion,url,event --limit 20`,
-  );
+  const out = runGh([
+    "run",
+    "list",
+    "--repo",
+    repo,
+    "--commit",
+    sha,
+    "--json",
+    "databaseId,name,status,conclusion,url,event",
+    "--limit",
+    "20",
+  ]);
   if (!out) return null;
   try {
     const runs = JSON.parse(out) as Array<{
@@ -294,9 +328,15 @@ function fetchDeploy(repo: string, sha: string): DeployInfo | null {
 }
 
 function fetchPrDetails(number: number, repo: string): TrackedPr | null {
-  const out = runGh(
-    `pr view ${number} --repo ${repo} --json number,title,state,url,isDraft,mergedAt,mergeCommit,statusCheckRollup`,
-  );
+  const out = runGh([
+    "pr",
+    "view",
+    String(number),
+    "--repo",
+    repo,
+    "--json",
+    "number,title,state,url,isDraft,mergedAt,mergeCommit,statusCheckRollup",
+  ]);
   if (!out) return null;
   try {
     const data = JSON.parse(out) as {
@@ -336,6 +376,17 @@ function trackPr(number: number, repo: string): boolean {
   }
   tracked.set(keyOf(repo, number), details);
   return true;
+}
+
+function parsePrRef(input: string): { repo: string; number: number } | null {
+  const trimmed = input.trim();
+  const full = PR_REF_RE.exec(trimmed);
+  if (full) return { repo: full[1], number: Number(full[2]) };
+  const bare = /^#?(\d+)$/.exec(trimmed);
+  if (!bare) return null;
+  const repo = runGh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]);
+  if (!repo || !GITHUB_REPO_RE.test(repo)) return null;
+  return { repo, number: Number(bare[1]) };
 }
 
 function pruneStale(): void {
@@ -407,7 +458,8 @@ function resultToText(result: any): string {
 const CONTEXT_CUSTOM_TYPE = "prs-tracker-context";
 
 function ciLabel(ci: CiSummary | null): string {
-  if (!ci || ci.state === "NONE") return "sem CI";
+  if (!ci) return "CI ainda não reportado";
+  if (ci.state === "NONE") return "sem CI";
   const link = ci.url ? ` (logs: ${ci.url})` : "";
   if (ci.state === "PENDING") return `CI rodando (${ci.passed}/${ci.total} ok, ${ci.pending} pendente, ${ci.failed} falha)${link}`;
   if (ci.state === "FAIL") return `CI FALHOU (${ci.failed}/${ci.total} falharam)${link}`;
@@ -666,14 +718,35 @@ function stopPolling(): void {
   }
 }
 
+function activate(ctx: any): void {
+  const cwd = ctx?.cwd ?? process.cwd();
+  if (tracked.size === 0) loadState(cwd);
+  if (tracked.size > 0) refreshAll();
+  startPolling(ctx);
+  updateWidget(ctx);
+  requestGitReviewServer();
+}
+
+function deactivate(ctx: any): void {
+  stopPolling();
+  stopSpinner();
+  if (widgetVisible) ctx?.ui?.setWidget?.("pi-prs-tracker", undefined);
+  widgetVisible = false;
+}
+
+function setMode(next: Mode, ctx: any): void {
+  mode = next;
+  if (mode === "off") deactivate(ctx);
+  else activate(ctx);
+}
+
 export default function prsTrackerExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event, ctx) => {
     sessionId = getSessionId(ctx);
-    loadState(ctx?.cwd ?? process.cwd());
-    if (tracked.size > 0) refreshAll();
-    startPolling(ctx);
-    updateWidget(ctx);
-    requestGitReviewServer();
+    uiCtx = ctx;
+    mode = loadMode(ctx?.cwd ?? process.cwd());
+    if (mode === "off") return;
+    activate(ctx);
   });
 
   pi.on("session_shutdown", async () => {
@@ -685,6 +758,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
     const messages = event.messages.filter(
       (m: any) => m?.customType !== CONTEXT_CUSTOM_TYPE,
     );
+    if (mode !== "context") return { messages };
     const summary = buildContextSummary();
     if (!summary) return { messages };
     messages.push({
@@ -699,7 +773,7 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
 
   pi.on("tool_execution_end", async (event: any, ctx: any) => {
     const name = event?.toolName;
-    if (name !== "bash" || event?.isError) return;
+    if (mode === "off" || name !== "bash" || event?.isError) return;
 
     const before = tracked.size;
     const beforeSnapshot = JSON.stringify([...tracked.values()]);
@@ -716,9 +790,53 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
   });
 
   pi.registerCommand("prs", {
-    description: "Manage the pinned PRs widget. Usage: /prs [show|hide|merged|refresh]",
+    description:
+      "PR tracking (opt-in). Usage: /prs [on|off|widget|context|track <pr>|show|hide|merged|refresh]",
     handler: async (args, ctx) => {
-      const sub = (args ?? "").trim().toLowerCase();
+      const raw = (args ?? "").trim();
+      const [rawSub, ...rest] = raw.split(/\s+/);
+      const sub = (rawSub ?? "").toLowerCase();
+      const rawArg = rest.join(" ");
+
+      if (sub === "track") {
+        const ref = parsePrRef(rawArg);
+        if (!ref) {
+          ctx.ui.notify("Usage: /prs track <url|owner/repo#N|N>", "warning");
+          return;
+        }
+        const cwd = ctx?.cwd ?? process.cwd();
+        const wasOff = mode === "off";
+        if (wasOff) loadState(cwd);
+        if (!trackPr(ref.number, ref.repo)) {
+          ctx.ui.notify(`Não consegui ler ${ref.repo}#${ref.number} via gh.`, "error");
+          return;
+        }
+        if (wasOff) mode = "widget";
+        hidden = false;
+        saveState(cwd);
+        startPolling(ctx);
+        updateWidget(ctx);
+        requestGitReviewServer();
+        ctx.ui.notify(`Rastreando ${ref.repo}#${ref.number} (modo ${mode}).`, "info");
+        return;
+      }
+
+      if (sub === "on" || sub === "off" || sub === "widget" || sub === "context") {
+        const next: Mode = sub === "on" ? "context" : (sub as Mode);
+        setMode(next, ctx);
+        const message: Record<Mode, string> = {
+          off: "PR tracking desligado: sem auto-detect, sem poll, sem contexto injetado.",
+          widget: "PR tracking em modo widget: auto-detect e poll ativos, nada injetado no prompt.",
+          context: "PR tracking completo: status dos PRs injetado no contexto a cada chamada.",
+        };
+        ctx.ui.notify(message[next], "info");
+        return;
+      }
+
+      if (mode === "off" && sub !== "") {
+        ctx.ui.notify("PR tracking está off. Use /prs on, /prs widget ou /prs track <pr>.", "warning");
+        return;
+      }
 
       switch (sub) {
         case "hide":
@@ -748,7 +866,10 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
             updateWidget(ctx);
             ctx.ui.notify(`PRs atualizados (${tracked.size} rastreado(s)).`, "info");
           } else {
-            ctx.ui.notify("Usage: /prs [show|hide|refresh]", "info");
+            ctx.ui.notify(
+              `Modo atual: ${mode}. Usage: /prs [on|off|widget|context|track <pr>|show|hide|merged|refresh]`,
+              "info",
+            );
           }
           break;
         }
@@ -764,7 +885,10 @@ export default function prsTrackerExtension(pi: ExtensionAPI): void {
           break;
 
         default:
-          ctx.ui.notify("Usage: /prs [show|hide|merged|refresh]", "warning");
+          ctx.ui.notify(
+            "Usage: /prs [on|off|widget|context|track <pr>|show|hide|merged|refresh]",
+            "warning",
+          );
       }
     },
   });

@@ -1,6 +1,8 @@
 # @arvoretech/pi-prs-tracker
 
-Keeps your open and recently-merged PRs pinned in the chat as a persistent widget — now with CI and production deploy status. PRs are auto-detected from `gh pr create` calls (and any GitHub PR URL) the agent runs during the session, and their status is refreshed in the background. The current status of every tracked PR is also injected into the AI's context on each LLM call, so the agent always knows whether a PR is merged and how its CI/deploy is doing.
+Keeps your open and recently-merged PRs pinned in the chat as a persistent widget — with CI and production deploy status. PRs are auto-detected from `gh pr create` calls (and any GitHub PR URL) the agent runs during the session, and their status is refreshed in the background.
+
+**Tracking is opt-in.** Since 2.0.0 the extension starts in `off` and does nothing at all — no auto-detection, no `gh` polling, no context injection — until you turn it on.
 
 ## Install
 
@@ -16,6 +18,26 @@ Or in `.pi/settings.json`:
 }
 ```
 
+## Modes
+
+| mode | auto-detect | widget | `gh` polling | context injection |
+| --- | --- | --- | --- | --- |
+| `off` (default) | no | no | no | no |
+| `widget` | yes | yes | yes | no |
+| `context` | yes | yes | yes | yes |
+
+Set the default per project in `.pi/prs-tracker.json` at the hub root:
+
+```json
+{ "mode": "widget" }
+```
+
+Or via the `PI_PRS_TRACKER_MODE` env var, which wins over the file. `/prs on|off|widget|context`
+changes the mode for the current session only.
+
+`/prs track <url|owner/repo#N|N>` adds that PR explicitly. If the extension was `off`,
+it switches to `widget`, which enables polling and auto-detection for the rest of the session.
+
 ## How it works
 
 - Listens to `bash` tool executions. When a command contains `gh pr create` or its output prints a `github.com/<owner>/<repo>/pull/<n>` URL, the PR is captured automatically.
@@ -30,7 +52,7 @@ Or in `.pi/settings.json`:
 
 ## AI context injection
 
-On every LLM call the extension injects a non-displayed `custom` message (`customType: "prs-tracker-context"`) with a fresh snapshot of all tracked PRs — state (`OPEN`/`MERGED`/`CLOSED`), CI summary and deploy status. The block is rebuilt each call from the latest background poll and the previous one is filtered out, so the history is never polluted and the agent always sees the current state instead of stale info. This lets the agent answer "is this PR merged / did CI pass / did it deploy?" without re-running `gh`.
+Only in `context` mode. On every LLM call the extension injects a non-displayed `custom` message (`customType: "prs-tracker-context"`) with a fresh snapshot of all tracked PRs — state (`OPEN`/`MERGED`/`CLOSED`), CI summary and deploy status. The block is rebuilt each call from the latest background poll and the previous one is filtered out, so the history is never polluted and the agent always sees the current state instead of stale info. This lets the agent answer "is this PR merged / did CI pass / did it deploy?" without re-running `gh`.
 
 ## Deploy detection
 
@@ -38,8 +60,13 @@ The production deploy run is matched by the `push` event on the merge commit, pi
 
 ## Commands
 
-- `/prs` — show usage
-- `/prs hide` — hide the widget
+- `/prs` — show the current mode and usage
+- `/prs on` — enable full tracking (`context` mode) for this session
+- `/prs widget` — enable tracking without context injection
+- `/prs context` — enable full tracking with context injection
+- `/prs off` — stop polling, hide the widget and inject nothing
+- `/prs track <pr>` — track one PR explicitly (url, `owner/repo#N` or `N`)
+- `/prs hide` — hide the widget (keeps tracking)
 - `/prs show` — re-show the widget
 - `/prs refresh` — force an immediate status refresh
 
