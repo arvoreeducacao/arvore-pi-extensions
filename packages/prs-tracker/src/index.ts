@@ -442,7 +442,8 @@ function resultToText(result: any): string {
 const CONTEXT_CUSTOM_TYPE = "prs-tracker-context";
 
 function ciLabel(ci: CiSummary | null): string {
-  if (!ci || ci.state === "NONE") return "sem CI";
+  if (!ci) return "CI ainda não reportado";
+  if (ci.state === "NONE") return "sem CI";
   const link = ci.url ? ` (logs: ${ci.url})` : "";
   if (ci.state === "PENDING") return `CI rodando (${ci.passed}/${ci.total} ok, ${ci.pending} pendente, ${ci.failed} falha)${link}`;
   if (ci.state === "FAIL") return `CI FALHOU (${ci.failed}/${ci.total} falharam)${link}`;
