@@ -1,65 +1,113 @@
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { resolveReviewProtocol } from "./ds.js";
 import { UI_FILE_RE } from "./shared.js";
 
-const REVIEW_PROMPT = `[DESIGN REVIEW — GATE DE HEURÍSTICAS]
-Faça uma auditoria da UI que acabou de ser criada/alterada nesta sessão contra o design system da Árvore. Prefira delegar a um sub-agent de contexto fresco (tool subagent, context: "fresh") para não poluir este contexto; se não houver subagent disponível, faça você mesmo.
+const SHELL_TOOLS = new Set(["bash", "shell"]);
+const PR_CREATE_RE = /\bgh\s+pr\s+create\b/;
+const IGNORED_FILE_RE = /(\/__tests__\/|\.(test|spec|stories)\.)/;
+const REPOS_WITH_DESIGN_SYSTEM = ["frontend-arvore-nextjs", "superautor-sistema"];
 
-O revisor DEVE ler, nesta ordem:
-1. design/design-system/guidelines.md (§8 é o gate de aceitação: tokens, shadcn-first, tipografia, layout responsivo, estados, heurísticas, acessibilidade)
-2. design/design-system/foundations/usability-heuristics.md (10 heurísticas de Nielsen + UX infantil se a tela for para criança)
+function reviewPrompt(protocolPath: string): string {
+  return `[DESIGN REVIEW]
+Leia ${protocolPath} e execute exatamente o que ele diz. Prefira delegar a um sub-agent de contexto fresco (tool subagent, context: "fresh") para não poluir este contexto; se não houver subagent disponível, faça você mesmo.
 
-Depois, para cada arquivo de UI alterado no diff atual, reporte findings agrupados por eixo:
-- Tokens & cores: usa tokens do Bonsai? algum valor hardcoded?
-- Componente: shadcn-first? reusou componente existente em vez de recriar?
-- Ícones/emojis: usa @/components/icons (find_icon)? algum emoji proibido? algum lucide-react?
-- Tipografia, spacing, elevação, borders: dentro das foundations?
-- Responsividade: cobre mobile/tablet/desktop conforme o brief?
-- Estados: loading, empty, error, success cobertos?
-- Acessibilidade (WCAG AA): contraste, aria-label em ícones interativos, foco, semântica?
-- 10 heurísticas de Nielsen: aponte violações concretas (não genéricas).
-- UX infantil (se aplicável): alvos grandes, linguagem simples, feedback claro?
+Não improvise processo próprio, não leia os guidelines.md inteiros e não produza relatório de conformidade. O protocolo define o roteamento entre os design systems, o que ler, como olhar a tela, o teto de achados e o formato da saída — inclusive o caso em que a saída correta é dizer que não há nada a apontar.`;
+}
 
-Formato do resultado: lista de findings priorizados (🔴 bloqueia / 🟡 ajustar / 🟢 ok), cada um com arquivo:linha e a correção sugerida. Termine com um veredito: APROVADO ou AJUSTES NECESSÁRIOS.`;
+const PROTOCOL_MISSING = `[DESIGN REVIEW]
+Não encontrei design/design-review.md subindo a partir deste diretório. O protocolo do review mora no arvore-hub — atualize o repo (git pull) e rode /design-review de novo. Não tente reconstruir o protocolo de memória.`;
+
+function cwdOf(ctx: ExtensionContext): string {
+  return (ctx as { cwd?: string } | undefined)?.cwd ?? process.cwd();
+}
+
+function reviewMessage(ctx: ExtensionContext): string {
+  const protocolPath = resolveReviewProtocol(cwdOf(ctx));
+  return protocolPath ? reviewPrompt(protocolPath) : PROTOCOL_MISSING;
+}
+
+function repoRootFor(cwd: string): { dir: string; name: string } | null {
+  for (const name of REPOS_WITH_DESIGN_SYSTEM) {
+    const marker = `/${name}`;
+    const index = cwd.indexOf(marker);
+    if (index !== -1) {
+      return { dir: cwd.slice(0, index + marker.length), name };
+    }
+  }
+  return null;
+}
+
+function changedUiFiles(cwd: string): string[] {
+  const repo = repoRootFor(cwd);
+  if (!repo || !existsSync(join(repo.dir, ".git"))) return [];
+  for (const range of ["origin/main...HEAD", "HEAD"]) {
+    try {
+      const out = execFileSync("git", ["diff", "--name-only", range], {
+        cwd: repo.dir,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+      const files = out
+        .split("\n")
+        .filter(Boolean)
+        .filter((f) => UI_FILE_RE.test(f) && !IGNORED_FILE_RE.test(f));
+      if (files.length > 0) return files;
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
 
 export function registerReviewGate(pi: ExtensionAPI): void {
-  let uiTouchedThisSession = false;
+  let askedThisSession = false;
 
   pi.registerCommand("design-review", {
-    description: "Auditar a UI gerada contra o design system e as 10 heurísticas (guidelines §8)",
+    description:
+      "Olhar a tela alterada e devolver no máximo 3 achados — ou nada, quando não há o que apontar",
     handler: async (_args, ctx: ExtensionContext) => {
       pi.sendMessage(
-        { customType: "design-review-request", content: REVIEW_PROMPT, display: true },
+        { customType: "design-review-request", content: reviewMessage(ctx), display: true },
         { triggerTurn: true },
       );
-      ctx.ui.notify("Rodando design review contra o design system…", "info");
+      ctx.ui.notify("Rodando design review…", "info");
     },
   });
 
   pi.on("tool_call", async (event) => {
-    if (event.toolName === "edit" || event.toolName === "write") {
-      const path = (event.input as { path?: string } | undefined)?.path;
-      if (path && UI_FILE_RE.test(path)) {
-        uiTouchedThisSession = true;
-      }
-    }
+    if (askedThisSession) return;
+    if (!SHELL_TOOLS.has(event.toolName)) return;
+    const command = (event.input as { command?: string } | undefined)?.command ?? "";
+    if (!PR_CREATE_RE.test(command)) return;
+
+    const files = changedUiFiles(process.cwd());
+    if (files.length === 0) return;
+
+    askedThisSession = true;
+    const shown = files.slice(0, 10);
+    return {
+      block: true,
+      reason: [
+        `[DESIGN] Este PR toca ${files.length} arquivo(s) de UI:`,
+        ...shown.map((f) => `  - ${f}`),
+        files.length > shown.length ? `  (+${files.length - shown.length} outros)` : "",
+        "",
+        "PERGUNTE ao usuário, em uma linha, se ele quer um design review antes de abrir o PR — e respeite a resposta. Não rode o review sem perguntar.",
+        "",
+        "  sim → rode /design-review, aplique o que fizer sentido, depois reexecute o `gh pr create`.",
+        "  não → apenas reexecute o `gh pr create`.",
+        "",
+        "Este aviso não se repete nesta sessão.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
   });
 
   pi.on("session_start", async () => {
-    uiTouchedThisSession = false;
-  });
-
-  pi.on("agent_end", async (_event, ctx) => {
-    if (!uiTouchedThisSession || !ctx.hasUI) return;
-    uiTouchedThisSession = false;
-    const choice = await ctx.ui.select(
-      "Você alterou UI nesta sessão. Rodar o gate de heurísticas (design review) agora?",
-      ["Sim, rodar /design-review", "Não, pular"],
-    );
-    if (choice?.startsWith("Sim")) {
-      pi.sendMessage(
-        { customType: "design-review-request", content: REVIEW_PROMPT, display: true },
-        { triggerTurn: true },
-      );
-    }
+    askedThisSession = false;
   });
 }
