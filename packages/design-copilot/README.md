@@ -37,11 +37,13 @@ find_asset({ designSystem: "superautor", intent: "sticker campeão" })
 
 Resolução análoga à dos ícones (env `ARVORE_ASSETS_MANIFEST` / `SUPERAUTOR_ASSETS_MANIFEST`, ou walk-up).
 
-## 3. `/design-brief` — brief obrigatório com hard gate
-Antes de gerar UI, `edit`/`write` em `.tsx/.jsx/.css/.scss/.vue` ficam **bloqueados** até o brief ser definido. `/design-brief` pergunta persona, UX infantil, alvos responsivos, cobertura de estados e necessidade de assets, e injeta o resultado no contexto. Escape: `/skip-brief`.
+## 3. `/design-review` — segunda vista sobre a tela
 
-## 4. `/design-review` — gate de heurísticas
-Audita a UI gerada contra `guidelines.md §8` (tokens, shadcn-first, ícones, tipografia, responsivo, estados, acessibilidade WCAG AA, 10 heurísticas de Nielsen + UX infantil), preferindo um sub-agent de contexto fresco. Oferecido automaticamente no fim de sessões que tocaram UI.
+Olha a tela alterada e devolve **no máximo 3 achados** — ou nada, quando não há o que apontar. Infere a intenção da conversa em vez de pedir formulário, e nunca reporta item mecânico (hex cru, `lucide-react`, emoji, `h-screen`): isso é lint.
+
+O protocolo não vive aqui: a extensão resolve `design/design-review.md` no workspace por walk-up e manda o modelo segui-lo, preferindo um sub-agent de contexto fresco. Não achou o arquivo, ela diz para atualizar o `arvore-hub` em vez de improvisar. Assim a política muda com um commit no hub, sem republicar o pacote.
+
+O acionamento é manual; o gatilho automático fica na abertura do PR, e sempre pergunta antes de rodar.
 
 ## Instalação
 

@@ -34,8 +34,20 @@ const DS: Record<DesignSystem, DsPaths> = {
   },
 };
 
+const REVIEW_PROTOCOL_REL = "design/design-review.md";
+
 export function dsConfig(ds: DesignSystem): DsPaths {
   return DS[ds];
+}
+
+export function dsForPath(path: string): DesignSystem {
+  return /(^|\/)writing\//.test(path) || /superautor-sistema\//.test(path)
+    ? "superautor"
+    : "bonsai";
+}
+
+export function resolveReviewProtocol(cwd: string): string | null {
+  return walkUp(cwd, REVIEW_PROTOCOL_REL);
 }
 
 function walkUp(cwd: string, rel: string): string | null {
