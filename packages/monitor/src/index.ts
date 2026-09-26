@@ -12,8 +12,17 @@ import {
 
 const DEFAULT_MAX_EVENTS = 40;
 const DEFAULT_WINDOW_MS = 60_000;
+const DEFAULT_COALESCE_MS = 500;
+const MAX_BATCH_LINES = 20;
 const STATUS_KEY = "monitor";
 const MAX_LOG_LINES = 200;
+
+type DeliverAs = "steer" | "followUp";
+
+interface PendingBatch {
+  events: MonitorEvent[];
+  timer?: ReturnType<typeof setTimeout>;
+}
 
 type UIRef = {
   setStatus: (key: string, text: string | undefined) => void;
@@ -34,6 +43,18 @@ function kindTag(kind: MonitorEvent["kind"]): string {
 
 function formatEvent(event: MonitorEvent): string {
   return `[monitor:${event.monitorId}] (${kindTag(event.kind)}) ${event.line}`;
+}
+
+function formatBatch(events: MonitorEvent[]): string {
+  if (events.length === 1) return formatEvent(events[0]);
+  const mixedKinds = new Set(events.map((e) => e.kind)).size > 1;
+  const header = mixedKinds
+    ? `[monitor:${events[0].monitorId}] (${events.length} lines)`
+    : `[monitor:${events[0].monitorId}] (${kindTag(events[0].kind)} ×${events.length})`;
+  const body = events.map(
+    (e) => `  ${mixedKinds ? `(${kindTag(e.kind)}) ` : ""}${e.line}`,
+  );
+  return [header, ...body].join("\n");
 }
 
 export default function extension(pi: ExtensionAPI): void {
@@ -57,9 +78,49 @@ export default function extension(pi: ExtensionAPI): void {
     refreshStatus();
   };
 
-  const pushEvent = (event: MonitorEvent, deliverAs: "steer" | "followUp") => {
+  // Lines are coalesced per monitor so a burst costs one turn instead of one turn per line.
+  const delivery = new Map<string, { deliverAs: DeliverAs; coalesceMs: number }>();
+  const pending = new Map<string, PendingBatch>();
+
+  const flushPending = (monitorId: string) => {
+    const batch = pending.get(monitorId);
+    if (!batch) return;
+    pending.delete(monitorId);
+    if (batch.timer) clearTimeout(batch.timer);
+    if (batch.events.length === 0) return;
+    pi.sendUserMessage(formatBatch(batch.events), {
+      deliverAs: delivery.get(monitorId)?.deliverAs ?? "steer",
+    });
+  };
+
+  const pushEvent = (event: MonitorEvent) => {
     recordEvent(event);
-    pi.sendUserMessage(formatEvent(event), { deliverAs });
+    const settings = delivery.get(event.monitorId) ?? {
+      deliverAs: "steer" as DeliverAs,
+      coalesceMs: DEFAULT_COALESCE_MS,
+    };
+    const terminal = event.kind === "exit" || event.kind === "flood";
+
+    // Terminal events go out immediately, after flushing whatever they were queued behind.
+    if (terminal || settings.coalesceMs <= 0) {
+      flushPending(event.monitorId);
+      pi.sendUserMessage(formatEvent(event), { deliverAs: settings.deliverAs });
+      if (terminal) delivery.delete(event.monitorId);
+      return;
+    }
+
+    const batch: PendingBatch = pending.get(event.monitorId) ?? { events: [] };
+    batch.events.push(event);
+    pending.set(event.monitorId, batch);
+
+    if (batch.events.length >= MAX_BATCH_LINES) {
+      flushPending(event.monitorId);
+      return;
+    }
+
+    if (!batch.timer) {
+      batch.timer = setTimeout(() => flushPending(event.monitorId), settings.coalesceMs);
+    }
   };
 
   const captureUI = (ctx: { ui?: UIRef }) => {
@@ -141,6 +202,7 @@ export default function extension(pi: ExtensionAPI): void {
       "Start a background monitor that pushes matching stdout/stderr lines back to you as they happen",
     promptGuidelines: [
       "Use monitor_start when the user asks to watch/tail a long-running process (deploy, CI, tests, build, file changes) and react to its output without blocking the conversation.",
+      "Matching lines are coalesced into one notification per quiet window (coalesceMs, default 500ms), so a burst costs a single turn; use coalesceMs: 0 only when every line must arrive the moment it appears.",
       "Always set an include or exclude regex on monitor_start for verbose processes — an unfiltered monitor of a chatty process will be auto-stopped for flooding.",
       "Set reportExit=true on monitor_start when you need to know if the process fails silently; monitor also forwards stderr by default.",
       "Stop a monitor with monitor_stop once its purpose is served; monitors are session-scoped and die on shutdown.",
@@ -183,10 +245,16 @@ export default function extension(pi: ExtensionAPI): void {
           description: `Auto-stop the monitor if it emits more than this many matching lines per window. Default ${DEFAULT_MAX_EVENTS}.`,
         }),
       ),
+      coalesceMs: Type.Optional(
+        Type.Number({
+          description: `Batch matching lines that arrive within this many milliseconds into a single notification. 0 pushes every line immediately. Default ${DEFAULT_COALESCE_MS}.`,
+        }),
+      ),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       captureUI(ctx as unknown as { ui?: UIRef });
-      const deliverAs = params.deliverAs ?? "steer";
+      const deliverAs: DeliverAs = params.deliverAs ?? "steer";
+      const coalesceMs = Math.max(0, params.coalesceMs ?? DEFAULT_COALESCE_MS);
       try {
         const handle = startMonitor(
           {
@@ -200,17 +268,27 @@ export default function extension(pi: ExtensionAPI): void {
             maxEventsPerWindow: params.maxEventsPerWindow ?? DEFAULT_MAX_EVENTS,
             windowMs: DEFAULT_WINDOW_MS,
           },
-          (event) => pushEvent(event, deliverAs),
+          (event) => pushEvent(event),
         );
+        delivery.set(params.id, { deliverAs, coalesceMs });
+        const deliveryNote =
+          coalesceMs > 0
+            ? `Matching lines are coalesced into one notification per ${coalesceMs}ms quiet window (delivery: ${deliverAs}).`
+            : `Every matching line is pushed as it arrives (delivery: ${deliverAs}).`;
         refreshStatus();
         return {
           content: [
             {
               type: "text",
-              text: `Monitor "${handle.config.id}" started: \`${handle.config.command}\`. Matching lines will be pushed to you as they arrive (delivery: ${deliverAs}). Continue working; you'll be notified on new output.`,
+              text: `Monitor "${handle.config.id}" started: \`${handle.config.command}\`. ${deliveryNote} Continue working; you'll be notified on new output.`,
             },
           ],
-          details: { id: handle.config.id, command: handle.config.command, deliverAs } as Record<string, unknown>,
+          details: {
+            id: handle.config.id,
+            command: handle.config.command,
+            deliverAs,
+            coalesceMs,
+          } as Record<string, unknown>,
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -234,7 +312,12 @@ export default function extension(pi: ExtensionAPI): void {
     }),
     async execute(_toolCallId, params) {
       if (params.all) {
+        const ids = listMonitors().map((m) => m.id);
         const count = stopAllMonitors();
+        for (const id of ids) {
+          flushPending(id);
+          delivery.delete(id);
+        }
         refreshStatus();
         return {
           content: [{ type: "text", text: `Stopped ${count} monitor(s).` }],
@@ -248,6 +331,9 @@ export default function extension(pi: ExtensionAPI): void {
         };
       }
       const ok = stopMonitor(params.id, "manual");
+      // The process is gone, so flushing now cannot race new output.
+      if (ok) flushPending(params.id);
+      delivery.delete(params.id);
       refreshStatus();
       return {
         content: [
@@ -287,6 +373,12 @@ export default function extension(pi: ExtensionAPI): void {
   });
 
   pi.on("session_shutdown", async () => {
+    for (const batch of pending.values()) {
+      if (batch.timer) clearTimeout(batch.timer);
+    }
+    // Never push buffered lines into a session that is going away.
+    pending.clear();
+    delivery.clear();
     stopAllMonitors();
     logBuffer.length = 0;
     ui?.setStatus(STATUS_KEY, undefined);
