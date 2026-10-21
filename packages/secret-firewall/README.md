@@ -73,6 +73,32 @@ masked, captured, and exported to the shell. Keep patterns specific — a
 too-broad regex will redact large chunks of normal output and degrade the agent,
 and a pathological regex runs on every tool result (ReDoS risk).
 
+### Turning off built-in patterns
+
+A built-in rule that gets in the way can be switched off in the same config
+file. List the rules by name (case-insensitive), or pass `true` to turn off
+every built-in and keep only your custom patterns:
+
+```json
+{ "disableBuiltins": ["AWS_SECRET"] }
+```
+
+```json
+{
+  "disableBuiltins": true,
+  "patterns": [{ "name": "ACME", "regex": "acme-[0-9a-f]{12}" }]
+}
+```
+
+The built-in rules are `AWS_ACCESS_KEY`, `AWS_SECRET`, `OPENAI_KEY`,
+`GITHUB_TOKEN`, `SLACK_TOKEN`, `JWT` and `PRIVATE_KEY`. The global and project
+lists are merged, and `true` in either file wins. Values found in env vars and
+`.env` files are still redacted either way: this only affects the pattern
+fallback. `/secret-firewall` shows which built-ins are off.
+
+`AWS_SECRET` already skips pure-hex tokens, so full git commit hashes are not
+mistaken for AWS secrets.
+
 ### Standing guidance in the system prompt
 
 A `before_agent_start` hook appends a short section to the system prompt every
