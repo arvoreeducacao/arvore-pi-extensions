@@ -45,6 +45,7 @@ import {
 } from "./retry.js";
 import { ThinkingTagParser } from "./thinking-parser.js";
 import { countTokens } from "./tokenizer.js";
+import { resolveTranscript } from "./transcript.js";
 import {
 	buildHistory,
 	convertImagesToKiro,
@@ -339,6 +340,7 @@ export function streamKiro(
 			const kiroModelId = resolveKiroModel(model.id);
 			const thinkingBudget = resolveThinkingBudget(model, options);
 			const thinkingEnabled = thinkingBudget !== undefined;
+			const transcript = resolveTranscript(context);
 			debugLog("request.init", {
 				endpoint,
 				model: model.id,
@@ -346,13 +348,13 @@ export function streamKiro(
 				contextWindow: model.contextWindow,
 				thinkingEnabled,
 				reasoning: options?.reasoning,
-				messageCount: context.messages.length,
-				toolCount: context.tools?.length ?? 0,
-				hasSystemPrompt: !!context.systemPrompt,
+				messageCount: transcript.messages.length,
+				toolCount: transcript.tools.length,
+				hasSystemPrompt: !!transcript.systemPrompt,
 				profileArn,
 				sessionId: options?.sessionId,
 			});
-			let systemPrompt = context.systemPrompt ?? "";
+			let systemPrompt = transcript.systemPrompt;
 			if (thinkingBudget !== undefined) {
 				systemPrompt = `<thinking_mode>enabled</thinking_mode><max_thinking_length>${thinkingBudget}</max_thinking_length>${systemPrompt ? `\n${systemPrompt}` : ""}`;
 			}
@@ -362,7 +364,7 @@ export function streamKiro(
 			while (retryCount <= maxRetries) {
 				if (options?.signal?.aborted) throw options.signal.reason;
 				const effectiveSystemPrompt = systemPrompt;
-				const normalized = normalizeMessages(context.messages);
+				const normalized = normalizeMessages(transcript.messages);
 				const {
 					history: rawHistory,
 					systemPrepended,
@@ -490,20 +492,18 @@ export function streamKiro(
 						currentContent = `${effectiveSystemPrompt}\n\n${currentContent}`;
 				}
 				// Prepend truncation notice if the previous assistant response was cut off
-				if (wasPreviousResponseTruncated(context.messages)) {
+				if (wasPreviousResponseTruncated(transcript.messages)) {
 					currentContent = `${TRUNCATION_NOTICE}\n\n${currentContent}`;
 				}
 				// Always synthesize placeholder specs for tool names referenced in
-				// history, even when context.tools is empty/undefined. Without this,
+				// history, even when the current tool set is empty. Without this,
 				// an "advisor-style" call that inherits a tool-rich conversation but
 				// declares no current tools is rejected by Kiro as "Improperly formed
 				// request" because history references toolUses with no tool catalog.
 				let uimc:
 					| { toolResults?: KiroToolResult[]; tools?: KiroToolSpec[] }
 					| undefined;
-				const baseTools = context.tools?.length
-					? convertToolsToKiro(context.tools)
-					: [];
+				const baseTools = convertToolsToKiro(transcript.tools);
 				const finalTools =
 					history.length > 0
 						? addPlaceholderTools(baseTools, history)
