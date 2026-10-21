@@ -27,7 +27,11 @@ interface PatternRule {
 
 const PATTERN_RULES: PatternRule[] = [
   { name: "AWS_ACCESS_KEY", re: /\bAKIA[0-9A-Z]{16}\b/g },
-  { name: "AWS_SECRET", re: /\b(?<![A-Za-z0-9/+])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])\b/g },
+  // A random 40-char AWS secret is essentially never pure hex, but git commit hashes always are.
+  {
+    name: "AWS_SECRET",
+    re: /\b(?<![A-Za-z0-9/+])(?![0-9a-fA-F]{40}(?![A-Za-z0-9/+]))[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])\b/g,
+  },
   { name: "OPENAI_KEY", re: /\bsk-[A-Za-z0-9_-]{20,}\b/g },
   { name: "GITHUB_TOKEN", re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
   { name: "SLACK_TOKEN", re: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g },

@@ -77,6 +77,22 @@ test("redactor catches token patterns not present in env", () => {
   assert.ok(out.text.includes('"$SECRET_AWS_ACCESS_KEY"'));
 });
 
+test("AWS secret rule ignores git commit hashes", () => {
+  const r = createRedactor([]);
+  const sha = "5d2bd58f3c1e9a7b4d6c8e0f2a4b6c8d0e1f2a3b";
+  const out = r.redactString(`commit ${sha}\nAuthor: someone`);
+  assert.equal(out.text, `commit ${sha}\nAuthor: someone`);
+  assert.equal(out.hits, 0);
+});
+
+test("AWS secret rule still catches base64-shaped secrets", () => {
+  const r = createRedactor([]);
+  const secret = "aB3/dE6+gH".repeat(4);
+  const out = r.redactString(`aws_secret_access_key = ${secret}`);
+  assert.ok(!out.text.includes(secret));
+  assert.ok(out.text.includes('"$SECRET_AWS_SECRET"'));
+});
+
 test("redactor leaves non-secret text untouched", () => {
   const r = createRedactor([]);
   const out = r.redactString("server listening on port 3000");
