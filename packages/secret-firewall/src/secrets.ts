@@ -15,8 +15,11 @@ export interface CustomPatternConfig {
   flags?: string;
 }
 
+export type DisabledBuiltins = true | string[];
+
 export interface FirewallConfig {
   patterns: CustomPatternConfig[];
+  disableBuiltins: DisabledBuiltins;
 }
 
 const SENSITIVE_NAME = /(SECRET|TOKEN|PASSWORD|PASSWD|PWD|API[_-]?KEY|APIKEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET|AUTH|CREDENTIAL|DSN|DATABASE_URL|CONNECTION_STRING|SESSION|COOKIE|SIGNING|ENCRYPT|SALT|BEARER)/i;
@@ -103,17 +106,39 @@ function parsePatterns(raw: unknown): CustomPatternConfig[] {
   return out;
 }
 
-export function loadCustomPatterns(cwd: string): CustomPatternConfig[] {
-  const merged: CustomPatternConfig[] = [];
+function parseDisabledBuiltins(raw: unknown): DisabledBuiltins {
+  if (!raw || typeof raw !== "object") return [];
+  const value = (raw as Record<string, unknown>).disableBuiltins;
+  if (value === true) return true;
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((name): name is string => typeof name === "string" && name.length > 0)
+    .map((name) => name.toUpperCase());
+}
+
+function mergeDisabledBuiltins(a: DisabledBuiltins, b: DisabledBuiltins): DisabledBuiltins {
+  if (a === true || b === true) return true;
+  return [...new Set([...a, ...b])];
+}
+
+export function loadConfig(cwd: string): FirewallConfig {
+  const config: FirewallConfig = { patterns: [], disableBuiltins: [] };
   for (const path of configPaths(cwd)) {
     if (!existsSync(path)) continue;
+    let raw: unknown;
     try {
-      merged.push(...parsePatterns(JSON.parse(readFileSync(path, "utf8"))));
+      raw = JSON.parse(readFileSync(path, "utf8"));
     } catch {
-      /* unreadable or invalid JSON, skip */
+      continue;
     }
+    config.patterns.push(...parsePatterns(raw));
+    config.disableBuiltins = mergeDisabledBuiltins(config.disableBuiltins, parseDisabledBuiltins(raw));
   }
-  return merged;
+  return config;
+}
+
+export function loadCustomPatterns(cwd: string): CustomPatternConfig[] {
+  return loadConfig(cwd).patterns;
 }
 
 export function discoverSecrets(cwd: string): SecretEntry[] {

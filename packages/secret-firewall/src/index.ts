@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TextContent, ImageContent } from "@earendil-works/pi-ai";
-import { discoverSecrets, loadCustomPatterns, type SecretEntry } from "./secrets.js";
+import { discoverSecrets, loadConfig, type DisabledBuiltins, type SecretEntry } from "./secrets.js";
 import { createRedactor } from "./redact.js";
 
 type ContentBlock = TextContent | ImageContent;
@@ -10,6 +10,7 @@ export default function (pi: ExtensionAPI) {
   let entries: SecretEntry[] = [];
   const redactor = createRedactor([]);
   let exportedNames: string[] = [];
+  let disabledBuiltins: DisabledBuiltins = [];
   const stats = { redactedHits: 0, lastScan: 0, capturedCount: 0 };
 
   function exportToShell(list: SecretEntry[]): void {
@@ -27,7 +28,9 @@ export default function (pi: ExtensionAPI) {
 
   function rescan(cwd: string): void {
     entries = discoverSecrets(cwd);
-    redactor.refreshPatterns(loadCustomPatterns(cwd));
+    const config = loadConfig(cwd);
+    disabledBuiltins = config.disableBuiltins;
+    redactor.refreshPatterns(config.patterns, disabledBuiltins);
     redactor.refresh(entries);
     exportToShell(entries);
     stats.lastScan = entries.length;
@@ -188,9 +191,11 @@ export default function (pi: ExtensionAPI) {
       rescan(ctx.cwd);
       const names = entries.map((e) => e.placeholder).join(", ") || "(none)";
       const captured = redactor.knownPlaceholders().join(", ") || "(none)";
+      const builtinsOff =
+        disabledBuiltins === true ? "all" : disabledBuiltins.join(", ") || "(none)";
       ctx.ui.notify(
         `secret-firewall [${enabled ? "on" : "off"}] | protecting ${entries.length} secret(s) | ` +
-          `redacted ${stats.redactedHits} value(s) so far\nReferenceable as shell env: ${names}\nCaptured from context (auto-exported): ${captured}`,
+          `redacted ${stats.redactedHits} value(s) so far\nReferenceable as shell env: ${names}\nCaptured from context (auto-exported): ${captured}\nBuilt-in patterns turned off: ${builtinsOff}`,
         "info",
       );
     },

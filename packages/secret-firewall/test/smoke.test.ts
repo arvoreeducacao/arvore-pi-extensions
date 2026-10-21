@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { discoverSecrets, loadCustomPatterns } from "../dist/secrets.js";
+import { discoverSecrets, loadConfig, loadCustomPatterns } from "../dist/secrets.js";
 import { createRedactor } from "../dist/redact.js";
 
 function fakeJwt(seed: string): string {
@@ -13,6 +13,17 @@ function fakeJwt(seed: string): string {
   return `${b64({ alg: "none", typ: "JWT" })}.${b64({ sub: seed })}.${sig}`;
 }
 
+
+function withConfig(config: unknown, fn: (dir: string) => void): void {
+  const dir = mkdtempSync(join(tmpdir(), "sf-test-"));
+  try {
+    mkdirSync(join(dir, ".pi"));
+    writeFileSync(join(dir, ".pi", "secret-firewall.json"), JSON.stringify(config));
+    fn(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 function withEnvFile(lines: string[], fn: (dir: string) => void): void {
   const dir = mkdtempSync(join(tmpdir(), "sf-test-"));
@@ -177,4 +188,42 @@ test("invalid custom regex is skipped without throwing", () => {
   const out = r.redactString("nothing to redact here");
   assert.equal(out.hits, 0);
   assert.equal(out.text, "nothing to redact here");
+});
+
+test("loads disabled built-in patterns from config", () => {
+  withConfig({ disableBuiltins: ["aws_secret", "JWT", 42] }, (dir) => {
+    assert.deepEqual(loadConfig(dir).disableBuiltins, ["AWS_SECRET", "JWT"]);
+  });
+  withConfig({ disableBuiltins: true }, (dir) => {
+    assert.equal(loadConfig(dir).disableBuiltins, true);
+  });
+  withConfig({ patterns: [] }, (dir) => {
+    assert.deepEqual(loadConfig(dir).disableBuiltins, []);
+  });
+});
+
+test("a disabled built-in pattern stops redacting while the others keep working", () => {
+  const r = createRedactor([], [], ["AWS_SECRET"]);
+  const secretShaped = "aB3/dE6+gH".repeat(4);
+  const jwt = fakeJwt("user-123");
+  const out = r.redactString(`${secretShaped} ${jwt}`);
+  assert.ok(out.text.includes(secretShaped));
+  assert.ok(!out.text.includes(jwt));
+  assert.equal(out.hits, 1);
+});
+
+test("disableBuiltins true keeps only custom patterns", () => {
+  const r = createRedactor([], [{ name: "ACME", regex: "acme-[0-9a-f]{12}" }], true);
+  const out = r.redactString("AKIAIOSFODNN7EXAMPLE acme-0123456789ab");
+  assert.ok(out.text.includes("AKIAIOSFODNN7EXAMPLE"));
+  assert.ok(out.text.includes('"$SECRET_ACME"'));
+  assert.equal(out.hits, 1);
+});
+
+test("refreshPatterns applies a new set of disabled built-ins", () => {
+  const r = createRedactor([]);
+  r.refreshPatterns([], ["AWS_ACCESS_KEY"]);
+  const out = r.redactString("AKIAIOSFODNN7EXAMPLE");
+  assert.equal(out.text, "AKIAIOSFODNN7EXAMPLE");
+  assert.equal(out.hits, 0);
 });
