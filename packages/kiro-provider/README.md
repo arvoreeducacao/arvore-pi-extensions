@@ -108,6 +108,7 @@ src/
 ├── models.ts           # 12 model definitions + ID resolution
 ├── oauth.ts            # Multi-provider auth (Builder ID / Google / GitHub)
 ├── kiro-cli.ts         # kiro-cli credential sharing
+├── transcript.ts       # System prompt and tools from either pi context shape
 ├── transform.ts        # Message format conversion
 ├── history.ts          # Conversation history management
 ├── thinking-parser.ts  # Streaming <thinking> tag parser

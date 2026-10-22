@@ -1129,6 +1129,110 @@ describe("Feature 9: Streaming Integration", () => {
 	});
 
 	// =========================================================================
+	// Pi 0.86+ transcript context: prompt and tools arrive as system messages
+	// =========================================================================
+
+	const calcTool = {
+		name: "calc",
+		description: "Calculate",
+		parameters: { type: "object", properties: {} },
+	};
+
+	it("sends the system prompt and tools carried by pi 0.86 system messages", async () => {
+		const context = {
+			messages: [
+				{
+					role: "system",
+					content: "You are helpful",
+					toolsAdded: [calcTool],
+					timestamp: 0,
+				},
+				{ role: "user", content: "Hello", timestamp: ts },
+			],
+		} as unknown as Context;
+		const mockFetch = mockFetchOk(
+			'{"content":"Hi"}{"contextUsagePercentage":1}',
+		);
+		vi.stubGlobal("fetch", mockFetch);
+
+		const stream = streamKiro(makeModel(), context, { apiKey: "tok" });
+		await collect(stream);
+
+		const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+		const currentMsg = body.conversationState.currentMessage.userInputMessage;
+		expect(currentMsg.content).toBe("You are helpful\n\nHello");
+		const tools = currentMsg.userInputMessageContext?.tools as
+			| Array<{ toolSpecification: { name: string } }>
+			| undefined;
+		expect(tools?.map((t) => t.toolSpecification.name)).toEqual(["calc"]);
+
+		vi.unstubAllGlobals();
+	});
+
+	it("keeps tool results when a system message lands between the tool call and its result", async () => {
+		const assistantWithTool: AssistantMessage = {
+			role: "assistant",
+			content: [
+				{
+					type: "toolCall",
+					id: "tc1",
+					name: "calc",
+					arguments: { expr: "2+2" },
+				},
+			],
+			api: "kiro-api",
+			provider: "kiro",
+			model: "claude-sonnet-4-5",
+			usage: zeroUsage,
+			stopReason: "toolUse",
+			timestamp: ts,
+		};
+		const toolResult: ToolResultMessage = {
+			role: "toolResult",
+			toolCallId: "tc1",
+			toolName: "calc",
+			content: [{ type: "text", text: "4" }],
+			isError: false,
+			timestamp: ts,
+		};
+		const context = {
+			messages: [
+				{
+					role: "system",
+					content: "You are helpful",
+					toolsAdded: [calcTool],
+					timestamp: 0,
+				},
+				{ role: "user", content: "Calculate 2+2", timestamp: ts },
+				assistantWithTool,
+				{ role: "system", content: "Answer briefly", timestamp: ts },
+				toolResult,
+			],
+		} as unknown as Context;
+		const mockFetch = mockFetchOk(
+			'{"content":"4."}{"contextUsagePercentage":2}',
+		);
+		vi.stubGlobal("fetch", mockFetch);
+
+		const stream = streamKiro(makeModel(), context, { apiKey: "tok" });
+		await collect(stream);
+
+		const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+		const currentMsg = body.conversationState.currentMessage.userInputMessage;
+		expect(currentMsg.content).toBe("Tool results provided.");
+		expect(currentMsg.userInputMessageContext?.toolResults).toHaveLength(1);
+		expect(currentMsg.userInputMessageContext.toolResults[0].toolUseId).toBe(
+			"tc1",
+		);
+		const history = body.conversationState.history as KiroHistoryEntry[];
+		expect(history[0].userInputMessage?.content).toBe(
+			"You are helpful\n\nAnswer briefly\n\nCalculate 2+2",
+		);
+
+		vi.unstubAllGlobals();
+	});
+
+	// =========================================================================
 	// Non-retryable errors (complement to retry test)
 	// =========================================================================
 
