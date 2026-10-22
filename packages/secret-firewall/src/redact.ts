@@ -1,4 +1,4 @@
-import type { SecretEntry } from "./secrets.js";
+import type { DisabledBuiltins, SecretEntry } from "./secrets.js";
 
 export interface DynamicSecret {
   name: string;
@@ -15,7 +15,7 @@ export interface CustomPattern {
 export interface Redactor {
   redactString(text: string): { text: string; hits: number };
   refresh(entries: SecretEntry[]): void;
-  refreshPatterns(patterns: CustomPattern[]): void;
+  refreshPatterns(patterns: CustomPattern[], disabledBuiltins?: DisabledBuiltins): void;
   drainCaptured(): DynamicSecret[];
   knownPlaceholders(): string[];
 }
@@ -27,7 +27,11 @@ interface PatternRule {
 
 const PATTERN_RULES: PatternRule[] = [
   { name: "AWS_ACCESS_KEY", re: /\bAKIA[0-9A-Z]{16}\b/g },
-  { name: "AWS_SECRET", re: /\b(?<![A-Za-z0-9/+])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])\b/g },
+  // A random 40-char AWS secret is essentially never pure hex, but git commit hashes always are.
+  {
+    name: "AWS_SECRET",
+    re: /\b(?<![A-Za-z0-9/+])(?![0-9a-fA-F]{40}(?![A-Za-z0-9/+]))[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])\b/g,
+  },
   { name: "OPENAI_KEY", re: /\bsk-[A-Za-z0-9_-]{20,}\b/g },
   { name: "GITHUB_TOKEN", re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
   { name: "SLACK_TOKEN", re: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g },
@@ -64,12 +68,24 @@ function compileCustomPatterns(patterns: CustomPattern[]): PatternRule[] {
   return rules;
 }
 
+function activePatternRules(
+  customPatterns: CustomPattern[],
+  disabledBuiltins: DisabledBuiltins,
+): PatternRule[] {
+  const builtins =
+    disabledBuiltins === true
+      ? []
+      : PATTERN_RULES.filter((rule) => !disabledBuiltins.includes(rule.name));
+  return [...builtins, ...compileCustomPatterns(customPatterns)];
+}
+
 export function createRedactor(
   initial: SecretEntry[],
   customPatterns: CustomPattern[] = [],
+  disabledBuiltins: DisabledBuiltins = [],
 ): Redactor {
   let valueRules: { re: RegExp; placeholder: string }[] = [];
-  let patternRules: PatternRule[] = [...PATTERN_RULES, ...compileCustomPatterns(customPatterns)];
+  let patternRules = activePatternRules(customPatterns, disabledBuiltins);
 
   const captured = new Map<string, DynamicSecret>();
   const takenNames = new Set<string>();
@@ -82,8 +98,8 @@ export function createRedactor(
     for (const e of entries) takenNames.add(e.name);
   }
 
-  function refreshPatterns(patterns: CustomPattern[]): void {
-    patternRules = [...PATTERN_RULES, ...compileCustomPatterns(patterns)];
+  function refreshPatterns(patterns: CustomPattern[], disabled: DisabledBuiltins = []): void {
+    patternRules = activePatternRules(patterns, disabled);
   }
 
   function allocateName(patternName: string): string {
