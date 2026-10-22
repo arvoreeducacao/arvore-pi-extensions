@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json ./
 RUN npm install --no-package-lock
@@ -6,7 +6,7 @@ COPY tsconfig.build.json ./
 COPY src ./src
 RUN npx tsc -p tsconfig.build.json
 
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 RUN addgroup -g 1001 -S app && adduser -S app -u 1001
