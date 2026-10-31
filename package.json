@@ -16,7 +16,14 @@
   },
   "pnpm": {
     "overrides": {
-      "@earendil-works/pi-tui": "0.79.5"
+      "@earendil-works/pi-tui": "0.79.5",
+      "axios@>=1.0.0 <1.20.0": "1.20.0",
+      "follow-redirects@>=1.0.0 <1.16.2": "1.16.2",
+      "nanoid@>=3.0.0 <3.3.18": "3.3.18",
+      "postcss@>=8.0.0 <8.5.18": "8.5.18",
+      "source-map-js@>=1.0.0 <1.2.2": "1.2.2",
+      "undici@>=8.0.0 <8.12.2": "8.12.2",
+      "vite@>=7.0.0 <7.3.7": "7.3.7"
     },
     "ignoredBuiltDependencies": [
       "tree-sitter-typescript",
