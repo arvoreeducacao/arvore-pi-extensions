@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "parse-diff": "^0.11.1",
-    "ws": "^8.18.0"
+    "ws": "^8.22.0"
   },
   "pi": {
     "extensions": [
