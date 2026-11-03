@@ -23,7 +23,10 @@
       "postcss@>=8.0.0 <8.5.18": "8.5.18",
       "source-map-js@>=1.0.0 <1.2.2": "1.2.2",
       "undici@>=8.0.0 <8.12.2": "8.12.2",
-      "vite@>=7.0.0 <7.3.7": "7.3.7"
+      "vite@>=7.0.0 <7.3.7": "7.3.7",
+      "@earendil-works/pi-ai@latest": "0.80.3",
+      "@earendil-works/pi-coding-agent@latest": "0.80.3",
+      "@earendil-works/pi-agent-core@latest": "0.80.3"
     },
     "ignoredBuiltDependencies": [
       "tree-sitter-typescript",
