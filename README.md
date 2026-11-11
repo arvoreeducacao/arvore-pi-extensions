@@ -17,7 +17,6 @@ Monorepo for custom PI extensions used across Arvore projects.
 | `@arvoretech/pi-open-editor` | Opens files in the user's $EDITOR (tmux pane, GUI, or new terminal) |
 | `@arvoretech/pi-plan-mode` | Cursor-style plan mode with read-only exploration and manual /build approval |
 | `@arvoretech/pi-team-memory` | Team memory with proactive capture hooks |
-| `@arvoretech/pi-memory` | Cloud-based memory with RAG (Qdrant + GitHub OAuth) |
 | `@arvoretech/pi-monitor` | Watches a background process and pushes matching output lines to the agent as notifications (no polling) |
 | `@arvoretech/pi-recap` | Drafts a one-line recap of where you left off — on demand with `/recap` and automatically when you return to an idle session |
 | `@arvoretech/pi-secret-firewall` | Keeps secret values out of the model context, exposing them only as `$SECRET_*` shell env vars; supports custom token patterns via config |
